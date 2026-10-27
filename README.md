@@ -42,17 +42,41 @@ arquivo não tiver a fonte ou a vigência.
 ```
 lib/simples_nacional/   Ruby puro, sem dependências: tabelas, faixa, alíquota efetiva, Fator R, DAS
 data/anexos/*.yml       tabelas dos Anexos I a V, com fonte oficial e vigência
-api/calcular.rb         função Ruby da Vercel: recebe os números e devolve o resultado e os passos (JSON) [SIMP-5]
+api/calcular.rb         função Ruby da Vercel: recebe os números e devolve o resultado e os passos (JSON)
 web/                    React + Vite, build estático (formulário, resultado, passo a passo)
 test/                   Minitest, com 100% das linhas cobertas
 ```
-
-O que tem a chave de um card entre colchetes ainda não existe.
 
 - A regra fica num lugar só, em Ruby testável. A página só mostra o que a API devolve.
 - A função da Vercel guarda só o código (sem imagem de container), e a resposta tem
   cache de CDN: o resultado depende só dos números enviados.
 - A página é estática e roda com uma Content Security Policy sem `unsafe-inline`.
+
+### A biblioteca
+
+Dinheiro em centavos (Integer), para nenhuma conta passar por Float:
+
+```ruby
+require "simples_nacional"
+
+resultado = SimplesNacional.calcular(rbt12: 50_000_000, receita_mes: 4_000_000, anexo: 3)
+resultado.das                # => 398880 (R$ 3.988,80)
+resultado.passos.map(&:texto) # a conta explicada, com a base legal de cada passo
+
+# Atividade do Anexo III ou V: o Fator R escolhe (folha de salários dos 12 meses anteriores)
+SimplesNacional.calcular(rbt12: 50_000_000, receita_mes: 4_000_000, anexo: :fator_r, folha12: 15_000_000)
+```
+
+### A API
+
+```
+GET /api/calcular?rbt12=500000.00&receita_mes=40000.00&anexo=3
+GET /api/calcular?rbt12=500000.00&receita_mes=40000.00&anexo=fator_r&folha12=150000.00
+```
+
+Valores em reais, com ponto e até duas casas. A resposta traz `anexo`, `faixa`, `fator_r`,
+`aliquota_nominal`, `aliquota_efetiva`, `das` (já formatados), `das_centavos`, os `passos`
+e a `tabela` usada (fonte, redação e vigência). Entrada inválida responde 400 com `erro`.
 
 ## Fontes oficiais
 
