@@ -1,0 +1,171 @@
+# Monitor de disponibilidade (adaptado do portfólio): a cada 4 horas, e logo depois de
+# cada deploy de produção, confere a página e as duas funções com curl.
+# Se algo falhar, abre uma issue "Site fora do ar" (ou comenta na que já existe); quando
+# volta ao normal, comenta e fecha a issue sozinho. Deploy de produção com falha abre uma
+# issue com o rótulo "deploy". Com o app do GitHub no Slack inscrito em issues, os avisos
+# chegam em #simples.
+#
+# Custo: 6 execuções por dia de menos de 1 minuto (só curl, sem checkout nem navegador).
+# O repositório é público: minutos sem limite.
+name: Uptime
+
+on:
+  schedule:
+    - cron: "41 */4 * * *"
+  workflow_dispatch:
+  # A Vercel avisa o GitHub com um "commit status" (contexto "Vercel") quando um deploy
+  # termina. Por isso o gatilho é "status" e não "deployment_status".
+  status:
+
+permissions:
+  contents: read
+  issues: write
+
+env:
+  SITE: https://simples-nacional-br.vercel.app
+
+jobs:
+  check:
+    # Em deploys, só os que deram certo e vieram da main (produção).
+    if: >-
+      github.event_name != 'status' ||
+      (github.event.context == 'Vercel' &&
+       github.event.state == 'success' &&
+       contains(github.event.branches.*.name, 'main'))
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    # Uma verificação por vez. Fica no job (e não no workflow) porque cada deploy gera
+    # vários avisos de status: os que são pulados não podem cancelar o que importa.
+    concurrency:
+      group: uptime
+      cancel-in-progress: false
+    steps:
+      - name: Conferir a página e as funções
+        id: check
+        run: |
+          problems=""
+
+          # expect CAMINHO STATUS [TEXTO]: confere o status HTTP e, se passado, um trecho da
+          # resposta. Tenta até 3 vezes (com 60 s de intervalo) antes de considerar falha.
+          expect() {
+            local attempt
+            for attempt in 1 2 3; do
+              if check_once "$@"; then return 0; fi
+              [ "$attempt" -lt 3 ] && sleep 60
+            done
+            problems+="$last_problem"$'\n'
+          }
+
+          check_once() {
+            local url="$SITE$1" status="$2" text="${3:-}"
+            local body code
+            body=$(mktemp)
+            code=$(curl --silent --max-time 30 --output "$body" --write-out "%{http_code}" "$url" || echo "000")
+            if [ "$code" != "$status" ]; then
+              last_problem="- \`$1\`: esperado $status, recebido $code (3 tentativas)"
+              return 1
+            elif [ -n "$text" ] && ! grep -qF "$text" "$body"; then
+              last_problem="- \`$1\`: resposta sem \"$text\" (3 tentativas)"
+              return 1
+            fi
+          }
+
+          # A página vem pré-renderizada: o formulário já está no HTML.
+          expect / 200 "Receita bruta dos 12 meses anteriores (RBT12)"
+          expect /robots.txt 200 "User-agent"
+          expect /favicon.svg 200
+          # Conta conhecida (feita à mão no test/calculo_test.rb): R$ 3.988,80.
+          expect "/api/calcular?anexo=3&rbt12=500000.00&receita_mes=40000.00" 200 '"das_centavos":398880'
+          expect "/api/calcular?anexo=9&rbt12=1.00&receita_mes=1.00" 400 "Escolha o anexo"
+          # CNPJ com dígito errado: responde sem chamar a BrasilAPI.
+          expect "/api/cnpj?cnpj=11222333000180" 400 "CNPJ inválido"
+
+          # Cabeçalhos de segurança da página (definidos no vercel.json).
+          headers=$(curl --silent --max-time 30 --head "$SITE/" || true)
+          for header in content-security-policy strict-transport-security x-content-type-options cross-origin-opener-policy; do
+            grep -qi "^$header:" <<<"$headers" || problems+="- \`/\`: sem o cabeçalho $header"$'\n'
+          done
+
+          if [ -n "$problems" ]; then
+            echo "::error title=Site com problemas::$(echo "$problems" | tr '\n' ' ')"
+            {
+              echo "problems<<EOF"
+              echo "$problems"
+              echo "EOF"
+            } >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Abrir ou atualizar a issue
+        if: steps.check.outputs.problems != ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          PROBLEMS: ${{ steps.check.outputs.problems }}
+        run: |
+          gh label create uptime --color B60205 --description "Monitor de disponibilidade" 2>/dev/null || true
+          body="$(printf 'Verificação de %s:\n\n%s\nExecução: %s/%s/actions/runs/%s' \
+            "$(date -u '+%Y-%m-%d %H:%M UTC')" "$PROBLEMS" "$GITHUB_SERVER_URL" "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID")"
+          issue=$(gh issue list --label uptime --state open --json number --jq '.[0].number')
+          if [ -n "$issue" ]; then
+            gh issue comment "$issue" --body "$body"
+          else
+            gh issue create --title "Site fora do ar ou com erro" --label uptime --body "$body"
+          fi
+          exit 1
+
+      - name: Fechar a issue se o site voltou
+        if: steps.check.outputs.problems == ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          issue=$(gh issue list --label uptime --state open --json number --jq '.[0].number')
+          if [ -n "$issue" ]; then
+            gh issue close "$issue" --comment "Tudo no ar de novo em $(date -u '+%Y-%m-%d %H:%M UTC')."
+          fi
+
+      # Deploy de produção que deu certo resolve a falha de deploy anterior.
+      - name: Fechar a issue de deploy com falha
+        if: github.event_name == 'status' && steps.check.outputs.problems == ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          SHA: ${{ github.event.sha }}
+        run: |
+          for issue in $(gh issue list --label deploy --state open --json number --jq '.[].number'); do
+            gh issue close "$issue" --comment "O commit ${SHA:0:7} foi publicado na produção e o site passou na verificação."
+          done
+
+  # Deploy de produção que falhou não chega a rodar a verificação acima (o site continua
+  # na versão anterior). Este job avisa por uma issue com o rótulo "deploy"; só existe uma
+  # aberta por vez, e falhas seguidas viram comentários nela.
+  deploy-failed:
+    if: >-
+      github.event_name == 'status' &&
+      github.event.context == 'Vercel' &&
+      (github.event.state == 'failure' || github.event.state == 'error') &&
+      contains(github.event.branches.*.name, 'main')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    concurrency:
+      group: deploy-failed
+      cancel-in-progress: false
+    steps:
+      - name: Abrir ou atualizar a issue
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          SHA: ${{ github.event.sha }}
+          DETAILS: ${{ github.event.target_url }}
+        run: |
+          gh label create deploy --color B60205 --description "Deploy de produção com falha" 2>/dev/null || true
+          short="${SHA:0:7}"
+          body="$(printf 'A Vercel não conseguiu publicar o commit %s na produção. O site continua na versão anterior.\n\nDetalhes e logs: %s' "$SHA" "$DETAILS")"
+          issue=$(gh issue list --label deploy --state open --json number --jq '.[0].number')
+          if [ -z "$issue" ]; then
+            gh issue create --label deploy --title "Deploy de produção falhou ($short)" --body "$body"
+          elif gh issue view "$issue" --json body,comments --jq '.body, .comments[].body' | grep -q "$SHA"; then
+            echo "A issue #$issue já fala do commit $short."
+          else
+            gh issue comment "$issue" --body "$body"
+          fi

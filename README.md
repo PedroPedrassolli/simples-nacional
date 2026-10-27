@@ -115,6 +115,17 @@ npm run build && npm run test:e2e   # navegador: acessibilidade, 320 px, API sim
 O fluxo de trabalho (cards, branches, PRs, merge automático) está no
 [CONTRIBUTING.md](CONTRIBUTING.md).
 
+## Monitoramento
+
+- **Uptime** (`.github/workflows/uptime.yml`): a cada 4 horas e depois de cada deploy de
+  produção, confere com `curl` a página, uma conta conhecida em `/api/calcular`, os erros
+  esperados das duas funções e os cabeçalhos de segurança. Problema abre uma issue com o
+  rótulo `uptime`; deploy de produção com falha abre uma com o rótulo `deploy`. As duas
+  fecham sozinhas quando tudo volta.
+- **Resumo semanal** no Slack (`#simples`), toda segunda de manhã.
+- Diagrama da arquitetura no [FigJam](https://www.figma.com/board/ENcSh8yoOVszzoQbkFY3jA)
+  ("Calculadora do Simples Nacional: arquitetura (out/2026)").
+
 ## Planos gratuitos
 
 - **GitHub Actions:** repositório público, minutos sem limite. Todo job tem tempo máximo.
@@ -122,6 +133,7 @@ O fluxo de trabalho (cards, branches, PRs, merge automático) está no
   para o ar (`scripts/vercel-ignorar-build.sh`), porque o espaço de deploys é um só para a
   conta toda.
 - **Jira Free:** sem regras de automação; os cards andam pelo `jira.yml`.
+- **BrasilAPI:** gratuita e sem chave; as respostas de CNPJ ficam um dia no cache da Vercel.
 
 ## Autor
 

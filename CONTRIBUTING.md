@@ -56,13 +56,17 @@ falha enquanto elas forem diferentes da resposta atual.
   espera sempre a CI do commit.
 - Merge feito pelo `GITHUB_TOKEN` não dispara outros workflows. Por isso o
   `auto-merge.yml` move o card do Jira ele mesmo.
-- Workflows disparados por `workflow_run` usam a versão que está na `main`. Se você mudar o
+- Workflows disparados por `workflow_run` ou `status` (Auto-merge, Uptime) usam a versão que
+  está na `main`. Se você mudar o
   `auto-merge.yml`, abra o PR como rascunho: até o merge, quem decide é a versão antiga.
 - As Actions dos workflows ficam fixadas pelo commit (SHA), com a versão num comentário.
   Não troque por `@v7`: uma tag pode ser movida para outro código. O Dependabot atualiza.
 - A página é pré-renderizada no build (`web/scripts/prerender.mjs`): o HTML já sai pronto e o
   React só hidrata. O primeiro desenho do `App` precisa ser igual no build e no navegador:
   nada de `window`, data atual ou número aleatório durante o render (use `useEffect`).
+- O Uptime confere uma conta conhecida (`/api/calcular`, DAS de R$ 3.988,80). Mudou essa conta
+  de propósito? Mude o `uptime.yml` no mesmo PR. Atraso de algumas horas nos agendados do
+  GitHub é normal.
 - O script `.github/scripts/jira-transition.sh` nunca deixa um job vermelho: se o card não
   existe, o Jira não responde ou os secrets faltam, ele só avisa.
 - Nunca escreva o marcador que pula a CI (colchetes com "skip ci") numa mensagem de
