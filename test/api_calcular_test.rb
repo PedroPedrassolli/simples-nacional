@@ -84,6 +84,11 @@ describe "api/calcular.rb" do
       assert_equal "Escolha o anexo: 1, 2, 3, 4, 5 ou fator_r.", erro("anexo" => "6")
     end
 
+    it "recusa texto com bytes inválidos sem quebrar (ex.: %FF%FE na URL)" do
+      assert_match(/RBT12\) como número/, erro("rbt12" => "\xFF\xFE"))
+      assert_equal 400, response.status
+    end
+
     it "recusa número grande demais antes de calcular" do
       assert_match(/como número/, erro("rbt12" => "12345678.00"))
     end

@@ -108,7 +108,7 @@ bundle exec rubocop          # estilo
 cd web
 npm ci
 npm run dev                  # página em http://localhost:5173 (usa a API publicada)
-npm test                     # funções do formulário
+npm test                     # funções do formulário e das chamadas à API
 npm run build && npm run test:e2e   # navegador: acessibilidade, 320 px, API simulada
 ```
 

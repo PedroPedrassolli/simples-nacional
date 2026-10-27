@@ -123,12 +123,24 @@ test("mostra a mensagem de erro da API", async ({ page }) => {
   await expect(page.getByRole("alert")).toHaveText(erro);
 });
 
+test("mostra uma mensagem quando a rede falha e libera o botão", async ({ page }) => {
+  await page.route("**/api/calcular?*", (route) => route.abort("internetdisconnected"));
+  await page.goto("/");
+  await preencher(page, { rbt12: "500000", receita: "40000", anexo: "3" });
+
+  await expect(page.getByRole("alert")).toHaveText(
+    "Não deu para calcular agora. Tente de novo em instantes.",
+  );
+  await expect(page.getByRole("button", { name: "Calcular" })).toBeEnabled();
+});
+
 test("consulta o CNPJ e mostra a empresa, o CNAE e a situação no Simples", async ({ page }) => {
   const chamadas = await simularCnpj(page);
   await page.goto("/");
   await consultarCnpj(page, "11.222.333/0001-81");
 
   await expect(page.getByText("EMPRESA FICTICIA LTDA")).toBeVisible();
+  await expect(page.locator("[aria-live=polite]")).toContainText("EMPRESA FICTICIA LTDA");
   await expect(
     page.getByText("6201-5/01 – Desenvolvimento de programas de computador sob encomenda"),
   ).toBeVisible();
@@ -142,6 +154,16 @@ test("mostra o erro da consulta de CNPJ", async ({ page }) => {
   await consultarCnpj(page, "11.222.333/0001-80");
 
   await expect(page.getByRole("alert")).toHaveText("CNPJ inválido: confira os números.");
+});
+
+test("mostra uma mensagem quando a consulta de CNPJ não responde", async ({ page }) => {
+  await page.route("**/api/cnpj?*", (route) => route.abort("timedout"));
+  await page.goto("/");
+  await consultarCnpj(page, "11.222.333/0001-81");
+
+  await expect(page.getByRole("alert")).toHaveText(
+    "Não deu para consultar o CNPJ agora. Tente de novo em instantes.",
+  );
 });
 
 test("mostra o aviso de estimativa educativa", async ({ page }) => {
