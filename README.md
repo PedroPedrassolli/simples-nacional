@@ -13,6 +13,9 @@ anexo da atividade, e vê:
 - a **alíquota efetiva**: `(RBT12 × alíquota nominal − parcela a deduzir) ÷ RBT12`
   (art. 18, § 1º-A, da Lei Complementar 123/2006);
 - o **valor estimado do DAS**: receita do mês × alíquota efetiva;
+- a **divisão do DAS entre os tributos** (IRPJ, CSLL, Cofins, PIS/Pasep, CPP, IPI, ICMS ou
+  ISS), pelos percentuais de repartição de cada anexo, com o ISS limitado a 5% e, na 6ª faixa,
+  o ICMS ou o ISS calculado com a 5ª faixa (Resolução CGSN nº 140/2018, art. 21, III);
 - a conta **passo a passo**, com a faixa usada e de onde veio cada número.
 
 Quando a atividade pode cair no Anexo III ou no V, a calculadora aplica o **Fator R**:
@@ -23,8 +26,9 @@ Opcional: informe um CNPJ para ver a empresa, o CNAE principal e se ela consta c
 pelo Simples (dados públicos da Receita Federal, pela BrasilAPI).
 
 As tabelas dos Anexos I a V ficam em `data/anexos/`, cada arquivo com o link da fonte
-oficial, a lei que deu a redação atual e a data de vigência. Um teste falha se um
-arquivo não tiver a fonte ou a vigência.
+oficial, a lei que deu a redação atual e a data de vigência, as alíquotas e os percentuais de
+repartição de cada faixa. Um teste falha se um arquivo não tiver a fonte ou a vigência, ou se a
+repartição de uma faixa não somar 100%.
 
 ### O que ela não faz
 
@@ -34,8 +38,8 @@ arquivo não tiver a fonte ou a vigência.
   regulamentada pela Resolução CGSN nº 186/2026; os prazos da opção foram alterados
   pela Resolução CGSN nº 194/2026). A calculadora mostra o DAS do regime simplificado
   e não calcula o IBS e a CBS por fora.
-- Ainda não trata: repartição do DAS por tributo, empresa com menos de 12 meses
-  (RBT12 proporcional), sublimites estaduais e comparação entre anexos.
+- Ainda não trata: empresa com menos de 12 meses (RBT12 proporcional), sublimites
+  estaduais, locação de bens móveis (Anexo III sem o ISS) e comparação entre anexos.
 
 ## Como funciona
 
@@ -62,6 +66,7 @@ require "simples_nacional"
 
 resultado = SimplesNacional.calcular(rbt12: 50_000_000, receita_mes: 4_000_000, anexo: 3)
 resultado.das                # => 398880 (R$ 3.988,80)
+resultado.tributos.last      # => #<data SimplesNacional::Calculo::Tributo nome="ISS", percentual=(32409/1000000), valor=129636>
 resultado.passos.map(&:texto) # a conta explicada, com a base legal de cada passo
 
 # Atividade do Anexo III ou V: o Fator R escolhe (folha de salários dos 12 meses anteriores)
@@ -76,8 +81,9 @@ GET /api/calcular?rbt12=500000.00&receita_mes=40000.00&anexo=fator_r&folha12=150
 ```
 
 Valores em reais, com ponto e até duas casas. A resposta traz `anexo`, `faixa`, `fator_r`,
-`aliquota_nominal`, `aliquota_efetiva`, `das` (já formatados), `das_centavos`, os `passos`
-e a `tabela` usada (fonte, redação e vigência). Entrada inválida responde 400 com `erro`.
+`aliquota_nominal`, `aliquota_efetiva`, `das` (já formatados), `das_centavos`, os `tributos`
+(nome, percentual sobre a receita e valor de cada um), os `passos` e a `tabela` usada (fonte,
+redação e vigência). Entrada inválida responde 400 com `erro`.
 
 ```
 GET /api/cnpj?cnpj=11.222.333/0001-81
@@ -92,8 +98,12 @@ art. 18 da LC 123/2006.
 ## Fontes oficiais
 
 - [Lei Complementar nº 123/2006, texto compilado (Planalto)](https://www.planalto.gov.br/ccivil_03/leis/lcp/lcp123.htm):
-  limites (art. 3º), alíquota efetiva e Fator R (art. 18) e Anexos I a V (redação da
-  Lei Complementar nº 155/2016, vigência desde 01/01/2018). Conferido em 27/10/2026.
+  limites (art. 3º), alíquota efetiva e Fator R (art. 18) e Anexos I a V, com os percentuais
+  de repartição (redação da Lei Complementar nº 155/2016, vigência desde 01/01/2018).
+  Conferido em 27/10/2026.
+- [Resolução CGSN nº 140/2018 (normas da Receita Federal)](https://normas.receita.fazenda.gov.br/sijut2consulta/link.action?idAto=92278):
+  percentual efetivo de cada tributo, teto de 5% do ISS e ICMS/ISS na 6ª faixa (art. 21, III).
+  Conferido em 27/10/2026.
 - [Portal do Simples Nacional: opção pelo regime regular do IBS e da CBS para 2027](https://www8.receita.fazenda.gov.br/simplesnacional/noticias/NoticiaCompleta.aspx?id=c739e03c-8482-473f-8e82-f38ec3b13637).
 
 ## Rodar na sua máquina

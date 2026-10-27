@@ -260,6 +260,37 @@ button:disabled {
   margin: 0;
 }
 
+.tributos {
+  width: 100%;
+  margin: 0 0 1rem;
+  border-collapse: collapse;
+  /* Números com a mesma largura: os valores ficam alinhados na coluna. */
+  font-variant-numeric: tabular-nums;
+}
+
+.tributos caption {
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+  text-align: left;
+}
+
+.tributos th,
+.tributos td {
+  padding: 0.375rem 0.5rem;
+  border-bottom: 1px solid var(--borda);
+  text-align: right;
+}
+
+.tributos th:first-child {
+  padding-left: 0;
+  text-align: left;
+}
+
+.tributos thead th {
+  color: var(--texto-suave);
+  font-weight: 400;
+}
+
 .passos summary {
   cursor: pointer;
   font-weight: 600;

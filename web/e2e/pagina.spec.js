@@ -70,11 +70,24 @@ test("calcula e mostra o DAS, o resumo e o passo a passo", async ({ page }) => {
   await expect(resultado).toBeFocused();
   await expect(page.getByText("9,9720%", { exact: true })).toBeVisible();
 
+  // A divisão entre os tributos, numa tabela com cabeçalho de linha e de coluna.
+  const tabela = page.getByRole("table", { name: "Divisão do DAS entre os tributos" });
+  await expect(tabela.getByRole("row", { name: "ISS 3,2409% R$ 1.296,36" })).toBeVisible();
+  await expect(tabela.getByRole("rowheader")).toHaveText([
+    "IRPJ",
+    "CSLL",
+    "Cofins",
+    "PIS/Pasep",
+    "CPP",
+    "ISS",
+  ]);
+
   await page.getByText("Ver a conta passo a passo").click();
   await expect(page.getByRole("heading", { level: 3 })).toHaveText([
     "Anexo",
     "Faixa",
     "Alíquota efetiva",
+    "Divisão entre os tributos",
     "DAS estimado",
   ]);
 

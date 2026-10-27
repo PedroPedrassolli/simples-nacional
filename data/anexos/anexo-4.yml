@@ -3,12 +3,21 @@
 #
 # Copiado do texto compilado no Planalto (link em "fonte"). No texto, o anexo tem a
 # nota "Vide Lei Complementar nº 214, de 2025"; as alíquotas e as parcelas a deduzir
-# continuam as da redação da Lei Complementar nº 155/2016.
+# continuam as da redação da Lei Complementar nº 155/2016. A LC 214/2025 (art. 519) troca
+# esta tabela a partir de 1º/1/2027.
 #
 # Os valores ficam como texto e o Ruby converte para Rational (sem erro de
 # arredondamento de Float). Cada faixa vai até "ate", inclusive.
 #   aliquota: alíquota nominal, em %
 #   deduzir:  parcela a deduzir, em R$
+#   reparticao: percentual de cada tributo na alíquota efetiva (tabela "Percentual de
+#               Repartição dos Tributos", logo abaixo das alíquotas no anexo). Soma 100%.
+#               A 6ª faixa não tem ICMS nem ISS: eles são calculados com a 5ª faixa
+#               (Resolução CGSN nº 140/2018, art. 21, III, b).
+#   teto_iss:   nota (*) do anexo: "O percentual efetivo máximo devido ao ISS será de 5%,
+#               transferindo-se a diferença, de forma proporcional, aos tributos federais".
+#               Na 5ª faixa, com alíquota efetiva acima de 12,5%, cada tributo federal
+#               fica com (alíquota efetiva − 5%) × este percentual, e o ISS com 5%.
 anexo: 4
 nome: Serviços relacionados no § 5º-C do art. 18
 fonte: https://www.planalto.gov.br/ccivil_03/leis/lcp/lcp123.htm
@@ -16,9 +25,28 @@ redacao: Lei Complementar nº 155/2016
 vigencia: "2018-01-01"
 conferido_em: "2026-10-27"
 faixas:
-  - { ate: "180000.00", aliquota: "4.50", deduzir: "0.00" }
-  - { ate: "360000.00", aliquota: "9.00", deduzir: "8100.00" }
-  - { ate: "720000.00", aliquota: "10.20", deduzir: "12420.00" }
-  - { ate: "1800000.00", aliquota: "14.00", deduzir: "39780.00" }
-  - { ate: "3600000.00", aliquota: "22.00", deduzir: "183780.00" }
-  - { ate: "4800000.00", aliquota: "33.00", deduzir: "828000.00" }
+  - ate: "180000.00"
+    aliquota: "4.50"
+    deduzir: "0.00"
+    reparticao: { IRPJ: "18.80", CSLL: "15.20", Cofins: "17.67", PIS/Pasep: "3.83", ISS: "44.50" }
+  - ate: "360000.00"
+    aliquota: "9.00"
+    deduzir: "8100.00"
+    reparticao: { IRPJ: "19.80", CSLL: "15.20", Cofins: "20.55", PIS/Pasep: "4.45", ISS: "40.00" }
+  - ate: "720000.00"
+    aliquota: "10.20"
+    deduzir: "12420.00"
+    reparticao: { IRPJ: "20.80", CSLL: "15.20", Cofins: "19.73", PIS/Pasep: "4.27", ISS: "40.00" }
+  - ate: "1800000.00"
+    aliquota: "14.00"
+    deduzir: "39780.00"
+    reparticao: { IRPJ: "17.80", CSLL: "19.20", Cofins: "18.90", PIS/Pasep: "4.10", ISS: "40.00" }
+  - ate: "3600000.00"
+    aliquota: "22.00"
+    deduzir: "183780.00"
+    reparticao: { IRPJ: "18.80", CSLL: "19.20", Cofins: "18.08", PIS/Pasep: "3.92", ISS: "40.00" }
+    teto_iss: { IRPJ: "31.33", CSLL: "32.00", Cofins: "30.13", PIS/Pasep: "6.54" }
+  - ate: "4800000.00"
+    aliquota: "33.00"
+    deduzir: "828000.00"
+    reparticao: { IRPJ: "53.50", CSLL: "21.50", Cofins: "20.55", PIS/Pasep: "4.45" }

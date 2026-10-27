@@ -13,5 +13,7 @@ end
 require_relative "simples_nacional/tabelas"
 require_relative "simples_nacional/formato"
 require_relative "simples_nacional/passos"
+require_relative "simples_nacional/passo_da_divisao"
 require_relative "simples_nacional/fator_r"
+require_relative "simples_nacional/reparticao"
 require_relative "simples_nacional/calculo"

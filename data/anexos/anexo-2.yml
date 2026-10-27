@@ -3,12 +3,17 @@
 #
 # Copiado do texto compilado no Planalto (link em "fonte"). No texto, o anexo tem a
 # nota "Vide Lei Complementar nº 214, de 2025"; as alíquotas e as parcelas a deduzir
-# continuam as da redação da Lei Complementar nº 155/2016.
+# continuam as da redação da Lei Complementar nº 155/2016. A LC 214/2025 (art. 519) troca
+# esta tabela a partir de 1º/1/2027.
 #
 # Os valores ficam como texto e o Ruby converte para Rational (sem erro de
 # arredondamento de Float). Cada faixa vai até "ate", inclusive.
 #   aliquota: alíquota nominal, em %
 #   deduzir:  parcela a deduzir, em R$
+#   reparticao: percentual de cada tributo na alíquota efetiva (tabela "Percentual de
+#               Repartição dos Tributos", logo abaixo das alíquotas no anexo). Soma 100%.
+#               A 6ª faixa não tem ICMS nem ISS: eles são calculados com a 5ª faixa
+#               (Resolução CGSN nº 140/2018, art. 21, III, b).
 anexo: 2
 nome: Indústria
 fonte: https://www.planalto.gov.br/ccivil_03/leis/lcp/lcp123.htm
@@ -16,9 +21,27 @@ redacao: Lei Complementar nº 155/2016
 vigencia: "2018-01-01"
 conferido_em: "2026-10-27"
 faixas:
-  - { ate: "180000.00", aliquota: "4.50", deduzir: "0.00" }
-  - { ate: "360000.00", aliquota: "7.80", deduzir: "5940.00" }
-  - { ate: "720000.00", aliquota: "10.00", deduzir: "13860.00" }
-  - { ate: "1800000.00", aliquota: "11.20", deduzir: "22500.00" }
-  - { ate: "3600000.00", aliquota: "14.70", deduzir: "85500.00" }
-  - { ate: "4800000.00", aliquota: "30.00", deduzir: "720000.00" }
+  - ate: "180000.00"
+    aliquota: "4.50"
+    deduzir: "0.00"
+    reparticao: { IRPJ: "5.50", CSLL: "3.50", Cofins: "11.51", PIS/Pasep: "2.49", CPP: "37.50", IPI: "7.50", ICMS: "32.00" }
+  - ate: "360000.00"
+    aliquota: "7.80"
+    deduzir: "5940.00"
+    reparticao: { IRPJ: "5.50", CSLL: "3.50", Cofins: "11.51", PIS/Pasep: "2.49", CPP: "37.50", IPI: "7.50", ICMS: "32.00" }
+  - ate: "720000.00"
+    aliquota: "10.00"
+    deduzir: "13860.00"
+    reparticao: { IRPJ: "5.50", CSLL: "3.50", Cofins: "11.51", PIS/Pasep: "2.49", CPP: "37.50", IPI: "7.50", ICMS: "32.00" }
+  - ate: "1800000.00"
+    aliquota: "11.20"
+    deduzir: "22500.00"
+    reparticao: { IRPJ: "5.50", CSLL: "3.50", Cofins: "11.51", PIS/Pasep: "2.49", CPP: "37.50", IPI: "7.50", ICMS: "32.00" }
+  - ate: "3600000.00"
+    aliquota: "14.70"
+    deduzir: "85500.00"
+    reparticao: { IRPJ: "5.50", CSLL: "3.50", Cofins: "11.51", PIS/Pasep: "2.49", CPP: "37.50", IPI: "7.50", ICMS: "32.00" }
+  - ate: "4800000.00"
+    aliquota: "30.00"
+    deduzir: "720000.00"
+    reparticao: { IRPJ: "8.50", CSLL: "7.50", Cofins: "20.96", PIS/Pasep: "4.54", CPP: "23.50", IPI: "35.00" }

@@ -55,12 +55,19 @@ module SimplesNacional
                 fonte: "LC 123/2006, art. 18, § 1º-A")
     end
 
-    def self.das(receita_mes, efetiva, das)
-      Passo.new(titulo: "DAS estimado",
-                texto: "Receita do mês × alíquota efetiva = #{Formato.reais(receita_mes)} × " \
-                       "#{Formato.percentual(efetiva, 4)} = #{Formato.reais(das)}. A conta usa a alíquota " \
-                       "efetiva exata, sem cortar casas decimais, e arredonda o resultado para o centavo.",
-                fonte: "LC 123/2006, art. 18, § 3º")
+    # efetiva: a alíquota da fórmula; total: a soma dos percentuais dos tributos (os dois
+    # só são diferentes quando o ICMS ou o ISS é calculado à parte, como na 6ª faixa).
+    def self.das(receita_mes, efetiva, total, das, tributos)
+      aliquota = total == efetiva ? "alíquota efetiva" : "soma dos percentuais dos tributos"
+      soma = tributos.sum(&:valor)
+      texto = "Receita do mês × #{aliquota} = #{Formato.reais(receita_mes)} × " \
+              "#{Formato.percentual(total, 4)} = #{Formato.reais(das)}. A conta usa os percentuais exatos, " \
+              "sem cortar casas decimais, e arredonda o resultado para o centavo."
+      unless soma == das
+        texto += " Cada tributo também é arredondado para o centavo, por isso a soma da tabela " \
+                 "(#{Formato.reais(soma)}) pode ficar alguns centavos diferente do total."
+      end
+      Passo.new(titulo: "DAS estimado", texto:, fonte: "LC 123/2006, art. 18, § 3º")
     end
   end
 end

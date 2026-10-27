@@ -30,11 +30,15 @@ describe SimplesNacional::Calculo do
     end
 
     describe "no Anexo V, 6ª faixa" do
-      # (4.000.000 × 30,5% − 540.000) ÷ 4.000.000 = 17%; 300.000 × 17% = 51.000,00.
+      # Federais: (4.000.000 × 30,5% − 540.000) ÷ 4.000.000 = 17%.
+      # ISS pela 5ª faixa: (4.000.000 × 23% − 62.100) ÷ 4.000.000 = 21,4475%; × 23,5% = 5,0401625%,
+      # acima do teto: fica 5% (Res. CGSN 140/2018, art. 21, III, a e b).
+      # 300.000 × (17% + 5,0401625%) = 66.120,4875 → 66.120,49.
       let(:entrada) { { rbt12: 400_000_000, receita_mes: 30_000_000, anexo: 5 } }
 
-      it "calcula o DAS" do
-        assert_equal 5_100_000, subject.das
+      it "soma o ISS calculado com a 5ª faixa aos tributos federais" do
+        assert_equal 6_612_049, subject.das
+        assert_equal Rational(5, 100), subject.tributos.find { |tributo| tributo.nome == "ISS" }.percentual
       end
     end
   end
@@ -72,14 +76,44 @@ describe SimplesNacional::Calculo do
     end
   end
 
+  describe "a divisão entre os tributos" do
+    # 40.000 × 9,972% × percentual da 3ª faixa do Anexo III, arredondado para o centavo:
+    # IRPJ 4% = 159,552; CSLL 3,5% = 139,608; Cofins 13,64% = 544,0723; PIS/Pasep 2,96% = 118,0685;
+    # CPP 43,4% = 1.731,1392; ISS 32,5% = 1.296,36.
+    it "dá o valor de cada tributo, na ordem do anexo" do
+      esperado = { "IRPJ" => 15_955, "CSLL" => 13_961, "Cofins" => 54_407, "PIS/Pasep" => 11_807, "CPP" => 173_114,
+                   "ISS" => 129_636 }
+      assert_equal esperado, subject.tributos.to_h { |tributo| [tributo.nome, tributo.valor] }
+    end
+
+    it "soma o DAS com os tributos" do
+      assert_equal subject.das, subject.tributos.sum(&:valor)
+      assert_equal subject.aliquota_efetiva, subject.tributos.sum(&:percentual)
+    end
+
+    describe "quando o arredondamento de cada tributo muda a soma" do
+      # Anexo IV, 5ª faixa, com o ISS no teto: a soma dos tributos dá R$ 66.996,58 e o DAS,
+      # R$ 66.996,57 (16,74914...% de R$ 400.000,00).
+      let(:entrada) { { rbt12: 350_000_000, receita_mes: 40_000_000, anexo: 4 } }
+
+      it "avisa no passo do DAS" do
+        assert_equal [6_699_657, 6_699_658], [subject.das, subject.tributos.sum(&:valor)]
+        assert_includes subject.passos.last.texto, "a soma da tabela (R$ 66.996,58)"
+      end
+    end
+  end
+
   describe "os passos da conta" do
-    it "explicam o anexo, a faixa, a alíquota efetiva e o DAS, nessa ordem" do
-      assert_equal ["Anexo", "Faixa", "Alíquota efetiva", "DAS estimado"], subject.passos.map(&:titulo)
+    it "explicam o anexo, a faixa, a alíquota efetiva, a divisão e o DAS, nessa ordem" do
+      assert_equal ["Anexo", "Faixa", "Alíquota efetiva", "Divisão entre os tributos", "DAS estimado"],
+                   subject.passos.map(&:titulo)
     end
 
     it "mostram os números da conta no formato brasileiro" do
       assert_includes subject.passos[2].texto, "(R$ 500.000,00 × 13,50% − R$ 17.640,00) ÷ R$ 500.000,00 = 9,9720%"
-      assert_includes subject.passos[3].texto, "R$ 40.000,00 × 9,9720% = R$ 3.988,80"
+      assert_includes subject.passos[3].texto, "IRPJ = 9,9720% × 4,00% = 0,3988%"
+      assert_includes subject.passos[4].texto,
+                      "Receita do mês × alíquota efetiva = R$ 40.000,00 × 9,9720% = R$ 3.988,80"
     end
 
     it "mostram os limites da faixa" do

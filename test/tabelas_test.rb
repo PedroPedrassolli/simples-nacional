@@ -7,10 +7,12 @@ describe SimplesNacional::Tabelas do
   subject { SimplesNacional::Tabelas }
 
   # Um anexo válido no formato do YAML, para montar arquivos de teste.
+  let(:reparticao) { { "IRPJ" => "60.00", "ICMS" => "40.00" } }
   let(:faixas) do
     %w[180000.00 360000.00 720000.00 1800000.00 3600000.00 4800000.00].map do |ate|
-      { "ate" => ate, "aliquota" => "4.00", "deduzir" => "0.00" }
-    end
+      # dup: o mesmo Hash repetido vira um alias no YAML, que o safe_load recusa.
+      { "ate" => ate, "aliquota" => "4.00", "deduzir" => "0.00", "reparticao" => reparticao.dup }
+    end.tap { |lista| lista.last["reparticao"] = { "IRPJ" => "100.00" } }
   end
   let(:dados) do
     { "anexo" => 1, "nome" => "Teste", "fonte" => "https://www.planalto.gov.br/ccivil_03/leis/lcp/lcp123.htm",
@@ -72,6 +74,20 @@ describe SimplesNacional::Tabelas do
       # Anexo I, 2ª faixa: 7,30%.
       assert_equal Rational(73, 1000), anexos[1].faixas[1].aliquota
     end
+
+    it "guarda a repartição dos tributos de cada faixa, somando 100%" do
+      # Anexo I, 1ª faixa: ICMS de 34,00%.
+      assert_equal Rational(34, 100), anexos[1].faixas.first.reparticao["ICMS"]
+      anexos.each_value do |anexo|
+        anexo.faixas.each { |faixa| assert_equal 1, faixa.reparticao.values.sum, "Anexo #{anexo.numero}" }
+      end
+    end
+
+    it "tem a repartição da nota do ISS só na 5ª faixa dos Anexos III e IV" do
+      com_nota = anexos.values.flat_map { |anexo| anexo.faixas.select(&:teto_iss).map { [anexo.numero, _1.numero] } }
+      assert_equal [[3, 5], [4, 5]], com_nota
+      assert_equal Rational(602, 10_000), anexos[3].faixas[4].teto_iss["IRPJ"]
+    end
   end
 
   describe ".ler, com um arquivo de teste" do
@@ -114,6 +130,31 @@ describe SimplesNacional::Tabelas do
 
     it "recusa faixas fora de ordem" do
       assert_match(/ordem crescente/, erro(dados.merge("faixas" => faixas.reverse)))
+    end
+
+    it "recusa repartição que não soma 100%" do
+      faixas[0]["reparticao"] = { "IRPJ" => "60.00", "ICMS" => "39.99" }
+      assert_match(/somar 100\.00/, erro(dados))
+    end
+
+    it "recusa nota do ISS que não soma 100%" do
+      faixas[4]["teto_iss"] = { "IRPJ" => "99.00" }
+      assert_match(/somar 100\.00/, erro(dados))
+    end
+
+    it "recusa ICMS ou ISS na 6ª faixa" do
+      faixas[5]["reparticao"] = reparticao.dup
+      assert_match(/6ª faixa não pode ter ICMS nem ISS/, erro(dados))
+    end
+
+    it "recusa faixa sem repartição" do
+      faixas[2].delete("reparticao")
+      assert_match(/6 faixas/, erro(dados))
+    end
+
+    it "recusa percentual de repartição com vírgula" do
+      faixas[1]["reparticao"] = { "IRPJ" => "60,00", "ICMS" => "40.00" }
+      assert_match(/5940\.00/, erro(dados))
     end
 
     it "recusa arquivo que não é um mapa" do

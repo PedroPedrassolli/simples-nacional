@@ -13,7 +13,10 @@ module SimplesNacional
   #   # => #<data SimplesNacional::Tabelas::Faixa numero=1, ate=(180000/1), aliquota=(1/25), deduzir=(0/1)>
   #
   # Os valores viram Rational (frações exatas), nunca Float: 7,30% é 73/1000, e não
-  # 0.07299999... A alíquota já vem dividida por 100.
+  # 0.07299999... A alíquota e os percentuais de repartição já vêm divididos por 100.
+  #
+  # reparticao: { "IRPJ" => 11/200, "CSLL" => 7/200, ... }, na ordem do anexo.
+  # teto_iss: a repartição da nota do ISS (só na 5ª faixa dos Anexos III e IV), ou nil.
   module Tabelas
     PASTA = File.expand_path("../../data/anexos", __dir__)
 
@@ -25,10 +28,13 @@ module SimplesNacional
     # Dinheiro e percentual sempre como texto, com ponto e duas casas: "5940.00", "7.30".
     NUMERO = /\A\d+\.\d{2}\z/
 
+    # Impostos de estados e municípios: na 6ª faixa eles saem da 5ª.
+    LOCAIS = %w[ICMS ISS].freeze
+
     # Arquivo de tabela mal preenchido. A mensagem diz o arquivo e o problema.
     class TabelaInvalida < StandardError; end
 
-    Faixa = Data.define(:numero, :ate, :aliquota, :deduzir)
+    Faixa = Data.define(:numero, :ate, :aliquota, :deduzir, :reparticao, :teto_iss)
     Anexo = Data.define(:numero, :nome, :fonte, :redacao, :vigencia, :conferido_em, :faixas)
 
     # Todas as tabelas da pasta, pelo número do anexo: { 1 => Anexo, 2 => Anexo, ... }
@@ -71,16 +77,34 @@ module SimplesNacional
     def self.conferir_faixas(faixas)
       return "faixas precisa ser uma lista com #{QUANTIDADE_DE_FAIXAS} faixas" unless lista_de_faixas?(faixas)
       return "use números como \"5940.00\", entre aspas" unless numeros_validos?(faixas)
+      return "as faixas precisam estar em ordem crescente" unless em_ordem_crescente?(faixas)
 
-      "as faixas precisam estar em ordem crescente" unless em_ordem_crescente?(faixas)
+      conferir_reparticoes(faixas)
+    end
+
+    # Erro de digitação num percentual quase sempre faz a soma sair de 100%.
+    def self.conferir_reparticoes(faixas)
+      return "a reparticao de cada faixa precisa somar 100.00" unless faixas.all? { |faixa| soma_cem?(faixa) }
+
+      # Na 6ª faixa o ICMS e o ISS saem da 5ª (Res. CGSN 140/2018, art. 21, III, b).
+      "a 6ª faixa não pode ter ICMS nem ISS na reparticao" if (faixas.last["reparticao"].keys & LOCAIS).any?
+    end
+
+    def self.soma_cem?(faixa)
+      [faixa["reparticao"], faixa["teto_iss"]].compact.all? do |percentuais|
+        percentuais.values.sum { |valor| Rational(valor) } == 100
+      end
     end
 
     def self.lista_de_faixas?(faixas)
-      faixas.is_a?(Array) && faixas.size == QUANTIDADE_DE_FAIXAS && faixas.all?(Hash)
+      faixas.is_a?(Array) && faixas.size == QUANTIDADE_DE_FAIXAS &&
+        faixas.all? { |faixa| faixa.is_a?(Hash) && faixa["reparticao"].is_a?(Hash) }
     end
 
     def self.numeros_validos?(faixas)
-      valores = faixas.flat_map { |faixa| faixa.values_at("ate", "aliquota", "deduzir") }
+      valores = faixas.flat_map do |faixa|
+        faixa.values_at("ate", "aliquota", "deduzir") + faixa["reparticao"].values + faixa["teto_iss"].to_h.values
+      end
       valores.all? { |valor| NUMERO.match?(valor.to_s) }
     end
 
@@ -97,12 +121,18 @@ module SimplesNacional
 
     def self.montar_faixas(faixas)
       faixas.each_with_index.map do |faixa, indice|
+        teto_iss = faixa["teto_iss"] && percentuais(faixa["teto_iss"])
         Faixa.new(numero: indice + 1, ate: Rational(faixa["ate"]),
-                  aliquota: Rational(faixa["aliquota"]) / 100, deduzir: Rational(faixa["deduzir"]))
+                  aliquota: Rational(faixa["aliquota"]) / 100, deduzir: Rational(faixa["deduzir"]),
+                  reparticao: percentuais(faixa["reparticao"]), teto_iss: teto_iss)
       end
     end
 
-    private_class_method :conferir_campos, :datas?, :conferir_faixas, :lista_de_faixas?, :numeros_validos?,
-                         :em_ordem_crescente?, :montar_anexo, :montar_faixas
+    # { "IRPJ" => "5.50" } → { "IRPJ" => 11/200 }
+    def self.percentuais(textos) = textos.transform_values { |texto| Rational(texto) / 100 }
+
+    private_class_method :conferir_campos, :datas?, :conferir_faixas, :conferir_reparticoes, :soma_cem?,
+                         :lista_de_faixas?, :numeros_validos?, :em_ordem_crescente?, :montar_anexo, :montar_faixas,
+                         :percentuais
   end
 end
