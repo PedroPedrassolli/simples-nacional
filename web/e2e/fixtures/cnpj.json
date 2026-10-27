@@ -1,0 +1,15 @@
+{
+  "cnpj": "11.222.333/0001-81",
+  "razao_social": "EMPRESA FICTICIA LTDA",
+  "situacao": "ATIVA",
+  "cnae": {
+    "codigo": "6201-5/01",
+    "descricao": "Desenvolvimento de programas de computador sob encomenda"
+  },
+  "simples": {
+    "optante": true,
+    "desde": "01/01/2020",
+    "excluida_em": null
+  },
+  "fonte": "BrasilAPI (dados públicos do CNPJ na Receita Federal)"
+}

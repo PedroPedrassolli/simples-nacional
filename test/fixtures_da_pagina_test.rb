@@ -2,13 +2,14 @@
 
 require "test_helper"
 require "json"
-require_relative "../api/calcular"
+
+API_DA_PAGINA = carregar_api("calcular")
 
 # Os testes da página (web/e2e) simulam a API com respostas guardadas em
 # web/e2e/fixtures/. Este teste garante que elas são iguais ao que a API devolve hoje:
 # se o JSON mudar, a CI avisa para atualizar as fixtures.
 describe "fixtures dos testes da página" do
-  subject { CalcularApi }
+  subject { API_DA_PAGINA::CalcularApi }
 
   {
     "anexo-3.json" => { "rbt12" => "500000.00", "receita_mes" => "40000.00", "anexo" => "3" },

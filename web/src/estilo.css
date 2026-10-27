@@ -181,6 +181,51 @@ button:disabled {
   cursor: progress;
 }
 
+/* Consulta de CNPJ (opcional) */
+
+.cnpj {
+  margin-bottom: 1.25rem;
+  padding: 1rem 1.25rem;
+  background: var(--cartao);
+  border: 1px solid var(--borda);
+  border-radius: 0.75rem;
+}
+
+.cnpj summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--link);
+}
+
+.cnpj form {
+  margin-top: 1rem;
+}
+
+.cnpj label {
+  display: block;
+  font-weight: 600;
+}
+
+.linha {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.linha input {
+  flex: 1 1 12rem;
+  width: auto;
+}
+
+.empresa {
+  margin-top: 1rem;
+}
+
+.empresa p {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
 /* Resultado */
 
 .resultado {

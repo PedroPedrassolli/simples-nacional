@@ -1,7 +1,8 @@
 # frozen_string_literal: true
 
 require "test_helper"
-require_relative "../api/calcular"
+
+CALCULAR = carregar_api("calcular")
 
 # Testa a função da Vercel sem servidor: o request e o response são objetos simples com
 # os mesmos métodos que o runtime usa. Valores fictícios.
@@ -11,7 +12,7 @@ describe "api/calcular.rb" do
   let(:response) { Class.new(Hash) { attr_accessor :status, :body }.new }
 
   subject do
-    Handler.call(request, response)
+    CALCULAR::Handler.call(request, response)
     JSON.parse(response.body)
   end
 

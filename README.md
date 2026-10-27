@@ -19,6 +19,9 @@ Quando a atividade pode cair no Anexo III ou no V, a calculadora aplica o **Fato
 folha de salários dos últimos 12 meses ÷ RBT12. Com 28% ou mais, a atividade vai para o
 Anexo III; abaixo disso, para o V (art. 18, §§ 5º-J, 5º-K e 5º-M).
 
+Opcional: informe um CNPJ para ver a empresa, o CNAE principal e se ela consta como optante
+pelo Simples (dados públicos da Receita Federal, pela BrasilAPI).
+
 As tabelas dos Anexos I a V ficam em `data/anexos/`, cada arquivo com o link da fonte
 oficial, a lei que deu a redação atual e a data de vigência. Um teste falha se um
 arquivo não tiver a fonte ou a vigência.
@@ -40,6 +43,7 @@ arquivo não tiver a fonte ou a vigência.
 lib/simples_nacional/   Ruby puro, sem dependências: tabelas, faixa, alíquota efetiva, Fator R, DAS
 data/anexos/*.yml       tabelas dos Anexos I a V, com fonte oficial e vigência
 api/calcular.rb         função Ruby da Vercel: recebe os números e devolve o resultado e os passos (JSON)
+api/cnpj.rb             consulta opcional de CNPJ pela gem br_validators (BrasilAPI)
 web/                    React + Vite, build estático e pré-renderizado (formulário, resultado, passo a passo)
 test/                   Minitest, com 100% das linhas cobertas
 ```
@@ -74,6 +78,16 @@ GET /api/calcular?rbt12=500000.00&receita_mes=40000.00&anexo=fator_r&folha12=150
 Valores em reais, com ponto e até duas casas. A resposta traz `anexo`, `faixa`, `fator_r`,
 `aliquota_nominal`, `aliquota_efetiva`, `das` (já formatados), `das_centavos`, os `passos`
 e a `tabela` usada (fonte, redação e vigência). Entrada inválida responde 400 com `erro`.
+
+```
+GET /api/cnpj?cnpj=11.222.333/0001-81
+```
+
+Consulta opcional: valida o CNPJ com a gem [br_validators](https://rubygems.org/gems/br_validators)
+(CNPJ inválido nem chega à internet) e busca na BrasilAPI a razão social, a situação, o CNAE
+principal e a opção pelo Simples (`simples.optante`, `desde`, `excluida_em`). Não devolve o
+quadro de sócios. O CNAE não escolhe o anexo sozinho: quem decide é a atividade, conforme o
+art. 18 da LC 123/2006.
 
 ## Fontes oficiais
 
