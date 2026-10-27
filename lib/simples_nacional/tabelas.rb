@@ -33,7 +33,8 @@ module SimplesNacional
 
     # Todas as tabelas da pasta, pelo número do anexo: { 1 => Anexo, 2 => Anexo, ... }
     def self.todas(pasta = PASTA)
-      Dir[File.join(pasta, "*.yml")].sort.to_h do |arquivo|
+      # O Dir[] já devolve os arquivos em ordem alfabética (anexo-1, anexo-2...).
+      Dir[File.join(pasta, "*.yml")].to_h do |arquivo|
         anexo = ler(arquivo)
         [anexo.numero, anexo]
       end
@@ -68,15 +69,24 @@ module SimplesNacional
     end
 
     def self.conferir_faixas(faixas)
-      unless faixas.is_a?(Array) && faixas.size == QUANTIDADE_DE_FAIXAS && faixas.all?(Hash)
-        return "faixas precisa ser uma lista com #{QUANTIDADE_DE_FAIXAS} faixas"
-      end
+      return "faixas precisa ser uma lista com #{QUANTIDADE_DE_FAIXAS} faixas" unless lista_de_faixas?(faixas)
+      return "use números como \"5940.00\", entre aspas" unless numeros_validos?(faixas)
 
+      "as faixas precisam estar em ordem crescente" unless em_ordem_crescente?(faixas)
+    end
+
+    def self.lista_de_faixas?(faixas)
+      faixas.is_a?(Array) && faixas.size == QUANTIDADE_DE_FAIXAS && faixas.all?(Hash)
+    end
+
+    def self.numeros_validos?(faixas)
       valores = faixas.flat_map { |faixa| faixa.values_at("ate", "aliquota", "deduzir") }
-      return "use números como \"5940.00\", entre aspas" unless valores.all? { |valor| NUMERO.match?(valor.to_s) }
+      valores.all? { |valor| NUMERO.match?(valor.to_s) }
+    end
 
+    def self.em_ordem_crescente?(faixas)
       limites = faixas.map { |faixa| Rational(faixa["ate"]) }
-      "as faixas precisam estar em ordem crescente" unless limites.each_cons(2).all? { |menor, maior| menor < maior }
+      limites.each_cons(2).all? { |menor, maior| menor < maior }
     end
 
     def self.montar_anexo(dados)
@@ -92,6 +102,7 @@ module SimplesNacional
       end
     end
 
-    private_class_method :conferir_campos, :datas?, :conferir_faixas, :montar_anexo, :montar_faixas
+    private_class_method :conferir_campos, :datas?, :conferir_faixas, :lista_de_faixas?, :numeros_validos?,
+                         :em_ordem_crescente?, :montar_anexo, :montar_faixas
   end
 end
