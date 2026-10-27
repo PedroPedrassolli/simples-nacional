@@ -4,6 +4,12 @@
   "installCommand": "npm ci --prefix web",
   "buildCommand": "npm run build --prefix web",
   "outputDirectory": "web/dist",
+  "functions": {
+    "api/calcular.rb": {
+      "includeFiles": "{lib,data}/**",
+      "maxDuration": 10
+    }
+  },
   "git": {
     "deploymentEnabled": {
       "**": false,
