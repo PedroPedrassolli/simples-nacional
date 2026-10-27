@@ -129,11 +129,11 @@ describe SimplesNacional::Calculo do
     end
 
     it "recusa anexo que não existe" do
-      assert_match(/1, 2, 3, 4 ou 5/, erro(anexo: 6))
+      assert_match(/1, 2, 3, 4, 5 ou :fator_r/, erro(anexo: 6))
     end
 
     it "recusa anexo escrito como texto" do
-      assert_match(/1, 2, 3, 4 ou 5/, erro(anexo: "3"))
+      assert_match(/1, 2, 3, 4, 5 ou :fator_r/, erro(anexo: "3"))
     end
   end
 

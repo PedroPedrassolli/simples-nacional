@@ -16,6 +16,18 @@ module SimplesNacional
                 fonte: "LC 123/2006, Anexo #{romano(tabela.numero)}")
     end
 
+    def self.fator_r(tabela, rbt12, folha12, fator)
+      regra = if tabela.numero == 3
+                "Como é 28% ou mais, a atividade vai para o Anexo III"
+              else
+                "Como é menor que 28%, a atividade vai para o Anexo V"
+              end
+      Passo.new(titulo: "Fator R",
+                texto: "Folha de salários dos 12 meses anteriores ÷ RBT12 = #{Formato.reais(folha12)} ÷ " \
+                       "#{Formato.reais(rbt12)} = #{Formato.percentual(fator)}. #{regra}: #{tabela.nome}.",
+                fonte: "LC 123/2006, art. 18, §§ 5º-J, 5º-K, 5º-M e 24")
+    end
+
     def self.faixa(tabela, faixa, rbt12)
       Passo.new(titulo: "Faixa",
                 texto: "A receita bruta dos 12 meses anteriores (RBT12) é de #{Formato.reais(rbt12)} e fica na " \
