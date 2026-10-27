@@ -1,0 +1,156 @@
+# Roda os testes e o lint a cada push na main e em todo pull request.
+#
+# As Actions estão fixadas pelo commit (o SHA), com a versão no comentário: uma tag
+# como "v7" pode ser movida para outro código, o SHA não. O Dependabot atualiza os
+# dois juntos (ver .github/dependabot.yml).
+name: CI
+
+# Roda em todo PR, inclusive nos que só mudam Markdown: o repositório é público
+# (minutos ilimitados) e o merge automático espera sempre a CI do commit.
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+# Num PR, um push novo cancela a execução anterior. Na main, cada commit termina
+# a sua (o histórico da main fica com o resultado de todos).
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  # Confere a sintaxe dos workflows (o actionlint também passa o shellcheck nos
+  # trechos "run:") e os scripts de .github/scripts e scripts/.
+  workflows:
+    name: Workflows (actionlint)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # O SHA256 vem do arquivo de checksums da release do actionlint. Se o download
+      # vier diferente (arquivo trocado ou corrompido), o job para antes de rodar.
+      - name: actionlint
+        env:
+          VERSION: 1.7.12
+          SHA256: 8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8
+        run: |
+          curl -sSfL -o actionlint.tar.gz \
+            "https://github.com/rhysd/actionlint/releases/download/v$VERSION/actionlint_${VERSION}_linux_amd64.tar.gz"
+          echo "$SHA256  actionlint.tar.gz" | sha256sum --check --quiet
+          tar xzf actionlint.tar.gz actionlint
+          # Cada problema vira uma anotação no PR, com arquivo e linha.
+          # (As aspas simples são de propósito: o $err é do template do actionlint.)
+          # shellcheck disable=SC2016
+          format='{{range $err := .}}::error file={{$err.Filepath}},line={{$err.Line}},col={{$err.Column}}::{{$err.Message}}
+          {{end}}'
+          if ! ./actionlint -format "$format" 2> actionlint.log; then
+            [ -s actionlint.log ] && echo "::error title=actionlint::$(tr '\n' ' ' < actionlint.log)"
+            exit 1
+          fi
+
+      # O shellcheck já vem instalado no runner do Ubuntu. Cada problema vira uma
+      # anotação no PR ("arquivo:linha:coluna: nível: mensagem" → "::error ...").
+      - name: shellcheck
+        run: |
+          if ! problems=$(shellcheck --format=gcc .github/scripts/*.sh scripts/*.sh); then
+            sed -E 's/^([^:]+):([0-9]+):([0-9]+): [a-z]+: (.*)$/::error file=\1,line=\2,col=\3::\4/' <<<"$problems"
+            exit 1
+          fi
+
+  # A regra do Simples (lib/), as tabelas (data/) e a função da Vercel (api/).
+  ruby:
+    name: Ruby (testes e RuboCop)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # Sem "ruby-version": a Action lê o .ruby-version.
+      - uses: ruby/setup-ruby@7f797815d8adceb1c412e7abefdd1ab4abc47a5f # v1.335.0
+        with:
+          bundler-cache: true
+
+      # A Vercel lê a versão do Gemfile; a CI, do .ruby-version. Os dois precisam bater.
+      - name: Mesma versão do Ruby na CI e na Vercel
+        run: |
+          grep -q "^ruby \"~> $(cat .ruby-version).0\"$" Gemfile ||
+            { echo "::error file=Gemfile::A linha ruby do Gemfile não bate com o .ruby-version"; exit 1; }
+
+      # O mínimo de 100% é cobrado pelo test/test_helper.rb.
+      - name: Testes
+        run: bundle exec rake test
+
+      - name: Cobertura
+        run: |
+          line=$(ruby -rjson -e 'puts JSON.parse(File.read("coverage/.last_run.json")).dig("result", "line")')
+          echo "::notice title=Cobertura::${line}% das linhas executadas pelos testes"
+
+      # O formato "github" transforma cada problema numa anotação no PR, com arquivo e linha.
+      - name: RuboCop
+        run: bundle exec rubocop --format github
+
+  # A página (web/): React + Vite, build estático.
+  web:
+    name: Página (React)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: web/.nvmrc
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      # Instala exatamente as versões do package-lock.json.
+      - name: Instalar dependências
+        run: npm ci
+
+      - name: Lint (ESLint)
+        run: npm run lint
+
+      - name: Formatação (Prettier)
+        run: npm run format:check
+
+      # Só dependências que vão para o site (sem as de desenvolvimento) e só nível alto,
+      # para a CI não ficar vermelha por avisos que não chegam ao visitante.
+      - name: Vulnerabilidades nos pacotes
+        run: npm audit --omit=dev --audit-level=high
+
+      - name: Build
+        run: npm run build
+
+      - name: Cache do navegador do Playwright
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('web/package-lock.json') }}
+
+      - name: Instalar o Chromium do Playwright
+        run: npx playwright install chromium
+
+      # Acessibilidade (axe, temas claro e escuro), 320 px sem rolagem lateral e textos.
+      - name: Testes no navegador (Playwright)
+        run: npm run test:e2e
+
+      - name: Relatório do Playwright (se falhar)
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          retention-days: 7
+          name: playwright-report
+          path: web/test-results

@@ -1,0 +1,17 @@
+AllCops:
+  # A mesma versão do Ruby da função da Vercel (ver Gemfile).
+  TargetRubyVersion: 3.3
+  NewCops: enable
+  SuggestExtensions: false
+  Exclude:
+    - "vendor/**/*"
+    - "web/**/*"
+
+# Aspas duplas em tudo: assim não é preciso trocar de aspas ao interpolar.
+Style/StringLiterals:
+  EnforcedStyle: double_quotes
+
+# Os testes usam describe/it, que viram blocos grandes.
+Metrics/BlockLength:
+  Exclude:
+    - "test/**/*"

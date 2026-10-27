@@ -1,0 +1,103 @@
+/* Cores em variáveis: o tema escuro só troca os valores (segue o sistema do visitante).
+   Todos os pares de texto e fundo passam no contraste AA (o axe confere nos testes). */
+:root {
+  --fundo: #f7f8f6;
+  --texto: #1c2321;
+  --texto-suave: #4a5552;
+  --destaque: #0f5132;
+  --aviso-fundo: #fff7e0;
+  --aviso-borda: #b7791f;
+  --link: #0b5c8f;
+  --fonte: "Geist Variable", system-ui, sans-serif;
+  --fonte-mono: "Geist Mono Variable", ui-monospace, monospace;
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --fundo: #111614;
+    --texto: #e8ece9;
+    --texto-suave: #b4bdb9;
+    --destaque: #6fd3a0;
+    --aviso-fundo: #2b2410;
+    --aviso-borda: #e0b45a;
+    --link: #7cc4f2;
+    color-scheme: dark;
+  }
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--fundo);
+  color: var(--texto);
+  font-family: var(--fonte);
+  font-size: 1.0625rem;
+  line-height: 1.6;
+}
+
+a {
+  color: var(--link);
+}
+
+.pagina,
+.rodape {
+  /* Largura confortável de leitura; em 320 px sobra 16 px de cada lado. */
+  max-width: 44rem;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+.pagina {
+  padding-top: 3rem;
+}
+
+h1 {
+  font-size: clamp(1.75rem, 6vw, 2.5rem);
+  line-height: 1.15;
+  margin: 0.25rem 0 1rem;
+}
+
+h2 {
+  font-size: 1.125rem;
+  margin: 0 0 0.5rem;
+}
+
+.selo {
+  display: inline-block;
+  margin: 0;
+  padding: 0.125rem 0.625rem;
+  border: 1px solid var(--destaque);
+  border-radius: 999px;
+  color: var(--destaque);
+  font-family: var(--fonte-mono);
+  font-size: 0.8125rem;
+}
+
+.destaque {
+  font-size: 1.1875rem;
+}
+
+.aviso {
+  margin: 2rem 0;
+  padding: 1rem 1.25rem;
+  background: var(--aviso-fundo);
+  border-left: 4px solid var(--aviso-borda);
+  border-radius: 0.5rem;
+}
+
+.aviso ul {
+  margin: 0;
+  padding-left: 1.25rem;
+}
+
+.rodape {
+  padding-bottom: 2rem;
+  color: var(--texto-suave);
+  font-size: 0.9375rem;
+}

@@ -1,0 +1,16 @@
+/coverage/
+/.bundle/
+/vendor/
+
+# O Gemfile.lock não é versionado: a CI testa sempre com as versões mais novas
+# das ferramentas de teste e lint, e a biblioteca não tem dependências.
+Gemfile.lock
+
+# Página (web/)
+node_modules/
+web/dist/
+web/playwright-report/
+web/test-results/
+
+.vercel
+.DS_Store

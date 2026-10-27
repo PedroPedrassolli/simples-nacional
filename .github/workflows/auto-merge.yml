@@ -1,0 +1,117 @@
+# Mescla sozinho os PRs que passam em todas as verificações.
+#
+# Para segurar um PR (revisar com calma, esperar algo), use o rótulo "segurar"
+# ou deixe o PR em rascunho. Do Dependabot, entra sozinho o grupo "actions" (versões
+# das Actions dos workflows, que a CI inteira e o actionlint conferem); os pacotes
+# npm da página esperam revisão.
+#
+# O PR só entra se:
+#   1. não é rascunho, não tem o rótulo "segurar" e vem deste repositório;
+#   2. a CI passou no commit ATUAL do PR (a CI testa a regra em Ruby, as tabelas, a
+#      função da API e a página; as prévias da Vercel estão desligadas para economizar
+#      o espaço de deploys do plano grátis);
+#   3. o PR está atualizado com a main (o que foi testado é exatamente o que vai
+#      para a main). Atrás da main? Clique em "Update branch" e espere.
+# Nunca roda o código do PR: só a API do GitHub e o script do Jira da main.
+name: Auto-merge
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+  pull_request:
+    types: [unlabeled, ready_for_review]
+
+permissions:
+  actions: read # ler as execuções da CI
+  contents: write
+  pull-requests: write
+
+env:
+  JIRA_SITE: pedrassolli.atlassian.net
+
+jobs:
+  merge:
+    if: >-
+      (github.event_name == 'workflow_run' &&
+       github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.event == 'pull_request') ||
+      github.event_name == 'pull_request'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    concurrency:
+      group: auto-merge-${{ github.event.workflow_run.head_sha || github.event.pull_request.head.sha }}
+    steps:
+      # Sempre a main (o script do Jira), nunca o código do PR.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+          persist-credentials: false
+
+      - name: Mesclar, se o PR puder entrar
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          SHA: ${{ github.event.workflow_run.head_sha || github.event.pull_request.head.sha }}
+          JIRA_EMAIL: ${{ secrets.JIRA_EMAIL }}
+          JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
+        # Merge feito com o GITHUB_TOKEN não dispara outros workflows (regra do GitHub
+        # contra loops). Por isso este passo mesmo move o card do Jira para "Concluído",
+        # que é o que o jira.yml faria.
+        run: |
+          # PR aberto cujo último commit é o que acabou de ser verificado.
+          number=$(gh api "repos/$REPO/commits/$SHA/pulls" \
+            --jq "[.[] | select(.state == \"open\" and .head.sha == \"$SHA\")][0].number // empty")
+          if [ -z "$number" ]; then
+            echo "Nenhum PR aberto com o commit ${SHA:0:7} como último."
+            exit 0
+          fi
+
+          pr=$(gh api "repos/$REPO/pulls/$number")
+          title=$(jq -r .title <<<"$pr")
+          branch=$(jq -r .head.ref <<<"$pr")
+          author=$(jq -r .user.login <<<"$pr")
+          from_fork=$(jq -r '.head.repo.full_name != .base.repo.full_name' <<<"$pr")
+          is_draft=$(jq -r .draft <<<"$pr")
+          on_hold=$(jq -r '[.labels[].name] | index("segurar") != null' <<<"$pr")
+
+          skip() {
+            echo "::notice title=Auto-merge::PR #$number: $1"
+            exit 0
+          }
+
+          # 1. O PR pode entrar sozinho?
+          [ "$from_fork" = "false" ] || skip "vem de um fork; precisa de revisão."
+          [ "$is_draft" = "false" ] || skip "está em rascunho."
+          [ "$on_hold" = "false" ] || skip "tem o rótulo \"segurar\"."
+          is_bot=false
+          if [ "$author" = "dependabot[bot]" ]; then
+            is_bot=true
+            case "$title" in
+              *"the actions group"*) ;;
+              *) skip "atualização do Dependabot fora do grupo actions; precisa de revisão." ;;
+            esac
+          fi
+
+          # 2. A CI passou no commit atual?
+          ci=$(gh api "repos/$REPO/actions/workflows/ci.yml/runs?head_sha=$SHA&event=pull_request" \
+            --jq '.workflow_runs[0] | if . == null then "pendente" else (.conclusion // .status) end')
+          [ "$ci" = "success" ] || skip "CI do commit ${SHA:0:7}: $ci."
+
+          # 3. Atualizado com a main?
+          behind=$(gh api "repos/$REPO/compare/main...$SHA" --jq .behind_by)
+          [ "$behind" = "0" ] || skip "está $behind commit(s) atrás da main; clique em \"Update branch\"."
+
+          # Mensagem do commit na main: só o título do PR, sem a lista de commits da branch.
+          gh pr merge "$number" --repo "$REPO" --squash --delete-branch --match-head-commit "$SHA" \
+            --subject "$title (#$number)" --body "Mesclado automaticamente: CI aprovada."
+          echo "::notice title=Auto-merge::PR #$number mesclado."
+
+          [ "$is_bot" = "false" ] || exit 0
+
+          # Card do Jira: a chave vem do começo do título ("SIMP-3: ...") ou da branch.
+          key=$(printf '%s' "$title" | grep -oiE '^SIMP-[0-9]+' ||
+            printf '%s' "$branch" | grep -oiE '^simp-[0-9]+' || true)
+          if [ -n "$key" ]; then
+            .github/scripts/jira-transition.sh "${key^^}" "Concluído" "new,indeterminate"
+          fi

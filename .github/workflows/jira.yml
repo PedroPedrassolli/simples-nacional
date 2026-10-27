@@ -1,0 +1,76 @@
+# Move os cards do Jira conforme o trabalho anda no GitHub:
+#   branch criada (simp-3-...)      → Em andamento  (só se o card ainda estiver em "A fazer")
+#   PR aberto ("SIMP-3: ...")       → Em análise    (nunca mexe em card concluído)
+#   PR mesclado                     → Concluído     (nunca mexe em card concluído)
+#
+# A chave vem só do nome da branch ou do começo do título do PR: citar outros
+# cards na descrição ou nos commits não move nada.
+# Faz o papel das regras de automação do Jira, que no plano Free têm só 150 passos/mês.
+# Precisa dos secrets JIRA_EMAIL e JIRA_API_TOKEN; sem eles, só avisa.
+name: Jira
+
+on:
+  create:
+  pull_request:
+    types: [opened, reopened, ready_for_review, closed]
+
+permissions:
+  contents: read
+
+env:
+  JIRA_SITE: pedrassolli.atlassian.net
+
+jobs:
+  move-card:
+    # Branches e PRs de robôs (Dependabot) não têm card.
+    if: >-
+      github.actor != 'dependabot[bot]' &&
+      (github.event_name != 'create' || github.event.ref_type == 'branch')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Descobrir o card e o status de destino
+        id: card
+        env:
+          EVENT: ${{ github.event_name }}
+          ACTION: ${{ github.event.action }}
+          MERGED: ${{ github.event.pull_request.merged }}
+          BRANCH: ${{ github.event_name == 'create' && github.event.ref || github.event.pull_request.head.ref }}
+          TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          # Chave do card: começo do título do PR ("SIMP-3: ...") ou nome da branch ("simp-3-...").
+          key=$(printf '%s' "$TITLE" | grep -oiE '^SIMP-[0-9]+' || true)
+          [ -n "$key" ] || key=$(printf '%s' "$BRANCH" | grep -oiE '^simp-[0-9]+' || true)
+          key=$(printf '%s' "$key" | tr '[:lower:]' '[:upper:]')
+
+          if [ "$EVENT" = "create" ]; then
+            target="Em andamento"; allowed="new"
+          elif [ "$ACTION" = "closed" ] && [ "$MERGED" = "true" ]; then
+            target="Concluído"; allowed="new,indeterminate"
+          elif [ "$ACTION" = "closed" ]; then
+            target=""  # PR fechado sem merge: o card fica onde está.
+          else
+            target="Em análise"; allowed="new,indeterminate"
+          fi
+
+          {
+            echo "key=$key"
+            echo "target=$target"
+            echo "allowed=$allowed"
+          } >> "$GITHUB_OUTPUT"
+          echo "Card: ${key:-nenhum} → ${target:-nada a fazer}"
+
+      - name: Mover o card
+        if: steps.card.outputs.key != '' && steps.card.outputs.target != ''
+        env:
+          JIRA_EMAIL: ${{ secrets.JIRA_EMAIL }}
+          JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
+        run: >-
+          .github/scripts/jira-transition.sh
+          "${{ steps.card.outputs.key }}"
+          "${{ steps.card.outputs.target }}"
+          "${{ steps.card.outputs.allowed }}"
