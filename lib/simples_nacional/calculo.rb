@@ -35,9 +35,7 @@ module SimplesNacional
     end
 
     def self.com_fator_r(rbt12, receita_mes, folha12)
-      if folha12.nil?
-        raise EntradaInvalida, "Para usar o Fator R, informe a folha de salários dos 12 meses anteriores."
-      end
+      raise EntradaInvalida, "Para usar o Fator R, informe a folha de salários dos 12 meses anteriores." if folha12.nil?
 
       # Folha zero é possível (empresa sem empregados nem pró-labore): o Fator R fica em 0%.
       conferir_valor(folha12, "A folha de salários dos 12 meses anteriores", minimo: 0)
