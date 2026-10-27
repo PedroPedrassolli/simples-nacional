@@ -6,6 +6,11 @@
 #
 # É uma estimativa educativa: não substitui o PGDAS-D nem um contador.
 module SimplesNacional
+  # Atalho para o cálculo completo (ver SimplesNacional::Calculo).
+  def self.calcular(...) = Calculo.calcular(...)
 end
 
 require_relative "simples_nacional/tabelas"
+require_relative "simples_nacional/formato"
+require_relative "simples_nacional/passos"
+require_relative "simples_nacional/calculo"

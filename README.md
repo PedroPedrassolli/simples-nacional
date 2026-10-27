@@ -3,6 +3,8 @@
 Estimativa educativa da alíquota efetiva e do DAS do Simples Nacional, com a conta
 explicada passo a passo. Regra de negócio confusa em código claro.
 
+**No ar:** [simples-nacional-br.vercel.app](https://simples-nacional-br.vercel.app)
+
 > **Em construção.** O andamento está nos cards do projeto SIMP no Jira; o que já foi
 > feito aparece nos PRs mesclados.
 
