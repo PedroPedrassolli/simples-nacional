@@ -33,9 +33,15 @@ PR de fork não é mesclado sozinho: precisa de revisão.
 | --- | --- |
 | `bundle exec rake test` | Testes do Ruby, com cobertura |
 | `bundle exec rubocop` | Estilo do Ruby |
+| `cd web && npm run dev` | Página em `localhost:5173`; `/api` vai para a API publicada |
+| `cd web && npm test` | Funções puras do formulário (`node --test`) |
 | `cd web && npm run lint` | ESLint da página |
 | `cd web && npm run format:check` | Prettier da página e do `vercel.json` |
-| `cd web && npm run build && npm run test:e2e` | Playwright + axe (temas claro e escuro, 320 px) |
+| `cd web && npm run build && npm run test:e2e` | Playwright + axe com a API simulada (temas claro e escuro, 320 px) |
+| `cd web && npx @lhci/cli@0.15.1 autorun` | Lighthouse no build (`web/dist`), como na CI |
+
+Mudou o JSON da API? Atualize `web/e2e/fixtures/`: o teste `test/fixtures_da_pagina_test.rb`
+falha enquanto elas forem diferentes da resposta atual.
 
 ## Atualizar uma tabela
 

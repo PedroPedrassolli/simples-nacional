@@ -5,10 +5,12 @@ import { createRoot } from "react-dom/client";
 import "@fontsource-variable/geist";
 import "@fontsource-variable/geist-mono";
 import "./estilo.css";
-import App from "./App.jsx";
+import Calculadora from "./Calculadora.jsx";
 
-createRoot(document.getElementById("root")).render(
+// O título, a explicação e os avisos já vêm prontos no index.html (aparecem antes do
+// JavaScript carregar). O React cuida só da parte que muda: o formulário e o resultado.
+createRoot(document.getElementById("calculadora")).render(
   <StrictMode>
-    <App />
+    <Calculadora />
   </StrictMode>,
 );

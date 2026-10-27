@@ -1,0 +1,37 @@
+{
+  "anexo": 3,
+  "anexo_nome": "Locação de bens móveis e serviços não relacionados no § 5º-C do art. 18",
+  "faixa": 3,
+  "fator_r": null,
+  "aliquota_nominal": "13,50%",
+  "aliquota_efetiva": "9,9720%",
+  "das": "R$ 3.988,80",
+  "das_centavos": 398880,
+  "passos": [
+    {
+      "titulo": "Anexo",
+      "texto": "Você informou o Anexo III: Locação de bens móveis e serviços não relacionados no § 5º-C do art. 18.",
+      "fonte": "LC 123/2006, Anexo III"
+    },
+    {
+      "titulo": "Faixa",
+      "texto": "A receita bruta dos 12 meses anteriores (RBT12) é de R$ 500.000,00 e fica na 3ª faixa do Anexo III, de R$ 360.000,01 a R$ 720.000,00: alíquota nominal de 13,50% e parcela a deduzir de R$ 17.640,00.",
+      "fonte": "LC 123/2006, art. 18, § 1º, e Anexo III"
+    },
+    {
+      "titulo": "Alíquota efetiva",
+      "texto": "(RBT12 × alíquota nominal − parcela a deduzir) ÷ RBT12 = (R$ 500.000,00 × 13,50% − R$ 17.640,00) ÷ R$ 500.000,00 = 9,9720%.",
+      "fonte": "LC 123/2006, art. 18, § 1º-A"
+    },
+    {
+      "titulo": "DAS estimado",
+      "texto": "Receita do mês × alíquota efetiva = R$ 40.000,00 × 9,9720% = R$ 3.988,80. A conta usa a alíquota efetiva exata, sem cortar casas decimais, e arredonda o resultado para o centavo.",
+      "fonte": "LC 123/2006, art. 18, § 3º"
+    }
+  ],
+  "tabela": {
+    "fonte": "https://www.planalto.gov.br/ccivil_03/leis/lcp/lcp123.htm",
+    "redacao": "Lei Complementar nº 155/2016",
+    "vigencia": "2018-01-01"
+  }
+}

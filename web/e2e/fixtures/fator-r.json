@@ -1,0 +1,37 @@
+{
+  "anexo": 5,
+  "anexo_nome": "Serviços relacionados no § 5º-I do art. 18",
+  "faixa": 3,
+  "fator_r": "27,99%",
+  "aliquota_nominal": "19,50%",
+  "aliquota_efetiva": "17,5200%",
+  "das": "R$ 7.008,00",
+  "das_centavos": 700800,
+  "passos": [
+    {
+      "titulo": "Fator R",
+      "texto": "Folha de salários dos 12 meses anteriores ÷ RBT12 = R$ 139.999,99 ÷ R$ 500.000,00 = 27,99%. Como é menor que 28%, a atividade vai para o Anexo V: Serviços relacionados no § 5º-I do art. 18.",
+      "fonte": "LC 123/2006, art. 18, §§ 5º-J, 5º-K, 5º-M e 24"
+    },
+    {
+      "titulo": "Faixa",
+      "texto": "A receita bruta dos 12 meses anteriores (RBT12) é de R$ 500.000,00 e fica na 3ª faixa do Anexo V, de R$ 360.000,01 a R$ 720.000,00: alíquota nominal de 19,50% e parcela a deduzir de R$ 9.900,00.",
+      "fonte": "LC 123/2006, art. 18, § 1º, e Anexo V"
+    },
+    {
+      "titulo": "Alíquota efetiva",
+      "texto": "(RBT12 × alíquota nominal − parcela a deduzir) ÷ RBT12 = (R$ 500.000,00 × 19,50% − R$ 9.900,00) ÷ R$ 500.000,00 = 17,5200%.",
+      "fonte": "LC 123/2006, art. 18, § 1º-A"
+    },
+    {
+      "titulo": "DAS estimado",
+      "texto": "Receita do mês × alíquota efetiva = R$ 40.000,00 × 17,5200% = R$ 7.008,00. A conta usa a alíquota efetiva exata, sem cortar casas decimais, e arredonda o resultado para o centavo.",
+      "fonte": "LC 123/2006, art. 18, § 3º"
+    }
+  ],
+  "tabela": {
+    "fonte": "https://www.planalto.gov.br/ccivil_03/leis/lcp/lcp123.htm",
+    "redacao": "Lei Complementar nº 155/2016",
+    "vigencia": "2018-01-01"
+  }
+}
