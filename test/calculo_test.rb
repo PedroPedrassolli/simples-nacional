@@ -38,7 +38,8 @@ describe SimplesNacional::Calculo do
 
       it "soma o ISS calculado com a 5ª faixa aos tributos federais" do
         assert_equal 6_612_049, subject.das
-        assert_equal Rational(5, 100), subject.tributos.find { |tributo| tributo.nome == "ISS" }.percentual
+        iss = subject.tributos.find { |tributo| tributo.nome == "ISS" }
+        assert_equal Rational(5, 100), iss.percentual
       end
     end
   end
@@ -83,7 +84,8 @@ describe SimplesNacional::Calculo do
     it "dá o valor de cada tributo, na ordem do anexo" do
       esperado = { "IRPJ" => 15_955, "CSLL" => 13_961, "Cofins" => 54_407, "PIS/Pasep" => 11_807, "CPP" => 173_114,
                    "ISS" => 129_636 }
-      assert_equal esperado, subject.tributos.to_h { |tributo| [tributo.nome, tributo.valor] }
+      valores = subject.tributos.to_h { |tributo| [tributo.nome, tributo.valor] }
+      assert_equal esperado, valores
     end
 
     it "soma o DAS com os tributos" do

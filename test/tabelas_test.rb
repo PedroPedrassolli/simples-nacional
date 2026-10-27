@@ -9,10 +9,13 @@ describe SimplesNacional::Tabelas do
   # Um anexo válido no formato do YAML, para montar arquivos de teste.
   let(:reparticao) { { "IRPJ" => "60.00", "ICMS" => "40.00" } }
   let(:faixas) do
-    %w[180000.00 360000.00 720000.00 1800000.00 3600000.00 4800000.00].map do |ate|
+    lista = %w[180000.00 360000.00 720000.00 1800000.00 3600000.00 4800000.00].map do |ate|
       # dup: o mesmo Hash repetido vira um alias no YAML, que o safe_load recusa.
       { "ate" => ate, "aliquota" => "4.00", "deduzir" => "0.00", "reparticao" => reparticao.dup }
-    end.tap { |lista| lista.last["reparticao"] = { "IRPJ" => "100.00" } }
+    end
+    # Na 6ª faixa não entra ICMS nem ISS.
+    lista.last["reparticao"] = { "IRPJ" => "100.00" }
+    lista
   end
   let(:dados) do
     { "anexo" => 1, "nome" => "Teste", "fonte" => "https://www.planalto.gov.br/ccivil_03/leis/lcp/lcp123.htm",

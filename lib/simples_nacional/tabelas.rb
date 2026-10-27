@@ -87,7 +87,7 @@ module SimplesNacional
       return "a reparticao de cada faixa precisa somar 100.00" unless faixas.all? { |faixa| soma_cem?(faixa) }
 
       # Na 6ª faixa o ICMS e o ISS saem da 5ª (Res. CGSN 140/2018, art. 21, III, b).
-      "a 6ª faixa não pode ter ICMS nem ISS na reparticao" if (faixas.last["reparticao"].keys & LOCAIS).any?
+      "a 6ª faixa não pode ter ICMS nem ISS na reparticao" if faixas.last["reparticao"].keys.intersect?(LOCAIS)
     end
 
     def self.soma_cem?(faixa)

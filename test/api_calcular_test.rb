@@ -29,7 +29,8 @@ describe "api/calcular.rb" do
     it "devolve a divisão do DAS entre os tributos" do
       iss = { "nome" => "ISS", "percentual" => "3,2409%", "valor" => "R$ 1.296,36", "valor_centavos" => 129_636 }
       assert_equal iss, subject["tributos"].last
-      assert_equal %w[IRPJ CSLL Cofins PIS/Pasep CPP ISS], subject["tributos"].map { |tributo| tributo["nome"] }
+      nomes = subject["tributos"].map { |tributo| tributo["nome"] }
+      assert_equal %w[IRPJ CSLL Cofins PIS/Pasep CPP ISS], nomes
     end
 
     it "devolve a fonte e a vigência da tabela" do
