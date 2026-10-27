@@ -40,7 +40,7 @@ arquivo não tiver a fonte ou a vigência.
 lib/simples_nacional/   Ruby puro, sem dependências: tabelas, faixa, alíquota efetiva, Fator R, DAS
 data/anexos/*.yml       tabelas dos Anexos I a V, com fonte oficial e vigência
 api/calcular.rb         função Ruby da Vercel: recebe os números e devolve o resultado e os passos (JSON)
-web/                    React + Vite, build estático (formulário, resultado, passo a passo)
+web/                    React + Vite, build estático e pré-renderizado (formulário, resultado, passo a passo)
 test/                   Minitest, com 100% das linhas cobertas
 ```
 

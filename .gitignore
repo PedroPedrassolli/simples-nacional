@@ -9,6 +9,7 @@ Gemfile.lock
 # Página (web/)
 node_modules/
 web/dist/
+web/dist-ssr/
 web/playwright-report/
 web/test-results/
 web/lighthouse-report/

@@ -167,7 +167,10 @@ jobs:
       # As notas e o que ficou abaixo da nota máxima viram anotações no PR.
       - name: Notas do Lighthouse
         if: always()
-        run: '[ -f lighthouse-report/manifest.json ] && node scripts/lighthouse-summary.mjs || true'
+        run: |
+          if [ -f lighthouse-report/manifest.json ]; then
+            node scripts/lighthouse-summary.mjs
+          fi
 
       - name: Relatório do Lighthouse (se falhar)
         if: failure()

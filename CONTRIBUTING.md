@@ -60,6 +60,9 @@ falha enquanto elas forem diferentes da resposta atual.
   `auto-merge.yml`, abra o PR como rascunho: até o merge, quem decide é a versão antiga.
 - As Actions dos workflows ficam fixadas pelo commit (SHA), com a versão num comentário.
   Não troque por `@v7`: uma tag pode ser movida para outro código. O Dependabot atualiza.
+- A página é pré-renderizada no build (`web/scripts/prerender.mjs`): o HTML já sai pronto e o
+  React só hidrata. O primeiro desenho do `App` precisa ser igual no build e no navegador:
+  nada de `window`, data atual ou número aleatório durante o render (use `useEffect`).
 - O script `.github/scripts/jira-transition.sh` nunca deixa um job vermelho: se o card não
   existe, o Jira não responde ou os secrets faltam, ele só avisa.
 - Nunca escreva o marcador que pula a CI (colchetes com "skip ci") numa mensagem de
