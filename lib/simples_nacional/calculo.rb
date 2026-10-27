@@ -4,7 +4,9 @@ module SimplesNacional
   # O cálculo do DAS (LC 123/2006, art. 18):
   #   1. a faixa vem da receita bruta dos 12 meses anteriores (RBT12);
   #   2. alíquota efetiva = (RBT12 × alíquota nominal − parcela a deduzir) ÷ RBT12 (§ 1º-A);
-  #   3. DAS = receita do mês × alíquota efetiva (§ 3º).
+  #   3. a alíquota efetiva é dividida entre os tributos (ver Reparticao);
+  #   4. DAS = receita do mês × soma dos percentuais dos tributos (§ 3º). Nas faixas 1 a 5 a
+  #      soma é a própria alíquota efetiva; na 6ª, entra também o ICMS ou o ISS.
   #
   # Dinheiro entra e sai em centavos (Integer) e percentual é fração exata (Rational):
   # nenhuma conta passa por Float.
@@ -21,7 +23,12 @@ module SimplesNacional
     class EntradaInvalida < ArgumentError; end
 
     # fator_r: o Fator R usado para escolher o anexo, ou nil quando o anexo foi informado.
-    Resultado = Data.define(:anexo, :fator_r, :faixa, :aliquota_efetiva, :das, :passos)
+    # aliquota_efetiva: o percentual que o DAS aplica sobre a receita do mês.
+    # tributos: a divisão do DAS, na ordem do anexo.
+    Resultado = Data.define(:anexo, :fator_r, :faixa, :aliquota_efetiva, :das, :tributos, :passos)
+
+    # percentual: parte da receita do mês (Rational); valor: em centavos, arredondado.
+    Tributo = Data.define(:nome, :percentual, :valor)
 
     # anexo: 1 a 5, ou :fator_r para as atividades que ficam no Anexo III ou no V conforme
     # o Fator R. folha12 (folha de salários dos 12 meses anteriores) só é usada no Fator R.
@@ -49,12 +56,23 @@ module SimplesNacional
     def self.resultado(tabela, rbt12, receita_mes, fator_r, passos)
       faixa = tabela.faixas.find { |item| rbt12 <= centavos(item.ate) }
       efetiva = aliquota_efetiva(faixa, rbt12)
-      das = (receita_mes * efetiva).round(half: :up)
+      percentuais = Reparticao.percentuais(tabela, faixa, rbt12, efetiva)
+      total, das, tributos = valores(receita_mes, percentuais)
 
       passos += [Passos.faixa(tabela, faixa, rbt12), Passos.aliquota_efetiva(faixa, rbt12, efetiva),
-                 Passos.das(receita_mes, efetiva, das)]
-      Resultado.new(anexo: tabela, fator_r: fator_r, faixa: faixa, aliquota_efetiva: efetiva, das: das,
-                    passos: passos)
+                 PassoDaDivisao.montar(tabela, faixa, rbt12, efetiva, percentuais),
+                 Passos.das(receita_mes, efetiva, total, das, tributos)]
+      Resultado.new(anexo: tabela, fator_r:, faixa:, aliquota_efetiva: total, das:, tributos:, passos:)
+    end
+
+    # Percentual total do DAS, o DAS em centavos e o valor de cada tributo. Cada tributo é
+    # arredondado sozinho, por isso a soma deles pode diferir do DAS em alguns centavos.
+    def self.valores(receita_mes, percentuais)
+      total = percentuais.values.sum
+      tributos = percentuais.map do |nome, percentual|
+        Tributo.new(nome:, percentual:, valor: (receita_mes * percentual).round(half: :up))
+      end
+      [total, (receita_mes * total).round(half: :up), tributos]
     end
 
     # (RBT12 × alíquota nominal − parcela a deduzir) ÷ RBT12, com a RBT12 em centavos.
@@ -80,6 +98,6 @@ module SimplesNacional
                              "empresa de pequeno porte (LC 123/2006, art. 3º, II)."
     end
 
-    private_class_method :conferir_valor, :com_fator_r, :resultado
+    private_class_method :conferir_valor, :com_fator_r, :resultado, :valores
   end
 end

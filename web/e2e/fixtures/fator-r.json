@@ -7,6 +7,44 @@
   "aliquota_efetiva": "17,5200%",
   "das": "R$ 7.008,00",
   "das_centavos": 700800,
+  "tributos": [
+    {
+      "nome": "IRPJ",
+      "percentual": "4,2048%",
+      "valor": "R$ 1.681,92",
+      "valor_centavos": 168192
+    },
+    {
+      "nome": "CSLL",
+      "percentual": "2,6280%",
+      "valor": "R$ 1.051,20",
+      "valor_centavos": 105120
+    },
+    {
+      "nome": "Cofins",
+      "percentual": "2,6139%",
+      "valor": "R$ 1.045,59",
+      "valor_centavos": 104559
+    },
+    {
+      "nome": "PIS/Pasep",
+      "percentual": "0,5658%",
+      "valor": "R$ 226,36",
+      "valor_centavos": 22636
+    },
+    {
+      "nome": "CPP",
+      "percentual": "4,1785%",
+      "valor": "R$ 1.671,41",
+      "valor_centavos": 167141
+    },
+    {
+      "nome": "ISS",
+      "percentual": "3,3288%",
+      "valor": "R$ 1.331,52",
+      "valor_centavos": 133152
+    }
+  ],
   "passos": [
     {
       "titulo": "Fator R",
@@ -24,8 +62,13 @@
       "fonte": "LC 123/2006, art. 18, § 1º-A"
     },
     {
+      "titulo": "Divisão entre os tributos",
+      "texto": "A alíquota efetiva é dividida entre os tributos pelos percentuais da 3ª faixa do Anexo V: IRPJ 24,00%, CSLL 15,00%, Cofins 14,92%, PIS/Pasep 3,23%, CPP 23,85% e ISS 19,00%. Por exemplo, IRPJ = 17,5200% × 24,00% = 4,2048%.",
+      "fonte": "Res. CGSN 140/2018, art. 21, III; LC 123/2006, Anexo V"
+    },
+    {
       "titulo": "DAS estimado",
-      "texto": "Receita do mês × alíquota efetiva = R$ 40.000,00 × 17,5200% = R$ 7.008,00. A conta usa a alíquota efetiva exata, sem cortar casas decimais, e arredonda o resultado para o centavo.",
+      "texto": "Receita do mês × alíquota efetiva = R$ 40.000,00 × 17,5200% = R$ 7.008,00. A conta usa os percentuais exatos, sem cortar casas decimais, e arredonda o resultado para o centavo.",
       "fonte": "LC 123/2006, art. 18, § 3º"
     }
   ],

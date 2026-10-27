@@ -37,6 +37,8 @@ export default function Resultado({ resultado, refTitulo }) {
         </div>
       </dl>
 
+      <Tributos tributos={resultado.tributos} />
+
       <details className="passos">
         <summary>Ver a conta passo a passo</summary>
         <ol>
@@ -55,5 +57,30 @@ export default function Resultado({ resultado, refTitulo }) {
         <a href={tabela.fonte}>Texto da LC 123/2006 no Planalto</a>.
       </p>
     </section>
+  );
+}
+
+// A divisão do DAS: quanto vai para cada tributo. O percentual é sobre a receita do mês.
+function Tributos({ tributos }) {
+  return (
+    <table className="tributos">
+      <caption>Divisão do DAS entre os tributos</caption>
+      <thead>
+        <tr>
+          <th scope="col">Tributo</th>
+          <th scope="col">% da receita</th>
+          <th scope="col">Valor</th>
+        </tr>
+      </thead>
+      <tbody>
+        {tributos.map((tributo) => (
+          <tr key={tributo.nome}>
+            <th scope="row">{tributo.nome}</th>
+            <td>{tributo.percentual}</td>
+            <td>{tributo.valor}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
   );
 }

@@ -23,7 +23,14 @@ describe "api/calcular.rb" do
     end
 
     it "devolve o anexo, a faixa e os passos da conta" do
-      assert_equal [3, 3, 4], [subject["anexo"], subject["faixa"], subject["passos"].size]
+      assert_equal [3, 3, 5], [subject["anexo"], subject["faixa"], subject["passos"].size]
+    end
+
+    it "devolve a divisão do DAS entre os tributos" do
+      iss = { "nome" => "ISS", "percentual" => "3,2409%", "valor" => "R$ 1.296,36", "valor_centavos" => 129_636 }
+      assert_equal iss, subject["tributos"].last
+      nomes = subject["tributos"].map { |tributo| tributo["nome"] }
+      assert_equal %w[IRPJ CSLL Cofins PIS/Pasep CPP ISS], nomes
     end
 
     it "devolve a fonte e a vigência da tabela" do

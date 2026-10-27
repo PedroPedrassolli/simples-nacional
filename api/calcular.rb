@@ -52,8 +52,16 @@ module CalcularApi
     anexo = resultado.anexo
     { anexo: anexo.numero, anexo_nome: anexo.nome, faixa: resultado.faixa.numero }
       .merge(valores(resultado))
-      .merge(passos: resultado.passos.map(&:to_h),
+      .merge(tributos: tributos(resultado.tributos), passos: resultado.passos.map(&:to_h),
              tabela: { fonte: anexo.fonte, redacao: anexo.redacao, vigencia: anexo.vigencia.iso8601 })
+  end
+
+  # A divisão do DAS: percentual sobre a receita do mês e valor de cada tributo.
+  def self.tributos(lista)
+    lista.map do |tributo|
+      { nome: tributo.nome, percentual: SimplesNacional::Formato.percentual(tributo.percentual, 4),
+        valor: SimplesNacional::Formato.reais(tributo.valor), valor_centavos: tributo.valor }
+    end
   end
 
   # Percentuais e dinheiro já no formato brasileiro, para a página só mostrar.

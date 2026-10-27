@@ -47,7 +47,9 @@ falha enquanto elas forem diferentes da resposta atual.
 
 1. Confira a tabela no texto compilado da Lei Complementar 123/2006 no Planalto.
 2. Mude o YAML em `data/anexos/`, com a nova `vigencia`, a lei que deu a redação e a data
-   da conferência (`conferido_em`).
+   da conferência (`conferido_em`). A `reparticao` de cada faixa vem da tabela "Percentual de
+   Repartição dos Tributos" do mesmo anexo e precisa somar 100.00 (o teste confere); na 6ª
+   faixa não entra ICMS nem ISS.
 3. Abra o PR com o link do trecho da lei na descrição.
 
 ## Cuidados
