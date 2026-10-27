@@ -37,6 +37,10 @@ export default function ConsultaCnpj() {
             id={id}
             name="cnpj"
             autoComplete="off"
+            // O CNPJ novo pode ter letras (Receita Federal, desde julho de 2026), por isso o
+            // teclado é o de texto, em maiúsculas e sem corretor ortográfico.
+            autoCapitalize="characters"
+            spellCheck={false}
             placeholder="00.000.000/0000-00"
             value={cnpj}
             onChange={(evento) => setCnpj(evento.target.value)}
@@ -53,7 +57,9 @@ export default function ConsultaCnpj() {
           {estado.erro}
         </p>
       )}
-      {estado.empresa && <Empresa empresa={estado.empresa} />}
+      {/* A região fica sempre na página (vazia até a resposta) para o leitor de tela
+          anunciar a empresa quando ela aparece. */}
+      <div aria-live="polite">{estado.empresa && <Empresa empresa={estado.empresa} />}</div>
     </details>
   );
 }

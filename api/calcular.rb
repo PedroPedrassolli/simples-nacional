@@ -40,7 +40,9 @@ module CalcularApi
 
   # "500000.5" → 50_000_050 centavos.
   def self.centavos(parametros, nome)
-    reais, decimais = VALOR.match(parametros[nome].to_s)&.captures
+    # scrub troca bytes que não são UTF-8 válido por "�". Sem ele, um texto quebrado
+    # (ex.: %FF na URL) levanta ArgumentError no match e vira erro 500 em vez de 400.
+    reais, decimais = VALOR.match(parametros[nome].to_s.scrub)&.captures
     raise ParametroInvalido, "Informe #{NOMES[nome]} como número, por exemplo 500000.00." unless reais
 
     (reais.to_i * 100) + decimais.to_s.ljust(2, "0").to_i

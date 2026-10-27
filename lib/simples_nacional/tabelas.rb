@@ -10,7 +10,7 @@ module SimplesNacional
   # (vigência). Arquivo sem isso é recusado: número sem fonte não entra na conta.
   #
   #   SimplesNacional::Tabelas.todas[1].faixas.first
-  #   # => #<data Faixa numero=1, ate=(180000/1), aliquota=(1/25), deduzir=(0/1)>
+  #   # => #<data SimplesNacional::Tabelas::Faixa numero=1, ate=(180000/1), aliquota=(1/25), deduzir=(0/1)>
   #
   # Os valores viram Rational (frações exatas), nunca Float: 7,30% é 73/1000, e não
   # 0.07299999... A alíquota já vem dividida por 100.
