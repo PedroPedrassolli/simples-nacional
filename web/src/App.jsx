@@ -1,23 +1,23 @@
+import Calculadora from "./Calculadora.jsx";
+
 const REPOSITORIO = "https://github.com/PedroPedrassolli/simples-nacional";
 const PORTFOLIO = "https://pedrassolli.vercel.app";
 
-// Primeira versão da página: explica o que a calculadora vai fazer e deixa os
-// avisos no lugar. O formulário e o resultado chegam no card SIMP-6.
+// A página inteira. No build ela vira HTML pronto (scripts/prerender.mjs), e o React só
+// assume os eventos no navegador: o texto aparece antes do JavaScript e nada pula de lugar.
 export default function App() {
   return (
     <>
-      <main className="pagina">
-        <p className="selo">Em construção</p>
+      <header className="topo">
         <h1>Calculadora do Simples Nacional</h1>
         <p className="destaque">
-          Informe a receita bruta dos últimos 12 meses, a receita do mês e o anexo da atividade, e
-          veja a alíquota efetiva, o valor estimado do DAS e a conta explicada passo a passo.
+          Informe a receita bruta dos 12 meses anteriores, a receita do mês e o anexo da atividade,
+          e veja a alíquota efetiva, o valor estimado do DAS e a conta explicada passo a passo.
         </p>
-        <p>
-          Quando a atividade pode cair no Anexo III ou no V, a calculadora aplica o Fator R (folha
-          de salários dos últimos 12 meses dividida pela receita bruta do mesmo período) e mostra
-          por que escolheu um dos anexos.
-        </p>
+      </header>
+
+      <main className="pagina">
+        <Calculadora />
 
         <section className="aviso" aria-labelledby="aviso-titulo">
           <h2 id="aviso-titulo">Antes de usar</h2>
@@ -26,9 +26,18 @@ export default function App() {
               É uma <strong>estimativa educativa</strong>: não substitui o PGDAS-D nem um contador.
             </li>
             <li>
+              Quando a atividade pode cair no Anexo III ou no V, a calculadora aplica o Fator R
+              (folha de salários ÷ receita bruta, ambas dos 12 meses anteriores): com 28% ou mais,
+              Anexo III; abaixo disso, Anexo V.
+            </li>
+            <li>
               A partir de janeiro de 2027, a empresa do Simples pode optar por recolher o IBS e a
               CBS fora do DAS (Lei Complementar 214/2025). Esta calculadora mostra só o DAS do
               regime simplificado.
+            </li>
+            <li>
+              Ainda não trata empresa com menos de 12 meses de atividade, sublimites estaduais nem a
+              divisão do DAS entre os tributos.
             </li>
           </ul>
         </section>

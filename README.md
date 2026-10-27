@@ -5,9 +5,6 @@ explicada passo a passo. Regra de negócio confusa em código claro.
 
 **No ar:** [simples-nacional-br.vercel.app](https://simples-nacional-br.vercel.app)
 
-> **Em construção.** O andamento está nos cards do projeto SIMP no Jira; o que já foi
-> feito aparece nos PRs mesclados.
-
 ## O que a calculadora faz
 
 A pessoa informa a receita bruta dos últimos 12 meses (RBT12), a receita do mês e o
@@ -43,7 +40,7 @@ arquivo não tiver a fonte ou a vigência.
 lib/simples_nacional/   Ruby puro, sem dependências: tabelas, faixa, alíquota efetiva, Fator R, DAS
 data/anexos/*.yml       tabelas dos Anexos I a V, com fonte oficial e vigência
 api/calcular.rb         função Ruby da Vercel: recebe os números e devolve o resultado e os passos (JSON)
-web/                    React + Vite, build estático (formulário, resultado, passo a passo)
+web/                    React + Vite, build estático e pré-renderizado (formulário, resultado, passo a passo)
 test/                   Minitest, com 100% das linhas cobertas
 ```
 
@@ -96,8 +93,9 @@ bundle exec rubocop          # estilo
 
 cd web
 npm ci
-npm run dev                  # página em http://localhost:5173
-npm run build && npm run test:e2e   # acessibilidade e 320 px no navegador
+npm run dev                  # página em http://localhost:5173 (usa a API publicada)
+npm test                     # funções do formulário
+npm run build && npm run test:e2e   # navegador: acessibilidade, 320 px, API simulada
 ```
 
 O fluxo de trabalho (cards, branches, PRs, merge automático) está no

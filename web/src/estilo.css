@@ -2,12 +2,17 @@
    Todos os pares de texto e fundo passam no contraste AA (o axe confere nos testes). */
 :root {
   --fundo: #f7f8f6;
+  --cartao: #ffffff;
   --texto: #1c2321;
   --texto-suave: #4a5552;
+  --borda: #6b7672;
   --destaque: #0f5132;
+  --botao-texto: #ffffff;
   --aviso-fundo: #fff7e0;
   --aviso-borda: #b7791f;
+  --erro: #b42318;
   --link: #0b5c8f;
+  --foco: #0b5c8f;
   --fonte: "Geist Variable", system-ui, sans-serif;
   --fonte-mono: "Geist Mono Variable", ui-monospace, monospace;
   color-scheme: light;
@@ -16,12 +21,17 @@
 @media (prefers-color-scheme: dark) {
   :root {
     --fundo: #111614;
+    --cartao: #19201d;
     --texto: #e8ece9;
     --texto-suave: #b4bdb9;
+    --borda: #8a9590;
     --destaque: #6fd3a0;
+    --botao-texto: #0b1210;
     --aviso-fundo: #2b2410;
     --aviso-borda: #e0b45a;
+    --erro: #ff9b8f;
     --link: #7cc4f2;
+    --foco: #7cc4f2;
     color-scheme: dark;
   }
 }
@@ -45,6 +55,12 @@ a {
   color: var(--link);
 }
 
+:focus-visible {
+  outline: 3px solid var(--foco);
+  outline-offset: 2px;
+}
+
+.topo,
 .pagina,
 .rodape {
   /* Largura confortável de leitura; em 320 px sobra 16 px de cada lado. */
@@ -53,14 +69,14 @@ a {
   padding: 0 1rem;
 }
 
-.pagina {
-  padding-top: 3rem;
+.topo {
+  padding-top: 2.5rem;
 }
 
 h1 {
   font-size: clamp(1.75rem, 6vw, 2.5rem);
   line-height: 1.15;
-  margin: 0.25rem 0 1rem;
+  margin: 0 0 1rem;
 }
 
 h2 {
@@ -68,20 +84,163 @@ h2 {
   margin: 0 0 0.5rem;
 }
 
-.selo {
-  display: inline-block;
+h3 {
+  font-size: 1rem;
   margin: 0;
-  padding: 0.125rem 0.625rem;
-  border: 1px solid var(--destaque);
-  border-radius: 999px;
-  color: var(--destaque);
-  font-family: var(--fonte-mono);
-  font-size: 0.8125rem;
 }
 
 .destaque {
   font-size: 1.1875rem;
+  margin: 0 0 1.5rem;
 }
+
+/* Formulário */
+
+.formulario {
+  display: grid;
+  gap: 1.25rem;
+  padding: 1.25rem;
+  background: var(--cartao);
+  border: 1px solid var(--borda);
+  border-radius: 0.75rem;
+}
+
+.campo label {
+  display: block;
+  font-weight: 600;
+}
+
+.dica {
+  margin: 0.125rem 0 0.375rem;
+  color: var(--texto-suave);
+  font-size: 0.9375rem;
+}
+
+.reais {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.25rem;
+}
+
+.reais span {
+  color: var(--texto-suave);
+  font-family: var(--fonte-mono);
+}
+
+input,
+select {
+  width: 100%;
+  min-width: 0;
+  padding: 0.625rem 0.75rem;
+  background: var(--fundo);
+  color: var(--texto);
+  border: 1px solid var(--borda);
+  border-radius: 0.5rem;
+  font: inherit;
+}
+
+select {
+  margin-top: 0.25rem;
+}
+
+input {
+  font-family: var(--fonte-mono);
+}
+
+[aria-invalid="true"] {
+  border-color: var(--erro);
+  border-width: 2px;
+}
+
+.erro-campo,
+.erro {
+  margin: 0.375rem 0 0;
+  color: var(--erro);
+  font-weight: 600;
+}
+
+.erro {
+  margin-top: 1rem;
+}
+
+button {
+  justify-self: start;
+  padding: 0.75rem 1.5rem;
+  background: var(--destaque);
+  color: var(--botao-texto);
+  border: 0;
+  border-radius: 0.5rem;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+button:disabled {
+  opacity: 0.8;
+  cursor: progress;
+}
+
+/* Resultado */
+
+.resultado {
+  margin-top: 1.5rem;
+  padding: 1.25rem;
+  background: var(--cartao);
+  border: 2px solid var(--destaque);
+  border-radius: 0.75rem;
+}
+
+.resultado h2 {
+  font-size: clamp(1.375rem, 5vw, 1.75rem);
+}
+
+.resumo {
+  display: grid;
+  gap: 0.5rem;
+  margin: 1rem 0;
+}
+
+.resumo div {
+  display: grid;
+  grid-template-columns: minmax(7rem, auto) 1fr;
+  gap: 0.75rem;
+}
+
+.resumo dt {
+  color: var(--texto-suave);
+}
+
+.resumo dd {
+  margin: 0;
+}
+
+.passos summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--link);
+}
+
+.passos ol {
+  padding-left: 1.25rem;
+}
+
+.passos li + li {
+  margin-top: 0.75rem;
+}
+
+.passos p {
+  margin: 0.25rem 0 0;
+  /* Contas longas (com valores em reais) quebram em vez de passar da tela. */
+  overflow-wrap: anywhere;
+}
+
+.fonte {
+  color: var(--texto-suave);
+  font-size: 0.875rem;
+}
+
+/* Avisos e rodapé */
 
 .aviso {
   margin: 2rem 0;
@@ -100,4 +259,11 @@ h2 {
   padding-bottom: 2rem;
   color: var(--texto-suave);
   font-size: 0.9375rem;
+}
+
+@media (max-width: 30rem) {
+  .resumo div {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
 }

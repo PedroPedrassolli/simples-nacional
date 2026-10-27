@@ -101,7 +101,7 @@ jobs:
   web:
     name: Página (React)
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    timeout-minutes: 20
     defaults:
       run:
         working-directory: web
@@ -119,6 +119,10 @@ jobs:
       # Instala exatamente as versões do package-lock.json.
       - name: Instalar dependências
         run: npm ci
+
+      # Funções puras do formulário (src/*.test.js).
+      - name: Testes (node --test)
+        run: npm test
 
       - name: Lint (ESLint)
         run: npm run lint
@@ -154,3 +158,24 @@ jobs:
           retention-days: 7
           name: playwright-report
           path: web/test-results
+
+      # Mede o build (web/dist) servido localmente, 3 vezes. Falha com acessibilidade, boas
+      # práticas ou SEO abaixo de 100, ou desempenho abaixo de 95 (ver web/lighthouserc.json).
+      - name: Lighthouse
+        run: npx --yes @lhci/cli@0.15.1 autorun
+
+      # As notas e o que ficou abaixo da nota máxima viram anotações no PR.
+      - name: Notas do Lighthouse
+        if: always()
+        run: |
+          if [ -f lighthouse-report/manifest.json ]; then
+            node scripts/lighthouse-summary.mjs
+          fi
+
+      - name: Relatório do Lighthouse (se falhar)
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          retention-days: 7
+          name: lighthouse-report
+          path: web/lighthouse-report

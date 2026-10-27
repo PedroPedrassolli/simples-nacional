@@ -12,8 +12,9 @@
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
   </head>
   <body>
-    <div id="root"></div>
-    <noscript>Esta página precisa de JavaScript para funcionar.</noscript>
+    <!-- No build, o marcador abaixo vira o HTML da página (ver scripts/prerender.mjs). -->
+    <div id="root"><!--app--></div>
+    <noscript><p class="erro">A calculadora precisa de JavaScript para funcionar.</p></noscript>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

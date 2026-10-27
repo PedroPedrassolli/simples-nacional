@@ -16,9 +16,12 @@ fi
 
 # HEAD^ é o commit anterior da main. Um merge que só mudou README, testes ou
 # workflows não mexe em nada do que vai para o ar.
-# O ":!" exclui da comparação os testes da página (web/e2e), que não vão para o ar.
+# O ":!" exclui da comparação o que não vai para o ar: os testes e as ferramentas da
+# página (Playwright, Lighthouse, ESLint).
 # No primeiro commit não existe HEAD^: o git diff falha e o build acontece.
-if git diff --quiet HEAD^ HEAD -- api data lib web vercel.json Gemfile ':!web/e2e'; then
+if git diff --quiet HEAD^ HEAD -- api data lib web vercel.json Gemfile \
+  ':!web/e2e' ':!web/*.test.js' ':!web/scripts/lighthouse-summary.mjs' ':!web/lighthouserc.json' \
+  ':!web/playwright.config.js' ':!web/eslint.config.js'; then
   echo "Nada da página, da API ou das tabelas mudou: sem deploy."
   exit 0
 fi
