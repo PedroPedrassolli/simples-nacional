@@ -1,4 +1,5 @@
 import Calculadora from "./Calculadora.jsx";
+import ConsultaCnpj from "./ConsultaCnpj.jsx";
 
 const REPOSITORIO = "https://github.com/PedroPedrassolli/simples-nacional";
 const PORTFOLIO = "https://pedrassolli.vercel.app";
@@ -17,6 +18,7 @@ export default function App() {
       </header>
 
       <main className="pagina">
+        <ConsultaCnpj />
         <Calculadora />
 
         <section className="aviso" aria-labelledby="aviso-titulo">

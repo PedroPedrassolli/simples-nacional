@@ -47,3 +47,13 @@ export function dataBrasileira(iso) {
   const [ano, mes, dia] = iso.split("-");
   return `${dia}/${mes}/${ano}`;
 }
+
+// Frase sobre o Simples na consulta de CNPJ, a partir do que a API devolveu.
+export function textoSimples({ optante, desde, excluida_em }) {
+  if (optante)
+    return desde
+      ? `Optante pelo Simples Nacional desde ${desde}.`
+      : "Optante pelo Simples Nacional.";
+  const exclusao = excluida_em ? ` (exclusão em ${excluida_em})` : "";
+  return `Não consta como optante pelo Simples Nacional${exclusao}.`;
+}

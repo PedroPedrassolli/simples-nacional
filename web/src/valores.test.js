@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { conferir, dataBrasileira, paraApi } from "./valores.js";
+import { conferir, dataBrasileira, paraApi, textoSimples } from "./valores.js";
 
 test("converte o jeito brasileiro para o formato da API", () => {
   assert.equal(paraApi("R$ 500.000,00"), "500000.00");
@@ -64,4 +64,17 @@ test("aponta o erro de cada campo", () => {
 
 test("mostra a data no formato brasileiro", () => {
   assert.equal(dataBrasileira("2018-01-01"), "01/01/2018");
+});
+
+test("descreve a situação no Simples da consulta de CNPJ", () => {
+  assert.equal(
+    textoSimples({ optante: true, desde: "01/01/2020", excluida_em: null }),
+    "Optante pelo Simples Nacional desde 01/01/2020.",
+  );
+  assert.equal(textoSimples({ optante: true, desde: null }), "Optante pelo Simples Nacional.");
+  assert.equal(
+    textoSimples({ optante: false, desde: "01/07/2007", excluida_em: "01/07/2007" }),
+    "Não consta como optante pelo Simples Nacional (exclusão em 01/07/2007).",
+  );
+  assert.equal(textoSimples({ optante: false }), "Não consta como optante pelo Simples Nacional.");
 });

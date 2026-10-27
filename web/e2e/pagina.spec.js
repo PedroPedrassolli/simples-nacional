@@ -7,6 +7,8 @@ import fs from "node:fs";
 const fixture = (nome) => JSON.parse(fs.readFileSync(new URL(`fixtures/${nome}`, import.meta.url)));
 const ANEXO_3 = fixture("anexo-3.json");
 const FATOR_R = fixture("fator-r.json");
+// Empresa fictícia; test/api_cnpj_test.rb confere que é a resposta atual de api/cnpj.rb.
+const CNPJ = fixture("cnpj.json");
 
 // Guarda as URLs chamadas, para conferir os parâmetros que a página mandou.
 async function simularApi(page, resposta = { status: 200 }) {
@@ -19,6 +21,21 @@ async function simularApi(page, resposta = { status: 200 }) {
     return route.fulfill({ status: resposta.status, json: corpo });
   });
   return chamadas;
+}
+
+async function simularCnpj(page, resposta = { status: 200, corpo: CNPJ }) {
+  const chamadas = [];
+  await page.route("**/api/cnpj?*", (route) => {
+    chamadas.push(new URL(route.request().url()).searchParams.get("cnpj"));
+    return route.fulfill({ status: resposta.status, json: resposta.corpo });
+  });
+  return chamadas;
+}
+
+async function consultarCnpj(page, cnpj) {
+  await page.getByText("Consultar um CNPJ (opcional)").click();
+  await page.getByLabel("CNPJ", { exact: true }).fill(cnpj);
+  await page.getByRole("button", { name: "Consultar", exact: true }).click();
 }
 
 async function preencher(page, { rbt12, receita, anexo, folha }) {
@@ -106,6 +123,27 @@ test("mostra a mensagem de erro da API", async ({ page }) => {
   await expect(page.getByRole("alert")).toHaveText(erro);
 });
 
+test("consulta o CNPJ e mostra a empresa, o CNAE e a situação no Simples", async ({ page }) => {
+  const chamadas = await simularCnpj(page);
+  await page.goto("/");
+  await consultarCnpj(page, "11.222.333/0001-81");
+
+  await expect(page.getByText("EMPRESA FICTICIA LTDA")).toBeVisible();
+  await expect(
+    page.getByText("6201-5/01 – Desenvolvimento de programas de computador sob encomenda"),
+  ).toBeVisible();
+  await expect(page.getByText("Optante pelo Simples Nacional desde 01/01/2020.")).toBeVisible();
+  expect(chamadas).toEqual(["11.222.333/0001-81"]);
+});
+
+test("mostra o erro da consulta de CNPJ", async ({ page }) => {
+  await simularCnpj(page, { status: 400, corpo: { erro: "CNPJ inválido: confira os números." } });
+  await page.goto("/");
+  await consultarCnpj(page, "11.222.333/0001-80");
+
+  await expect(page.getByRole("alert")).toHaveText("CNPJ inválido: confira os números.");
+});
+
 test("mostra o aviso de estimativa educativa", async ({ page }) => {
   await page.goto("/");
 
@@ -115,6 +153,7 @@ test("mostra o aviso de estimativa educativa", async ({ page }) => {
 for (const tema of ["light", "dark"]) {
   test(`não tem problemas graves de acessibilidade (tema ${tema})`, async ({ page }) => {
     await simularApi(page);
+    await simularCnpj(page);
     await page.emulateMedia({ colorScheme: tema });
     await page.goto("/");
     expect(await problemasGraves(page)).toEqual([]);
@@ -125,15 +164,23 @@ for (const tema of ["light", "dark"]) {
     await preencher(page, { rbt12: "500000", receita: "40000", anexo: "3" });
     await page.getByText("Ver a conta passo a passo").click();
     expect(await problemasGraves(page)).toEqual([]);
+
+    // E com a consulta de CNPJ aberta e respondida.
+    await consultarCnpj(page, "11.222.333/0001-81");
+    await expect(page.getByText("EMPRESA FICTICIA LTDA")).toBeVisible();
+    expect(await problemasGraves(page)).toEqual([]);
   });
 }
 
 test.describe("num celular de 320 px", () => {
   test.use({ viewport: { width: 320, height: 640 } });
 
-  test("não tem rolagem lateral, nem com o resultado aberto", async ({ page }) => {
+  test("não tem rolagem lateral, nem com o resultado e o CNPJ abertos", async ({ page }) => {
     await simularApi(page);
+    await simularCnpj(page);
     await page.goto("/");
+    await consultarCnpj(page, "11.222.333/0001-81");
+    await expect(page.getByText("EMPRESA FICTICIA LTDA")).toBeVisible();
     await preencher(page, { rbt12: "500000", receita: "40000", anexo: "3" });
     await page.getByText("Ver a conta passo a passo").click();
     await expect(page.getByRole("heading", { level: 3 }).first()).toBeVisible();

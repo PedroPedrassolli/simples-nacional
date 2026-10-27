@@ -13,3 +13,15 @@ export async function calcular(parametros) {
     return { erro: MENSAGEM_GENERICA };
   }
 }
+
+// Consulta opcional de CNPJ (api/cnpj.rb). Devolve { empresa } ou { erro }.
+export async function consultarCnpj(cnpj) {
+  try {
+    const resposta = await fetch(`/api/cnpj?${new URLSearchParams({ cnpj })}`);
+    const corpo = await resposta.json();
+    if (resposta.ok) return { empresa: corpo };
+    return { erro: corpo.erro ?? MENSAGEM_GENERICA };
+  } catch {
+    return { erro: MENSAGEM_GENERICA };
+  }
+}

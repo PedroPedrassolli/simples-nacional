@@ -8,6 +8,9 @@
     "api/calcular.rb": {
       "includeFiles": "{lib,data}/**",
       "maxDuration": 10
+    },
+    "api/cnpj.rb": {
+      "maxDuration": 10
     }
   },
   "git": {
