@@ -7,3 +7,5 @@
 # É uma estimativa educativa: não substitui o PGDAS-D nem um contador.
 module SimplesNacional
 end
+
+require_relative "simples_nacional/tabelas"

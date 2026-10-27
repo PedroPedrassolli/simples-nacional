@@ -1,0 +1,24 @@
+# Anexo III da Lei Complementar nº 123/2006.
+# Título na lei: Receitas de locação de bens móveis e de prestação de serviços não relacionados no § 5º-C do art. 18.
+#
+# Copiado do texto compilado no Planalto (link em "fonte"). No texto, o anexo tem a
+# nota "Vide Lei Complementar nº 214, de 2025"; as alíquotas e as parcelas a deduzir
+# continuam as da redação da Lei Complementar nº 155/2016.
+#
+# Os valores ficam como texto e o Ruby converte para Rational (sem erro de
+# arredondamento de Float). Cada faixa vai até "ate", inclusive.
+#   aliquota: alíquota nominal, em %
+#   deduzir:  parcela a deduzir, em R$
+anexo: 3
+nome: Locação de bens móveis e serviços não relacionados no § 5º-C do art. 18
+fonte: https://www.planalto.gov.br/ccivil_03/leis/lcp/lcp123.htm
+redacao: Lei Complementar nº 155/2016
+vigencia: "2018-01-01"
+conferido_em: "2026-10-27"
+faixas:
+  - { ate: "180000.00", aliquota: "6.00", deduzir: "0.00" }
+  - { ate: "360000.00", aliquota: "11.20", deduzir: "9360.00" }
+  - { ate: "720000.00", aliquota: "13.50", deduzir: "17640.00" }
+  - { ate: "1800000.00", aliquota: "16.00", deduzir: "35640.00" }
+  - { ate: "3600000.00", aliquota: "21.00", deduzir: "125640.00" }
+  - { ate: "4800000.00", aliquota: "33.00", deduzir: "648000.00" }

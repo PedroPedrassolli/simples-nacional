@@ -1,0 +1,24 @@
+# Anexo I da Lei Complementar nº 123/2006.
+# Título na lei: Alíquotas e Partilha do Simples Nacional – Comércio.
+#
+# Copiado do texto compilado no Planalto (link em "fonte"). No texto, o anexo tem a
+# nota "Vide Lei Complementar nº 214, de 2025"; as alíquotas e as parcelas a deduzir
+# continuam as da redação da Lei Complementar nº 155/2016.
+#
+# Os valores ficam como texto e o Ruby converte para Rational (sem erro de
+# arredondamento de Float). Cada faixa vai até "ate", inclusive.
+#   aliquota: alíquota nominal, em %
+#   deduzir:  parcela a deduzir, em R$
+anexo: 1
+nome: Comércio
+fonte: https://www.planalto.gov.br/ccivil_03/leis/lcp/lcp123.htm
+redacao: Lei Complementar nº 155/2016
+vigencia: "2018-01-01"
+conferido_em: "2026-10-27"
+faixas:
+  - { ate: "180000.00", aliquota: "4.00", deduzir: "0.00" }
+  - { ate: "360000.00", aliquota: "7.30", deduzir: "5940.00" }
+  - { ate: "720000.00", aliquota: "9.50", deduzir: "13860.00" }
+  - { ate: "1800000.00", aliquota: "10.70", deduzir: "22500.00" }
+  - { ate: "3600000.00", aliquota: "14.30", deduzir: "87300.00" }
+  - { ate: "4800000.00", aliquota: "19.00", deduzir: "378000.00" }
