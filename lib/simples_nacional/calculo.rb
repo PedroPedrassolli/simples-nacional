@@ -54,9 +54,7 @@ module SimplesNacional
     # A conta em si, com as entradas já conferidas. "passos" chega com a explicação de
     # como o anexo foi escolhido; a faixa, a alíquota e o DAS entram aqui.
     def self.resultado(tabela, dados, fator_r, passos)
-      rbt12 = rbt12_da_aliquota(dados.rbt12)
-      faixa = faixa_da(tabela, rbt12)
-      efetiva = aliquota_efetiva(faixa, rbt12)
+      rbt12, faixa, efetiva = faixa_e_aliquota(tabela, dados.rbt12)
       percentuais = Reparticao.percentuais(tabela, faixa, rbt12, efetiva)
       total, das, tributos = valores(dados.receita_mes, percentuais)
 
@@ -67,9 +65,13 @@ module SimplesNacional
                     aliquota_efetiva: total, das:, tributos:, passos:)
     end
 
-    # RBT12 zero vira R$ 1,00, só para achar a alíquota (Res. CGSN 140/2018, art. 21,
-    # parágrafo único): sem isso a conta dividiria por zero.
-    def self.rbt12_da_aliquota(rbt12) = rbt12.zero? ? 100 : rbt12
+    # [RBT12 da alíquota, faixa, alíquota efetiva]. RBT12 zero vira R$ 1,00, só para achar a
+    # alíquota (Res. CGSN 140/2018, art. 21, parágrafo único): sem isso a conta dividiria por zero.
+    def self.faixa_e_aliquota(tabela, rbt12)
+      rbt12 = 100 if rbt12.zero?
+      faixa = faixa_da(tabela, rbt12)
+      [rbt12, faixa, aliquota_efetiva(faixa, rbt12)]
+    end
 
     # A faixa da RBT12. Acima do limite (o que acontece com a RBT12 anualizada no início de
     # atividade), vale a última faixa (Res. CGSN 140/2018, art. 22, § 5º).
@@ -96,6 +98,6 @@ module SimplesNacional
     # Reais (Rational, como vêm das tabelas) → centavos (Integer).
     def self.centavos(reais) = (reais * 100).round
 
-    private_class_method :com_fator_r, :resultado, :rbt12_da_aliquota, :valores
+    private_class_method :com_fator_r, :resultado, :faixa_e_aliquota, :valores
   end
 end

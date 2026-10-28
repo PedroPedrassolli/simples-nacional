@@ -22,7 +22,7 @@ describe SimplesNacional::Entrada do
   end
 
   it "recusa mês fora de 2026, porque as tabelas mudam em 2027" do
-    assert_match(/só as regras de 2026.*LC 214\/2025, art\. 519/, erro(periodo: "2027-01"))
+    assert_match(%r{só as regras de 2026.*LC 214/2025, art\. 519}, erro(periodo: "2027-01"))
     assert_match(/só as regras de 2026/, erro(periodo: "2025-12"))
   end
 

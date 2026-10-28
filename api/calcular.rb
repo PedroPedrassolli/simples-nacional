@@ -61,13 +61,19 @@ module CalcularApi
   end
 
   def self.corpo(resultado)
-    anexo = resultado.anexo
-    { periodo: resultado.periodo.strftime("%Y-%m"), periodo_nome: SimplesNacional::Formato.mes(resultado.periodo),
-      anexo: anexo.numero, anexo_nome: anexo.nome, faixa: resultado.faixa.numero }
+    cabecalho(resultado)
       .merge(valores(resultado))
       .merge(tributos: tributos(resultado.tributos), passos: resultado.passos.map(&:to_h),
-             tabela: { fonte: anexo.fonte, redacao: anexo.redacao, vigencia: anexo.vigencia.iso8601 })
+             tabela: tabela(resultado.anexo))
   end
+
+  # O mês de apuração, o anexo e a faixa.
+  def self.cabecalho(resultado)
+    { periodo: resultado.periodo.strftime("%Y-%m"), periodo_nome: SimplesNacional::Formato.mes(resultado.periodo),
+      anexo: resultado.anexo.numero, anexo_nome: resultado.anexo.nome, faixa: resultado.faixa.numero }
+  end
+
+  def self.tabela(anexo) = { fonte: anexo.fonte, redacao: anexo.redacao, vigencia: anexo.vigencia.iso8601 }
 
   # A divisão do DAS: percentual sobre a receita do mês e valor de cada tributo.
   def self.tributos(lista)
