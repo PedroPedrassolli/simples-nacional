@@ -6,11 +6,14 @@ require_relative "../lib/simples_nacional"
 # Função da Vercel que a página chama. Toda a regra fica na biblioteca (lib/); aqui só
 # se lê a URL, confere o formato dos números e monta o JSON.
 #
-#   GET /api/calcular?rbt12=500000.00&receita_mes=40000.00&anexo=3
-#   GET /api/calcular?rbt12=500000.00&receita_mes=40000.00&anexo=fator_r&folha12=150000.00
+#   GET /api/calcular?periodo=2026-03&rbt12=500000.00&receita_mes=40000.00&anexo=3
+#   GET /api/calcular?periodo=2026-03&rbt12=500000.00&receita_mes=40000.00&anexo=fator_r&folha12=150000.00
+#   GET /api/calcular?periodo=2026-03&inicio=2025-11&rbt12=100000.00&receita_mes=30000.00&anexo=1
 #
 # Os valores vão em reais, com ponto e até duas casas ("500000.00"); a página converte o
 # que a pessoa digitou ("500.000,00") antes de chamar. anexo: 1 a 5 ou fator_r.
+# periodo: mês de apuração (AAAA-MM). inicio: mês de início das atividades, só para empresa
+# com menos de 12 meses; aí rbt12 é a receita desde o início (no 1º mês, não vai).
 module CalcularApi
   # Até R$ 9.999.999,99: cobre o limite do Simples e recusa textos enormes logo de cara.
   VALOR = /\A(\d{1,7})(?:\.(\d{1,2}))?\z/
@@ -18,9 +21,9 @@ module CalcularApi
   ANEXOS = { "1" => 1, "2" => 2, "3" => 3, "4" => 4, "5" => 5, "fator_r" => :fator_r }.freeze
 
   NOMES = {
-    "rbt12" => "a receita bruta dos 12 meses anteriores (RBT12)",
+    "rbt12" => "a receita bruta dos meses anteriores (RBT12)",
     "receita_mes" => "a receita do mês",
-    "folha12" => "a folha de salários dos 12 meses anteriores"
+    "folha12" => "a folha de salários"
   }.freeze
 
   # Parâmetro com problema: vira resposta 400 com a mensagem.
@@ -29,14 +32,23 @@ module CalcularApi
   # Devolve [status HTTP, corpo da resposta].
   def self.responder(parametros)
     anexo = ANEXOS[parametros["anexo"].to_s] || raise(ParametroInvalido, "Escolha o anexo: 1, 2, 3, 4, 5 ou fator_r.")
-    folha12 = anexo == :fator_r && parametros["folha12"] ? centavos(parametros, "folha12") : nil
-    resultado = SimplesNacional.calcular(rbt12: centavos(parametros, "rbt12"),
-                                         receita_mes: centavos(parametros, "receita_mes"),
-                                         anexo: anexo, folha12: folha12)
+    resultado = SimplesNacional.calcular(periodo: texto(parametros, "periodo"), inicio: texto(parametros, "inicio"),
+                                         anexo:, receita_mes: centavos(parametros, "receita_mes"),
+                                         rbt12: opcional(parametros, "rbt12"),
+                                         folha12: (opcional(parametros, "folha12") if anexo == :fator_r))
     [200, corpo(resultado)]
   rescue ParametroInvalido, SimplesNacional::Calculo::EntradaInvalida => e
     [400, { erro: e.message }]
   end
+
+  # Parâmetro de texto (os meses "AAAA-MM"); vazio vira nil. A biblioteca confere o formato.
+  def self.texto(parametros, nome)
+    texto = parametros[nome].to_s.scrub.strip
+    texto unless texto.empty?
+  end
+
+  # Valor que pode faltar (a biblioteca diz quando ele é necessário): vazio vira nil.
+  def self.opcional(parametros, nome) = texto(parametros, nome) && centavos(parametros, nome)
 
   # "500000.5" → 50_000_050 centavos.
   def self.centavos(parametros, nome)
@@ -49,12 +61,19 @@ module CalcularApi
   end
 
   def self.corpo(resultado)
-    anexo = resultado.anexo
-    { anexo: anexo.numero, anexo_nome: anexo.nome, faixa: resultado.faixa.numero }
+    cabecalho(resultado)
       .merge(valores(resultado))
       .merge(tributos: tributos(resultado.tributos), passos: resultado.passos.map(&:to_h),
-             tabela: { fonte: anexo.fonte, redacao: anexo.redacao, vigencia: anexo.vigencia.iso8601 })
+             tabela: tabela(resultado.anexo))
   end
+
+  # O mês de apuração, o anexo e a faixa.
+  def self.cabecalho(resultado)
+    { periodo: resultado.periodo.strftime("%Y-%m"), periodo_nome: SimplesNacional::Formato.mes(resultado.periodo),
+      anexo: resultado.anexo.numero, anexo_nome: resultado.anexo.nome, faixa: resultado.faixa.numero }
+  end
+
+  def self.tabela(anexo) = { fonte: anexo.fonte, redacao: anexo.redacao, vigencia: anexo.vigencia.iso8601 }
 
   # A divisão do DAS: percentual sobre a receita do mês e valor de cada tributo.
   def self.tributos(lista)
@@ -69,6 +88,7 @@ module CalcularApi
   def self.valores(resultado)
     {
       fator_r: resultado.fator_r && SimplesNacional::Formato.percentual(resultado.fator_r),
+      rbt12: SimplesNacional::Formato.reais(resultado.rbt12),
       aliquota_nominal: SimplesNacional::Formato.percentual(resultado.faixa.aliquota),
       aliquota_efetiva: SimplesNacional::Formato.percentual(resultado.aliquota_efetiva, 4),
       das: SimplesNacional::Formato.reais(resultado.das),

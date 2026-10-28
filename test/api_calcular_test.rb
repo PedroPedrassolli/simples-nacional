@@ -7,7 +7,7 @@ CALCULAR = carregar_api("calcular")
 # Testa a função da Vercel sem servidor: o request e o response são objetos simples com
 # os mesmos métodos que o runtime usa. Valores fictícios.
 describe "api/calcular.rb" do
-  let(:query) { { "rbt12" => "500000.00", "receita_mes" => "40000.00", "anexo" => "3" } }
+  let(:query) { { "periodo" => "2026-03", "rbt12" => "500000.00", "receita_mes" => "40000.00", "anexo" => "3" } }
   let(:request) { Struct.new(:query).new(query) }
   let(:response) { Class.new(Hash) { attr_accessor :status, :body }.new }
 
@@ -46,6 +46,16 @@ describe "api/calcular.rb" do
     it "não usa a folha" do
       query["folha12"] = "qualquer coisa"
       assert_nil subject["fator_r"]
+    end
+  end
+
+  describe "com início de atividade no próprio mês" do
+    # RBT12 = 20.000 × 12 = 240.000 → Anexo I, 2ª faixa: (240.000 × 7,3% − 5.940) ÷ 240.000 = 4,825%.
+    before { query.merge!("inicio" => "2026-03", "rbt12" => "", "receita_mes" => "20000.00", "anexo" => "1") }
+
+    it "calcula sem a receita anterior e devolve o mês e a RBT12 usada" do
+      assert_equal ["março de 2026", "R$ 240.000,00", "R$ 965,00"], subject.values_at("periodo_nome", "rbt12", "das")
+      assert_equal "2026-03", subject["periodo"]
     end
   end
 
@@ -101,7 +111,15 @@ describe "api/calcular.rb" do
     end
 
     it "repassa a mensagem da biblioteca para valor zero" do
-      assert_match(/precisa ser maior que zero/, erro("rbt12" => "0"))
+      assert_match(/A receita do mês precisa ser maior que zero/, erro("receita_mes" => "0"))
+    end
+
+    it "pede o mês de apuração" do
+      assert_match(/mês de apuração no formato AAAA-MM/, erro("periodo" => " "))
+    end
+
+    it "recusa mês de 2027" do
+      assert_match(/só as regras de 2026/, erro("periodo" => "2027-01"))
     end
 
     it "repassa a mensagem da biblioteca para valor acima do limite" do
@@ -113,7 +131,7 @@ describe "api/calcular.rb" do
     end
 
     it "recusa folha em formato errado no Fator R" do
-      assert_match(/a folha de salários dos 12 meses anteriores como número/,
+      assert_match(/a folha de salários como número/,
                    erro("anexo" => "fator_r", "folha12" => "-1"))
     end
   end

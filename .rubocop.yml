@@ -15,3 +15,8 @@ Style/StringLiterals:
 Metrics/BlockLength:
   Exclude:
     - "test/**/*"
+
+# Entrada.conferir recebe os campos do formulário como argumentos nomeados, um por campo:
+# mais claro do que juntar tudo num objeto só para ficar abaixo do limite de 5.
+Metrics/ParameterLists:
+  CountKeywordArgs: false

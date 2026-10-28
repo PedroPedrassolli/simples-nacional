@@ -12,6 +12,8 @@ end
 
 require_relative "simples_nacional/tabelas"
 require_relative "simples_nacional/formato"
+require_relative "simples_nacional/entrada"
+require_relative "simples_nacional/inicio_de_atividade"
 require_relative "simples_nacional/passos"
 require_relative "simples_nacional/passo_da_divisao"
 require_relative "simples_nacional/fator_r"

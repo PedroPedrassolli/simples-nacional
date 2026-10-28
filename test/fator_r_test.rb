@@ -6,7 +6,7 @@ require "test_helper"
 # Anexos III e V (data/anexos/) e da regra dos 28% (LC 123/2006, art. 18, §§ 5º-J e 5º-M).
 describe SimplesNacional::FatorR do
   let(:folha12) { 15_000_000 }
-  let(:entrada) { { rbt12: 50_000_000, receita_mes: 4_000_000, anexo: :fator_r, folha12: folha12 } }
+  let(:entrada) { { periodo: "2026-03", rbt12: 50_000_000, receita_mes: 4_000_000, anexo: :fator_r, folha12: } }
 
   subject { SimplesNacional.calcular(**entrada) }
 
@@ -65,7 +65,7 @@ describe SimplesNacional::FatorR do
   end
 
   describe "com o anexo informado" do
-    let(:entrada) { { rbt12: 50_000_000, receita_mes: 4_000_000, anexo: 3, folha12: 0 } }
+    let(:entrada) { { periodo: "2026-03", rbt12: 50_000_000, receita_mes: 4_000_000, anexo: 3, folha12: 0 } }
 
     it "não usa a folha nem o Fator R" do
       assert_equal [3, nil, "Anexo"], [subject.anexo.numero, subject.fator_r, subject.passos.first.titulo]

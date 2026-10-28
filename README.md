@@ -7,8 +7,8 @@ explicada passo a passo. Regra de negócio confusa em código claro.
 
 ## O que a calculadora faz
 
-A pessoa informa a receita bruta dos últimos 12 meses (RBT12), a receita do mês e o
-anexo da atividade, e vê:
+A pessoa informa o mês de apuração (por enquanto, meses de 2026), a receita bruta dos
+últimos 12 meses (RBT12), a receita do mês e o anexo da atividade, e vê:
 
 - a **alíquota efetiva**: `(RBT12 × alíquota nominal − parcela a deduzir) ÷ RBT12`
   (art. 18, § 1º-A, da Lei Complementar 123/2006);
@@ -17,6 +17,12 @@ anexo da atividade, e vê:
   ISS), pelos percentuais de repartição de cada anexo, com o ISS limitado a 5% e, na 6ª faixa,
   o ICMS ou o ISS calculado com a 5ª faixa (Resolução CGSN nº 140/2018, art. 21, III);
 - a conta **passo a passo**, com a faixa usada e de onde veio cada número.
+
+**Empresa com menos de 12 meses de atividade:** informe o mês de início. No 1º mês, a RBT12
+é a receita do mês × 12; até completar 12 meses, é a média dos meses anteriores × 12 (LC
+123/2006, art. 18, § 2º; Resolução CGSN nº 140/2018, art. 22, §§ 2º a 4º). A folha do Fator R
+segue a mesma regra (art. 26, § 4º). RBT12 zero vale R$ 1,00 só para achar a alíquota
+(art. 21, parágrafo único), e RBT12 acima de R$ 4,8 milhões usa a última faixa (art. 22, § 5º).
 
 Quando a atividade pode cair no Anexo III ou no V, a calculadora aplica o **Fator R**:
 folha de salários dos últimos 12 meses ÷ RBT12. Com 28% ou mais, a atividade vai para o
@@ -38,8 +44,11 @@ repartição de uma faixa não somar 100%.
   regulamentada pela Resolução CGSN nº 186/2026; os prazos da opção foram alterados
   pela Resolução CGSN nº 194/2026). A calculadora mostra o DAS do regime simplificado
   e não calcula o IBS e a CBS por fora.
-- Ainda não trata: empresa com menos de 12 meses (RBT12 proporcional), sublimites
-  estaduais, locação de bens móveis (Anexo III sem o ISS) e comparação entre anexos.
+- **Só 2026:** a partir de 1º/1/2027 os Anexos I a V passam a ter a redação da LC 214/2025
+  (art. 519), com a CBS e o IBS na divisão do DAS. A calculadora recusa meses de 2027 até ter
+  essas tabelas.
+- Ainda não trata: sublimites estaduais, locação de bens móveis (Anexo III sem o ISS) e
+  comparação entre anexos.
 
 ## Como funciona
 
@@ -64,23 +73,30 @@ Dinheiro em centavos (Integer), para nenhuma conta passar por Float:
 ```ruby
 require "simples_nacional"
 
-resultado = SimplesNacional.calcular(rbt12: 50_000_000, receita_mes: 4_000_000, anexo: 3)
+resultado = SimplesNacional.calcular(periodo: "2026-03", rbt12: 50_000_000, receita_mes: 4_000_000, anexo: 3)
 resultado.das                # => 398880 (R$ 3.988,80)
 resultado.tributos.last      # => #<data SimplesNacional::Calculo::Tributo nome="ISS", percentual=(32409/1000000), valor=129636>
 resultado.passos.map(&:texto) # a conta explicada, com a base legal de cada passo
 
 # Atividade do Anexo III ou V: o Fator R escolhe (folha de salários dos 12 meses anteriores)
-SimplesNacional.calcular(rbt12: 50_000_000, receita_mes: 4_000_000, anexo: :fator_r, folha12: 15_000_000)
+SimplesNacional.calcular(periodo: "2026-03", rbt12: 50_000_000, receita_mes: 4_000_000, anexo: :fator_r,
+                         folha12: 15_000_000)
+
+# Empresa que começou em novembro de 2025: rbt12 é a receita desde o início (4 meses)
+SimplesNacional.calcular(periodo: "2026-03", inicio: "2025-11", rbt12: 10_000_000, receita_mes: 3_000_000, anexo: 1)
 ```
 
 ### A API
 
 ```
-GET /api/calcular?rbt12=500000.00&receita_mes=40000.00&anexo=3
-GET /api/calcular?rbt12=500000.00&receita_mes=40000.00&anexo=fator_r&folha12=150000.00
+GET /api/calcular?periodo=2026-03&rbt12=500000.00&receita_mes=40000.00&anexo=3
+GET /api/calcular?periodo=2026-03&rbt12=500000.00&receita_mes=40000.00&anexo=fator_r&folha12=150000.00
+GET /api/calcular?periodo=2026-03&inicio=2025-11&rbt12=100000.00&receita_mes=30000.00&anexo=1
 ```
 
-Valores em reais, com ponto e até duas casas. A resposta traz `anexo`, `faixa`, `fator_r`,
+Valores em reais, com ponto e até duas casas; meses como `AAAA-MM`. Com `inicio`, `rbt12` é a
+receita desde o início das atividades (no 1º mês, não vai). A resposta traz `periodo`,
+`periodo_nome`, `rbt12` (a usada na conta), `anexo`, `faixa`, `fator_r`,
 `aliquota_nominal`, `aliquota_efetiva`, `das` (já formatados), `das_centavos`, os `tributos`
 (nome, percentual sobre a receita e valor de cada um), os `passos` e a `tabela` usada (fonte,
 redação e vigência). Entrada inválida responde 400 com `erro`.
@@ -102,8 +118,10 @@ art. 18 da LC 123/2006.
   de repartição (redação da Lei Complementar nº 155/2016, vigência desde 01/01/2018).
   Conferido em 27/10/2026.
 - [Resolução CGSN nº 140/2018 (normas da Receita Federal)](https://normas.receita.fazenda.gov.br/sijut2consulta/link.action?idAto=92278):
-  percentual efetivo de cada tributo, teto de 5% do ISS e ICMS/ISS na 6ª faixa (art. 21, III).
-  Conferido em 27/10/2026.
+  percentual efetivo de cada tributo, teto de 5% do ISS e ICMS/ISS na 6ª faixa (art. 21, III),
+  RBT12 no início de atividade (art. 22) e folha do Fator R (art. 26). Conferido em 27/10/2026.
+- [Lei Complementar nº 214/2025 (Planalto)](https://www.planalto.gov.br/ccivil_03/leis/lcp/lcp214.htm):
+  novos Anexos I a V a partir de 1º/1/2027 (art. 519; art. 544, III). Conferido em 27/10/2026.
 - [Portal do Simples Nacional: opção pelo regime regular do IBS e da CBS para 2027](https://www8.receita.fazenda.gov.br/simplesnacional/noticias/NoticiaCompleta.aspx?id=c739e03c-8482-473f-8e82-f38ec3b13637).
 
 ## Rodar na sua máquina
