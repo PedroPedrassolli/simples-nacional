@@ -14,6 +14,14 @@ export default function Resultado({ resultado, refTitulo }) {
 
       <dl className="resumo">
         <div>
+          <dt>Mês de apuração</dt>
+          <dd>{resultado.periodo_nome}</dd>
+        </div>
+        <div>
+          <dt>RBT12</dt>
+          <dd>{resultado.rbt12}</dd>
+        </div>
+        <div>
           <dt>Alíquota efetiva</dt>
           <dd>{resultado.aliquota_efetiva}</dd>
         </div>

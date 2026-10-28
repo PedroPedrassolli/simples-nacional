@@ -1,6 +1,12 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { calcular } from "./api.js";
-import { conferir } from "./valores.js";
+import {
+  conferir,
+  MESES_DE_APURACAO,
+  mesesDeInicio,
+  nomeDoMes,
+  textosDosCampos,
+} from "./valores.js";
 import Resultado from "./Resultado.jsx";
 
 // Os nomes vêm dos títulos dos anexos na LC 123/2006 (iguais aos de data/anexos/).
@@ -16,13 +22,16 @@ const ANEXOS = [
   { valor: "fator_r", rotulo: "Anexo III ou V, decidido pelo Fator R" },
 ];
 
-const VAZIO = { rbt12: "", receita_mes: "", anexo: "", folha12: "" };
+const PERIODOS = MESES_DE_APURACAO.map((mes) => ({ valor: mes, rotulo: nomeDoMes(mes) }));
+
+const VAZIO = { periodo: "", inicio: "", rbt12: "", receita_mes: "", anexo: "", folha12: "" };
 
 export default function Calculadora() {
   const [valores, setValores] = useState(VAZIO);
   const [erros, setErros] = useState({});
   const [estado, setEstado] = useState({ carregando: false, resultado: null, erro: null });
   const tituloResultado = useRef(null);
+  const textos = textosDosCampos(valores.periodo, valores.inicio);
 
   // Leva o foco para o resultado: quem usa leitor de tela ouve o DAS logo depois de
   // calcular, e no celular a página rola até ele.
@@ -31,7 +40,11 @@ export default function Calculadora() {
   }, [estado.resultado]);
 
   function mudar(evento) {
-    setValores({ ...valores, [evento.target.name]: evento.target.value });
+    const { name, value } = evento.target;
+    const novos = { ...valores, [name]: value };
+    // Trocou o mês de apuração e o início escolhido ficou fora da lista: volta para "12 meses ou mais".
+    if (name === "periodo" && !mesesDeInicio(value).includes(novos.inicio)) novos.inicio = "";
+    setValores(novos);
   }
 
   async function enviar(evento) {
@@ -45,17 +58,46 @@ export default function Calculadora() {
     setEstado({ carregando: false, resultado: resultado ?? null, erro: erro ?? null });
   }
 
+  const inicios = [
+    { valor: "", rotulo: "Há 12 meses ou mais" },
+    ...mesesDeInicio(valores.periodo).map((mes) => ({ valor: mes, rotulo: nomeDoMes(mes) })),
+  ];
+
   return (
     <>
       <form className="formulario" onSubmit={enviar} noValidate>
-        <CampoReais
-          nome="rbt12"
-          rotulo="Receita bruta dos 12 meses anteriores (RBT12)"
-          dica="A soma do faturamento dos 12 meses antes do mês que você quer calcular."
-          valor={valores.rbt12}
-          erro={erros.rbt12}
+        <CampoLista
+          nome="periodo"
+          rotulo="Mês de apuração"
+          dica="O mês do DAS que você quer calcular. Por enquanto, só meses de 2026."
+          vazio="Escolha o mês"
+          opcoes={PERIODOS}
+          valor={valores.periodo}
+          erro={erros.periodo}
           aoMudar={mudar}
         />
+        <CampoLista
+          nome="inicio"
+          rotulo="Início das atividades"
+          dica="Se a empresa começou há menos de 12 meses, escolha o mês em que ela começou. A lista aparece depois do mês de apuração."
+          opcoes={inicios}
+          valor={valores.inicio}
+          aoMudar={mudar}
+        />
+        {textos.receita ? (
+          <CampoReais
+            nome="rbt12"
+            rotulo={textos.receita}
+            dica={textos.dicaReceita}
+            valor={valores.rbt12}
+            erro={erros.rbt12}
+            aoMudar={mudar}
+          />
+        ) : (
+          <p className="dica">
+            No 1º mês de atividade, a receita dos 12 meses (RBT12) é a receita do mês × 12.
+          </p>
+        )}
         <CampoReais
           nome="receita_mes"
           rotulo="Receita bruta do mês"
@@ -63,11 +105,20 @@ export default function Calculadora() {
           erro={erros.receita_mes}
           aoMudar={mudar}
         />
-        <CampoAnexo valor={valores.anexo} erro={erros.anexo} aoMudar={mudar} />
+        <CampoLista
+          nome="anexo"
+          rotulo="Anexo da atividade"
+          dica="Se a lei manda decidir entre o Anexo III e o V pela folha de salários, escolha a última opção."
+          vazio="Escolha o anexo"
+          opcoes={ANEXOS}
+          valor={valores.anexo}
+          erro={erros.anexo}
+          aoMudar={mudar}
+        />
         {valores.anexo === "fator_r" && (
           <CampoReais
             nome="folha12"
-            rotulo="Folha de salários dos 12 meses anteriores"
+            rotulo={textos.folha}
             dica="Com encargos: salários, pró-labore, contribuição patronal ao INSS e FGTS. Aluguéis e distribuição de lucros não entram (LC 123/2006, art. 18, §§ 24 e 26)."
             valor={valores.folha12}
             erro={erros.folha12}
@@ -126,31 +177,34 @@ function CampoReais({ nome, rotulo, dica, valor, erro, aoMudar }) {
   );
 }
 
-function CampoAnexo({ valor, erro, aoMudar }) {
+// Lista de opções (mês, início, anexo). vazio: o texto da primeira opção, que não pode
+// ser escolhida de volta; sem ele, a primeira opção da lista vale como padrão.
+function CampoLista({ nome, rotulo, dica, vazio, opcoes, valor, erro, aoMudar }) {
   const id = useId();
   const descricao = [`${id}-dica`, erro && `${id}-erro`].filter(Boolean).join(" ");
 
   return (
     <div className="campo">
-      <label htmlFor={id}>Anexo da atividade</label>
+      <label htmlFor={id}>{rotulo}</label>
       <p id={`${id}-dica`} className="dica">
-        Se a lei manda decidir entre o Anexo III e o V pela folha de salários, escolha a última
-        opção.
+        {dica}
       </p>
       <select
         id={id}
-        name="anexo"
+        name={nome}
         value={valor}
         onChange={aoMudar}
         aria-invalid={erro ? "true" : undefined}
         aria-describedby={descricao}
       >
-        <option value="" disabled>
-          Escolha o anexo
-        </option>
-        {ANEXOS.map((anexo) => (
-          <option key={anexo.valor} value={anexo.valor}>
-            {anexo.rotulo}
+        {vazio && (
+          <option value="" disabled>
+            {vazio}
+          </option>
+        )}
+        {opcoes.map((opcao) => (
+          <option key={opcao.valor} value={opcao.valor}>
+            {opcao.rotulo}
           </option>
         ))}
       </select>

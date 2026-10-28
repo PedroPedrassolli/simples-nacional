@@ -5,9 +5,12 @@ require "test_helper"
 # Os valores de exemplo são fictícios. As contas esperadas foram feitas à mão a partir
 # das tabelas da LC 123/2006 (data/anexos/), sem usar o código que está sendo testado.
 describe SimplesNacional::Calculo do
-  let(:entrada) { { rbt12: 50_000_000, receita_mes: 4_000_000, anexo: 3 } }
+  let(:entrada) { { periodo: "2026-03", rbt12: 50_000_000, receita_mes: 4_000_000, anexo: 3 } }
 
   subject { SimplesNacional.calcular(**entrada) }
+
+  # Mesmo mês de apuração em todos os exemplos (2026 é o ano das tabelas).
+  def calcular(**dados) = SimplesNacional.calcular(periodo: "2026-03", **dados)
 
   def erro(**mudancas)
     assert_raises(SimplesNacional::Calculo::EntradaInvalida) { SimplesNacional.calcular(**entrada, **mudancas) }.message
@@ -22,7 +25,7 @@ describe SimplesNacional::Calculo do
 
     describe "no Anexo I, 2ª faixa" do
       # (300.000 × 7,3% − 5.940) ÷ 300.000 = 5,32%; 25.000 × 5,32% = 1.330,00.
-      let(:entrada) { { rbt12: 30_000_000, receita_mes: 2_500_000, anexo: 1 } }
+      let(:entrada) { { periodo: "2026-03", rbt12: 30_000_000, receita_mes: 2_500_000, anexo: 1 } }
 
       it "calcula o DAS" do
         assert_equal 133_000, subject.das
@@ -34,7 +37,7 @@ describe SimplesNacional::Calculo do
       # ISS pela 5ª faixa: (4.000.000 × 23% − 62.100) ÷ 4.000.000 = 21,4475%; × 23,5% = 5,0401625%,
       # acima do teto: fica 5% (Res. CGSN 140/2018, art. 21, III, a e b).
       # 300.000 × (17% + 5,0401625%) = 66.120,4875 → 66.120,49.
-      let(:entrada) { { rbt12: 400_000_000, receita_mes: 30_000_000, anexo: 5 } }
+      let(:entrada) { { periodo: "2026-03", rbt12: 400_000_000, receita_mes: 30_000_000, anexo: 5 } }
 
       it "soma o ISS calculado com a 5ª faixa aos tributos federais" do
         assert_equal 6_612_049, subject.das
@@ -49,8 +52,8 @@ describe SimplesNacional::Calculo do
       SimplesNacional::Calculo.tabelas.each_value do |tabela|
         tabela.faixas.each_cons(2) do |faixa, proxima|
           limite = SimplesNacional::Calculo.centavos(faixa.ate)
-          no_limite = SimplesNacional.calcular(rbt12: limite, receita_mes: 100, anexo: tabela.numero)
-          depois = SimplesNacional.calcular(rbt12: limite + 1, receita_mes: 100, anexo: tabela.numero)
+          no_limite = calcular(rbt12: limite, receita_mes: 100, anexo: tabela.numero)
+          depois = calcular(rbt12: limite + 1, receita_mes: 100, anexo: tabela.numero)
           assert_equal [faixa.numero, proxima.numero], [no_limite.faixa.numero, depois.faixa.numero]
         end
       end
@@ -58,7 +61,7 @@ describe SimplesNacional::Calculo do
 
     it "na 1ª faixa, a alíquota efetiva é igual à nominal (não há parcela a deduzir)" do
       SimplesNacional::Calculo.tabelas.each_value do |tabela|
-        resultado = SimplesNacional.calcular(rbt12: 10_000_000, receita_mes: 100, anexo: tabela.numero)
+        resultado = calcular(rbt12: 10_000_000, receita_mes: 100, anexo: tabela.numero)
         assert_equal tabela.faixas.first.aliquota, resultado.aliquota_efetiva
       end
     end
@@ -68,9 +71,20 @@ describe SimplesNacional::Calculo do
     end
   end
 
+  describe "com a RBT12 zero" do
+    # Res. CGSN 140/2018, art. 21, parágrafo único: só para a alíquota, a RBT12 vale R$ 1,00.
+    # Anexo III, 1ª faixa: 6%; 40.000 × 6% = 2.400,00.
+    let(:entrada) { { periodo: "2026-03", rbt12: 0, receita_mes: 4_000_000, anexo: 3 } }
+
+    it "usa a 1ª faixa e explica a regra no passo da faixa" do
+      assert_equal 240_000, subject.das
+      assert_includes subject.passos[1].texto, "A RBT12 é zero. Só para achar a alíquota, a conta usa R$ 1,00"
+    end
+  end
+
   describe "com o DAS quebrado em frações de centavo" do
     # 4% de R$ 12,38 = 49,52 centavos → R$ 0,50.
-    let(:entrada) { { rbt12: 10_000_000, receita_mes: 1238, anexo: 1 } }
+    let(:entrada) { { periodo: "2026-03", rbt12: 10_000_000, receita_mes: 1238, anexo: 1 } }
 
     it "arredonda para o centavo mais próximo" do
       assert_equal 50, subject.das
@@ -96,7 +110,7 @@ describe SimplesNacional::Calculo do
     describe "quando o arredondamento de cada tributo muda a soma" do
       # Anexo IV, 5ª faixa, com o ISS no teto: a soma dos tributos dá R$ 66.996,58 e o DAS,
       # R$ 66.996,57 (16,74914...% de R$ 400.000,00).
-      let(:entrada) { { rbt12: 350_000_000, receita_mes: 40_000_000, anexo: 4 } }
+      let(:entrada) { { periodo: "2026-03", rbt12: 350_000_000, receita_mes: 40_000_000, anexo: 4 } }
 
       it "avisa no passo do DAS" do
         assert_equal [6_699_657, 6_699_658], [subject.das, subject.tributos.sum(&:valor)]
@@ -127,7 +141,7 @@ describe SimplesNacional::Calculo do
     end
 
     describe "na 1ª faixa" do
-      let(:entrada) { { rbt12: 10_000_000, receita_mes: 100, anexo: 2 } }
+      let(:entrada) { { periodo: "2026-03", rbt12: 10_000_000, receita_mes: 100, anexo: 2 } }
 
       it "mostra só o limite de cima" do
         assert_includes subject.passos[1].texto, "1ª faixa do Anexo II, até R$ 180.000,00"
@@ -137,11 +151,7 @@ describe SimplesNacional::Calculo do
 
   describe "com entradas inválidas" do
     it "recusa RBT12 negativa" do
-      assert_match(/RBT12\) precisa ser maior que zero/, erro(rbt12: -1))
-    end
-
-    it "recusa RBT12 zero" do
-      assert_match(/maior que zero/, erro(rbt12: 0))
+      assert_match(/RBT12\) não pode ser negativa/, erro(rbt12: -1))
     end
 
     it "recusa receita do mês zero" do

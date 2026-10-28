@@ -1,8 +1,11 @@
 {
+  "periodo": "2026-03",
+  "periodo_nome": "março de 2026",
   "anexo": 3,
   "anexo_nome": "Locação de bens móveis e serviços não relacionados no § 5º-C do art. 18",
   "faixa": 3,
   "fator_r": null,
+  "rbt12": "R$ 500.000,00",
   "aliquota_nominal": "13,50%",
   "aliquota_efetiva": "9,9720%",
   "das": "R$ 3.988,80",
@@ -53,7 +56,7 @@
     },
     {
       "titulo": "Faixa",
-      "texto": "A receita bruta dos 12 meses anteriores (RBT12) é de R$ 500.000,00 e fica na 3ª faixa do Anexo III, de R$ 360.000,01 a R$ 720.000,00: alíquota nominal de 13,50% e parcela a deduzir de R$ 17.640,00.",
+      "texto": "A RBT12 é de R$ 500.000,00 e fica na 3ª faixa do Anexo III, de R$ 360.000,01 a R$ 720.000,00: alíquota nominal de 13,50% e parcela a deduzir de R$ 17.640,00.",
       "fonte": "LC 123/2006, art. 18, § 1º, e Anexo III"
     },
     {

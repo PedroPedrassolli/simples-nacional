@@ -38,11 +38,13 @@ async function consultarCnpj(page, cnpj) {
   await page.getByRole("button", { name: "Consultar", exact: true }).click();
 }
 
-async function preencher(page, { rbt12, receita, anexo, folha }) {
-  await page.getByLabel("Receita bruta dos 12 meses anteriores (RBT12)").fill(rbt12);
+async function preencher(page, { periodo = "2026-03", inicio, rbt12, receita, anexo, folha }) {
+  await page.getByLabel("Mês de apuração").selectOption(periodo);
+  if (inicio) await page.getByLabel("Início das atividades").selectOption(inicio);
+  if (rbt12 !== undefined) await page.getByLabel(/^Receita bruta (dos 12|desde)/).fill(rbt12);
   await page.getByLabel("Receita bruta do mês").fill(receita);
   await page.getByLabel("Anexo da atividade").selectOption(anexo);
-  if (folha) await page.getByLabel("Folha de salários dos 12 meses anteriores").fill(folha);
+  if (folha) await page.getByLabel(/^Folha de salários/).fill(folha);
   await page.getByRole("button", { name: "Calcular" }).click();
 }
 
@@ -93,16 +95,51 @@ test("calcula e mostra o DAS, o resumo e o passo a passo", async ({ page }) => {
 
   // A página converte o que foi digitado para o formato da API.
   expect(Object.fromEntries(chamadas[0])).toEqual({
+    periodo: "2026-03",
     anexo: "3",
     rbt12: "500000.00",
     receita_mes: "40000.00",
   });
+  await expect(page.locator(".resumo")).toContainText("março de 2026");
+});
+
+test("no 1º mês de atividade, não pede a receita anterior e manda o início", async ({ page }) => {
+  const chamadas = await simularApi(page);
+  await page.goto("/");
+  await page.getByLabel("Mês de apuração").selectOption("2026-03");
+  await page.getByLabel("Início das atividades").selectOption("2026-03");
+  await expect(page.getByLabel(/^Receita bruta (dos 12|desde)/)).toHaveCount(0);
+
+  await preencher(page, { receita: "20.000", anexo: "1" });
+  expect(Object.fromEntries(chamadas[0])).toEqual({
+    periodo: "2026-03",
+    inicio: "2026-03",
+    anexo: "1",
+    receita_mes: "20000.00",
+  });
+});
+
+test("com poucos meses de atividade, pede a receita desde o início", async ({ page }) => {
+  const chamadas = await simularApi(page);
+  await page.goto("/");
+  await page.getByLabel("Mês de apuração").selectOption("2026-03");
+  await page.getByLabel("Início das atividades").selectOption("2025-11");
+
+  const campo = page.getByLabel("Receita bruta desde o início das atividades");
+  await expect(campo).toHaveAccessibleDescription(/A soma dos 4 meses antes de março de 2026/);
+  await preencher(page, { rbt12: "100.000", receita: "30.000", anexo: "1" });
+  expect(chamadas[0].get("inicio")).toBe("2025-11");
+  expect(chamadas[0].get("rbt12")).toBe("100000.00");
+
+  // Trocar o mês de apuração para um que deixa o início fora da lista volta para "12 meses ou mais".
+  await page.getByLabel("Mês de apuração").selectOption("2026-12");
+  await expect(page.getByLabel("Início das atividades")).toHaveValue("");
 });
 
 test("pede a folha e mostra o Fator R só quando o anexo depende dele", async ({ page }) => {
   const chamadas = await simularApi(page);
   await page.goto("/");
-  await expect(page.getByLabel("Folha de salários dos 12 meses anteriores")).toHaveCount(0);
+  await expect(page.getByLabel(/^Folha de salários/)).toHaveCount(0);
 
   await preencher(page, {
     rbt12: "500000",

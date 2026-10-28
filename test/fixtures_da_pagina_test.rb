@@ -12,9 +12,9 @@ describe "fixtures dos testes da página" do
   subject { API_DA_PAGINA::CalcularApi }
 
   {
-    "anexo-3.json" => { "rbt12" => "500000.00", "receita_mes" => "40000.00", "anexo" => "3" },
-    "fator-r.json" => { "rbt12" => "500000.00", "receita_mes" => "40000.00", "anexo" => "fator_r",
-                        "folha12" => "139999.99" }
+    "anexo-3.json" => { "periodo" => "2026-03", "rbt12" => "500000.00", "receita_mes" => "40000.00", "anexo" => "3" },
+    "fator-r.json" => { "periodo" => "2026-03", "rbt12" => "500000.00", "receita_mes" => "40000.00",
+                        "anexo" => "fator_r", "folha12" => "139999.99" }
   }.each do |arquivo, parametros|
     it "#{arquivo} é a resposta atual da API" do
       _status, corpo = subject.responder(parametros)

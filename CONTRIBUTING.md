@@ -66,9 +66,11 @@ falha enquanto elas forem diferentes da resposta atual.
 - A página é pré-renderizada no build (`web/scripts/prerender.mjs`): o HTML já sai pronto e o
   React só hidrata. O primeiro desenho do `App` precisa ser igual no build e no navegador:
   nada de `window`, data atual ou número aleatório durante o render (use `useEffect`).
-- O Uptime confere uma conta conhecida (`/api/calcular`, DAS de R$ 3.988,80). Mudou essa conta
-  de propósito? Mude o `uptime.yml` no mesmo PR. Atraso de algumas horas nos agendados do
-  GitHub é normal.
+- O Uptime confere uma conta conhecida (`/api/calcular`, março de 2026, DAS de R$ 3.988,80).
+  Mudou essa conta ou os parâmetros obrigatórios de propósito? Mude o `uptime.yml` no mesmo PR.
+  Atraso de algumas horas nos agendados do GitHub é normal.
+- A calculadora aceita só meses de 2026 (`Entrada::ANO`). Para 2027, entram as tabelas da
+  LC 214/2025 (card SIMP-16): não basta trocar o ano.
 - O script `.github/scripts/jira-transition.sh` nunca deixa um job vermelho: se o card não
   existe, o Jira não responde ou os secrets faltam, ele só avisa.
 - Nunca escreva o marcador que pula a CI (colchetes com "skip ci") numa mensagem de
