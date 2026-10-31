@@ -1,13 +1,17 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import fs from "node:fs";
 import {
   conferir,
   dataBrasileira,
+  formatarReais,
   MESES_DE_APURACAO,
   mesesDeAtividade,
   mesesDeInicio,
   nomeDoMes,
   paraApi,
+  podePassarDoSublimite,
+  SUBLIMITE,
   textoSimples,
   textosDosCampos,
 } from "./valores.js";
@@ -203,4 +207,39 @@ test("manda os campos do sublimite só quando preenchidos", () => {
     conferir({ ...base, periodo: "2026-01", receita_ano: "1" }).parametros.receita_ano,
     undefined,
   );
+});
+
+test("formata o valor do jeito brasileiro ao sair do campo", () => {
+  assert.equal(formatarReais("500000"), "500.000,00");
+  assert.equal(formatarReais("1234.56"), "1.234,56");
+  assert.equal(formatarReais("R$ 4.800.000,5"), "4.800.000,50");
+  assert.equal(formatarReais("0,5"), "0,50");
+  assert.equal(formatarReais("999"), "999,00");
+  // O que não é valor fica como está, para a conferência apontar.
+  assert.equal(formatarReais("abc"), "abc");
+  assert.equal(formatarReais(""), "");
+});
+
+test("formata um texto muito longo sem travar", () => {
+  const inicio = Date.now();
+  assert.equal(formatarReais("9".repeat(100_000)).length, 133_336);
+  assert.ok(Date.now() - inicio < 1000);
+});
+
+test("percebe quando a receita do ano pode passar do sublimite", () => {
+  const base = { periodo: "2026-10", inicio: "", rbt12: "3.500.000", receita_mes: "100.000" };
+  assert.equal(podePassarDoSublimite(base), false);
+  assert.equal(podePassarDoSublimite({ ...base, receita_mes: "100.000,01" }), true);
+  // Janeiro e quem começou no ano não têm o campo da receita do ano.
+  assert.equal(podePassarDoSublimite({ ...base, periodo: "2026-01", rbt12: "9.000.000" }), false);
+  assert.equal(podePassarDoSublimite({ ...base, inicio: "2026-02", rbt12: "9.000.000" }), false);
+  // Campo em branco ou com erro conta como zero.
+  assert.equal(podePassarDoSublimite({ ...base, rbt12: "", receita_mes: "abc" }), false);
+});
+
+test("usa o mesmo sublimite do data/sublimite.yml", () => {
+  const yaml = fs.readFileSync(new URL("../../data/sublimite.yml", import.meta.url), "utf8");
+  const valores = [...yaml.matchAll(/valor: "([\d.]+)"/g)].map((achado) => Number(achado[1]));
+  assert.ok(valores.length >= 2);
+  for (const valor of valores) assert.equal(valor, SUBLIMITE);
 });
