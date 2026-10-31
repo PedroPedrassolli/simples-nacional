@@ -24,7 +24,7 @@ export default function ConsultaCnpj() {
   }
 
   return (
-    <details className="cartao revelar cnpj">
+    <details className="cartao revelar cnpj" id="cnpj">
       <summary>
         <span className="revelar-textos">
           <span className="revelar-titulo">

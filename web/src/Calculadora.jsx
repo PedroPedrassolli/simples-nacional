@@ -172,15 +172,15 @@ export default function Calculadora({ consulta }) {
                     Sublimite do ICMS e do ISS <span className="selo">opcional</span>
                   </span>
                   <span className="revelar-dica">
-                    Para quem pode passar de R$ 3.600.000,00 de receita no ano
+                    Para quem pode passar de R$&nbsp;3.600.000,00 de receita no ano
                   </span>
                 </span>
               </summary>
               <div className="revelar-corpo">
                 <p className="dica">
                   {podePassarDoSublimite(valores)
-                    ? "Com esses valores, a receita do ano pode passar de R$ 3.600.000,00. Informe a receita do ano para a conta do ICMS e do ISS."
-                    : "Acima de R$ 3.600.000,00 no ano, o ICMS e o ISS mudam de regra. Em branco, a conta considera que a empresa não passou desse valor; se faltar algum número, ela avisa."}
+                    ? "Com esses valores, a receita do ano pode passar de R$\u00a03.600.000,00. Informe a receita do ano para a conta do ICMS e do ISS."
+                    : "Acima de R$\u00a03.600.000,00 no ano, o ICMS e o ISS mudam de regra. Em branco, a conta considera que a empresa não passou desse valor; se faltar algum número, ela avisa."}
                 </p>
                 {textos.receitaAno && (
                   <CampoReais nome="receita_ano" rotulo={textos.receitaAno} {...campo} />
@@ -217,7 +217,7 @@ export default function Calculadora({ consulta }) {
         </Etapa>
 
         <div className="acoes">
-          <button type="submit" className="botao" disabled={estado.carregando}>
+          <button type="submit" className="botao primario" disabled={estado.carregando}>
             {estado.carregando ? "Calculando…" : "Calcular"}
           </button>
           <button type="button" className="botao secundario" onClick={() => recomecar(EXEMPLO)}>

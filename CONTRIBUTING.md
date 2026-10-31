@@ -75,6 +75,11 @@ opcionais na hora certa; um teste confere que ele bate com o YAML.
 - A página é pré-renderizada no build (`web/scripts/prerender.mjs`): o HTML já sai pronto e o
   React só hidrata. O primeiro desenho do `App` precisa ser igual no build e no navegador:
   nada de `window`, data atual ou número aleatório durante o render (use `useEffect`).
+- O visual segue o do portfólio: as cores e medidas do topo do `web/src/estilo.css` são as do
+  `frontend/src/styles/tokens.css` do repositório `portfolio`, e o cabeçalho, os botões, os
+  cartões e o rodapé repetem os componentes de lá. Mudou a identidade no portfólio? Mude aqui
+  também. O tema vem do `data-theme` do `<html>` (escuro por padrão; `public/theme.js` aplica o
+  salvo antes de pintar), não do tema do sistema.
 - Layout da página: no computador, só o formulário e o resultado ficam lado a lado. O que
   abre e fecha e pode crescer (passo a passo, consulta de CNPJ) vai em largura total, embaixo
   (`.layout` no `estilo.css`); senão uma coluna fica muito mais alta que a outra. Mudou o visual?

@@ -62,7 +62,7 @@ module SimplesNacional
               end
       Passo.new(titulo: "Fator R",
                 texto: "Folha de salários ÷ RBT12 = #{Formato.reais(folha12)} ÷ " \
-                       "#{Formato.reais(rbt12)} = #{Formato.percentual(fator)}. #{regra}: #{tabela.nome}.",
+                       "#{Formato.reais(rbt12)} = #{Formato.percentual(fator)}. #{regra}.",
                 fonte: "LC 123/2006, art. 18, §§ 5º-J, 5º-K, 5º-M e 24")
     end
 

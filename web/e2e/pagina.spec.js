@@ -304,6 +304,18 @@ test("mostra uma mensagem quando a consulta de CNPJ não responde", async ({ pag
   );
 });
 
+test("troca o tema pelo botão e lembra a escolha", async ({ page }) => {
+  await page.goto("/");
+  // Escuro por padrão, como no portfólio.
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+  await page.getByRole("button", { name: "Usar tema claro" }).click();
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
+
+  await page.reload();
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
+  await expect(page.getByRole("button", { name: "Usar tema escuro" })).toBeVisible();
+});
+
 test("mostra o aviso de estimativa educativa", async ({ page }) => {
   await page.goto("/");
 
@@ -314,8 +326,10 @@ for (const tema of ["light", "dark"]) {
   test(`não tem problemas graves de acessibilidade (tema ${tema})`, async ({ page }) => {
     await simularApi(page);
     await simularCnpj(page);
-    await page.emulateMedia({ colorScheme: tema });
+    // O tema é o do botão (salvo no localStorage), como no portfólio, e não o do sistema.
+    await page.addInitScript((escolhido) => localStorage.setItem("theme", escolhido), tema);
     await page.goto("/");
+    await expect(page.locator("html")).toHaveAttribute("data-theme", tema);
     expect(await problemasGraves(page)).toEqual([]);
 
     // De novo com os erros dos campos e com o resultado e o passo a passo abertos.
