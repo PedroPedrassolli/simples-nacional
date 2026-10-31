@@ -51,6 +51,9 @@ export default function Calculadora({ consulta }) {
   const [tentativasComErro, setTentativasComErro] = useState(0);
   // Número do último pedido à API: uma resposta atrasada de um pedido antigo é ignorada.
   const pedido = useRef(0);
+  // Quantas vezes os campos mudaram: se a pessoa mexer enquanto a API responde, o
+  // resultado que chega já foi calculado com os valores antigos e nasce desatualizado.
+  const mudancas = useRef(0);
   const formulario = useRef(null);
   const tituloResultado = useRef(null);
   const textos = textosDosCampos(valores.periodo, valores.inicio);
@@ -73,6 +76,7 @@ export default function Calculadora({ consulta }) {
     if (name === "periodo" && !mesesDeInicio(value).includes(novos.inicio)) novos.inicio = "";
     // Os valores acabaram de passar do sublimite: abre os campos opcionais dele.
     if (!podePassarDoSublimite(valores) && podePassarDoSublimite(novos)) setSublimiteAberto(true);
+    mudancas.current++;
     if (estado.resultado) setDesatualizado(true);
     setValores(novos);
   }
@@ -102,12 +106,13 @@ export default function Calculadora({ consulta }) {
     }
 
     const estePedido = ++pedido.current;
+    const mudancasNoPedido = mudancas.current;
     setEstado({ carregando: true, resultado: null, erro: null });
     const { resultado, erro } = await calcular(conferido.parametros);
     // Enquanto esperava, a pessoa limpou o formulário ou pediu outro cálculo.
     if (estePedido !== pedido.current) return;
     setEstado({ carregando: false, resultado: resultado ?? null, erro: erro ?? null });
-    setDesatualizado(false);
+    setDesatualizado(mudancas.current !== mudancasNoPedido);
   }
 
   function recomecar(novosValores) {
@@ -172,15 +177,15 @@ export default function Calculadora({ consulta }) {
                     Sublimite do ICMS e do ISS <span className="selo">opcional</span>
                   </span>
                   <span className="revelar-dica">
-                    Para quem pode passar de R$ 3.600.000,00 de receita no ano
+                    Para quem pode passar de R$&nbsp;3.600.000,00 de receita no ano
                   </span>
                 </span>
               </summary>
               <div className="revelar-corpo">
                 <p className="dica">
                   {podePassarDoSublimite(valores)
-                    ? "Com esses valores, a receita do ano pode passar de R$ 3.600.000,00. Informe a receita do ano para a conta do ICMS e do ISS."
-                    : "Acima de R$ 3.600.000,00 no ano, o ICMS e o ISS mudam de regra. Em branco, a conta considera que a empresa não passou desse valor; se faltar algum número, ela avisa."}
+                    ? "Com esses valores, a receita do ano pode passar de R$\u00a03.600.000,00. Informe a receita do ano para a conta do ICMS e do ISS."
+                    : "Acima de R$\u00a03.600.000,00 no ano, o ICMS e o ISS mudam de regra. Em branco, a conta considera que a empresa não passou desse valor; se faltar algum número, ela avisa."}
                 </p>
                 {textos.receitaAno && (
                   <CampoReais nome="receita_ano" rotulo={textos.receitaAno} {...campo} />
@@ -217,7 +222,7 @@ export default function Calculadora({ consulta }) {
         </Etapa>
 
         <div className="acoes">
-          <button type="submit" className="botao" disabled={estado.carregando}>
+          <button type="submit" className="botao primario" disabled={estado.carregando}>
             {estado.carregando ? "Calculando…" : "Calcular"}
           </button>
           <button type="button" className="botao secundario" onClick={() => recomecar(EXEMPLO)}>

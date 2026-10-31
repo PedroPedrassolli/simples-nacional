@@ -1,51 +1,94 @@
-/* Cores em variáveis: o tema escuro só troca os valores (segue o sistema do visitante).
-   Todos os pares de texto e fundo passam no contraste AA (o axe confere nos testes).
-   --linha é só decoração (separadores e contorno dos cartões); campos usam --borda (3:1).
-   --seta é a seta das listas de opções (SVG em data:, permitido pela CSP em img-src). */
-:root {
-  --fundo: #f3f5f4;
-  --cartao: #ffffff;
-  --realce: #f6f8f7;
-  --texto: #17201d;
-  --texto-suave: #4a5552;
-  --borda: #6b7672;
-  --linha: #d5dbd8;
-  --destaque: #0f5132;
-  --destaque-suave: #e3f1ea;
-  --botao-texto: #ffffff;
-  --trilho: #e2e7e4;
-  --aviso-fundo: #fff7e0;
+/* Visual no padrão do portfólio (pedrassolli.vercel.app, frontend/src/styles/tokens.css):
+   tema escuro por padrão, com o roxo do Dracula e um toque de rubi; o claro reaproveita os
+   mesmos nomes. O tema vem do atributo data-theme do <html> (public/theme.js e o botão).
+   Os pares de texto e fundo passam no contraste AA (o axe confere nos testes); as bordas
+   de campo (--campo-borda) têm pelo menos 3:1 com o fundo. */
+:root,
+:root[data-theme="dark"] {
+  --font-sans: "Geist Variable", "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "Geist Mono Variable", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+
+  --page-width: 70rem;
+  --gutter: clamp(1rem, 4vw, 2rem);
+  --header-height: 4.25rem;
+  --section-gap: clamp(3.5rem, 2.25rem + 3.5vw, 5rem);
+  --radius-sm: 8px;
+  --radius: 14px;
+  --radius-lg: 22px;
+
+  --color-bg: #09090f;
+  --color-bg-elevated: #101019;
+  --color-surface: rgba(255, 255, 255, 0.03);
+  --color-surface-hover: rgba(255, 255, 255, 0.055);
+  --color-border: rgba(255, 255, 255, 0.08);
+  --color-border-strong: rgba(255, 255, 255, 0.16);
+  --color-text: #ededf3;
+  --color-muted: #a3a3b8;
+  --color-subtle: #7d7d94;
+  --color-accent: #b9a1ff;
+  --color-accent-strong: #8b5cf6;
+  --color-ruby: #ff6b96;
+  --color-success: #4ade80;
+  --color-focus: #b9a1ff;
+  --color-erro: #ff8fa3;
+  --campo-borda: #6e6e85;
+  --aviso-fundo: rgba(250, 204, 21, 0.07);
+  --aviso-borda: #e0b45a;
+
+  --gradient-brand: linear-gradient(120deg, #b9a1ff 0%, #ff8fb1 100%);
+  --gradient-text: linear-gradient(180deg, #ffffff 0%, #b8b8cc 100%);
+  --glow-1: rgba(139, 92, 246, 0.22);
+  --glow-2: rgba(255, 107, 150, 0.12);
+  --grid-line: rgba(255, 255, 255, 0.045);
+
+  --button-primary-bg: #ededf3;
+  --button-primary-text: #09090f;
+  --button-primary-hover: #ffffff;
+
+  --shadow-card: 0 1px 0 rgba(255, 255, 255, 0.04) inset, 0 20px 40px -24px rgba(0, 0, 0, 0.6);
+  /* Seta das listas de opções (SVG em data:, permitido pela CSP em img-src). */
+  --seta: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%23a3a3b8' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+
+  color-scheme: dark;
+}
+
+:root[data-theme="light"] {
+  --color-bg: #fafafc;
+  --color-bg-elevated: #ffffff;
+  --color-surface: rgba(10, 10, 30, 0.025);
+  --color-surface-hover: rgba(10, 10, 30, 0.05);
+  --color-border: rgba(10, 10, 30, 0.09);
+  --color-border-strong: rgba(10, 10, 30, 0.18);
+  --color-text: #0f0f1a;
+  --color-muted: #4f4f63;
+  --color-subtle: #66667a;
+  --color-accent: #6d28d9;
+  --color-accent-strong: #6d28d9;
+  --color-ruby: #d6205b;
+  --color-success: #166534;
+  --color-focus: #6d28d9;
+  --color-erro: #b42318;
+  --campo-borda: #8a8aa0;
+  --aviso-fundo: #fff8e6;
   --aviso-borda: #b7791f;
-  --erro: #b42318;
-  --link: #0b5c8f;
-  --foco: #0b5c8f;
-  --seta: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%234a5552' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
-  --fonte: "Geist Variable", system-ui, sans-serif;
+
+  --gradient-brand: linear-gradient(120deg, #6d28d9 0%, #d6205b 100%);
+  --gradient-text: linear-gradient(180deg, #0f0f1a 0%, #45455a 100%);
+  --glow-1: rgba(139, 92, 246, 0.16);
+  --glow-2: rgba(255, 107, 150, 0.1);
+  --grid-line: rgba(10, 10, 30, 0.05);
+
+  --button-primary-bg: #0f0f1a;
+  --button-primary-text: #ffffff;
+  --button-primary-hover: #2a2a3d;
+
+  --shadow-card: 0 1px 2px rgba(10, 10, 30, 0.04), 0 16px 32px -24px rgba(10, 10, 30, 0.25);
+  --seta: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%234f4f63' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+
   color-scheme: light;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --fundo: #0f1412;
-    --cartao: #171e1b;
-    --realce: #1d2622;
-    --texto: #e8ece9;
-    --texto-suave: #b4bdb9;
-    --borda: #8a9590;
-    --linha: #2f3a35;
-    --destaque: #6fd3a0;
-    --destaque-suave: #16261f;
-    --botao-texto: #0b1210;
-    --trilho: #2f3a35;
-    --aviso-fundo: #2b2410;
-    --aviso-borda: #e0b45a;
-    --erro: #ff9b8f;
-    --link: #7cc4f2;
-    --foco: #7cc4f2;
-    --seta: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%23b4bdb9' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
-    color-scheme: dark;
-  }
-}
+/* Base, igual ao global.css do portfólio */
 
 *,
 *::before,
@@ -53,28 +96,47 @@
   box-sizing: border-box;
 }
 
+html {
+  scroll-behavior: smooth;
+  /* O cabeçalho fixo não cobre o título ao ir para uma parte da página pelo menu. */
+  scroll-padding-top: calc(var(--header-height) + 1rem);
+  -webkit-text-size-adjust: 100%;
+}
+
 body {
   margin: 0;
-  background: var(--fundo);
-  color: var(--texto);
-  font-family: var(--fonte);
-  font-size: 1.0625rem;
-  line-height: 1.6;
+  min-height: 100vh;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-sans);
+  font-size: 1rem;
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-a {
-  color: var(--link);
-}
-
-:focus-visible {
-  outline: 3px solid var(--foco);
-  outline-offset: 2px;
+/* Fundo: grade fina que some em direção às bordas e um brilho roxo/rosa no topo.
+   Só gradientes (sem imagens nem blur), leve de desenhar. */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(60rem 30rem at 15% -10%, var(--glow-1), transparent 70%),
+    radial-gradient(50rem 28rem at 95% 0%, var(--glow-2), transparent 70%),
+    linear-gradient(var(--grid-line) 1px, transparent 1px) 0 0 / 64px 64px,
+    linear-gradient(90deg, var(--grid-line) 1px, transparent 1px) 0 0 / 64px 64px;
+  mask-image: radial-gradient(ellipse 90% 60% at 50% 0%, #000 40%, transparent 100%);
 }
 
 h1,
 h2,
 h3 {
-  line-height: 1.2;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  text-wrap: balance;
 }
 
 h2 {
@@ -84,50 +146,361 @@ h2 {
 
 h3 {
   margin: 0;
-  font-size: 1.0625rem;
+  font-size: 1rem;
 }
 
-/* Largura e margens: em 320 px sobram 16 px de cada lado. */
-.topo,
-.pagina,
-.rodape {
-  max-width: 72rem;
-  margin: 0 auto;
-  padding-inline: 1rem;
+p {
+  text-wrap: pretty;
 }
 
-.topo {
-  padding-top: 2.75rem;
-  padding-bottom: 2rem;
+a {
+  color: var(--color-accent);
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+/* Link no meio de um texto: sublinhado sempre, para não depender só da cor (o axe cobra). */
+p a,
+li a {
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 3px;
+  border-radius: 6px;
+}
+
+/* O <main> recebe foco pelo link "Pular para o conteúdo"; não precisa de contorno. */
+main:focus {
+  outline: none;
+}
+
+::selection {
+  background: var(--color-accent-strong);
+  color: #ffffff;
+}
+
+.pular {
+  position: absolute;
+  top: -100px;
+  left: var(--gutter);
+  z-index: 100;
+  padding: 0.5rem 1rem;
+  background: var(--button-primary-bg);
+  color: var(--button-primary-text);
+  font-weight: 600;
+  border-radius: var(--radius-sm);
+}
+
+.pular:focus {
+  top: 0.75rem;
+}
+
+/* Cabeçalho fixo, com fundo translúcido e desfoque (como o do portfólio depois de rolar). */
+
+.cabecalho {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: color-mix(in srgb, var(--color-bg) 72%, transparent);
+  border-bottom: 1px solid var(--color-border);
+  backdrop-filter: blur(14px) saturate(150%);
+  -webkit-backdrop-filter: blur(14px) saturate(150%);
+}
+
+.cabecalho-dentro {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 1rem;
+  max-width: var(--page-width);
+  height: var(--header-height);
+  margin-inline: auto;
+  padding-inline: var(--gutter);
+}
+
+.marca {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.625rem;
+  justify-self: start;
+  color: var(--color-text);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.marca:hover {
+  text-decoration: none;
+}
+
+.marca-sigla {
+  display: grid;
+  place-items: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 8px;
+  background: var(--gradient-brand);
+  color: #09090f;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+/* Em telas bem estreitas sobra só a marca "pp" (o nome continua para o leitor de tela). */
+@media (max-width: 420px) {
+  .marca-nome {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+  }
+}
+
+/* Menu em pílula, centralizado; só no computador (no celular a página é uma coluna). */
+.menu {
+  display: none;
+}
+
+.menu ul {
+  display: flex;
+  gap: 2px;
+  margin: 0;
+  padding: 4px;
+  list-style: none;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background: var(--color-surface);
+}
+
+.menu a {
+  display: block;
+  text-decoration: none;
+  padding: 0.375rem 0.875rem;
+  border-radius: 999px;
+  color: var(--color-muted);
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.menu a:hover {
+  color: var(--color-text);
+  background: var(--color-surface-hover);
+  text-decoration: none;
+}
+
+@media (min-width: 64rem) {
+  .cabecalho-dentro {
+    grid-template-columns: 1fr auto 1fr;
+  }
+
+  .menu {
+    display: block;
+  }
+}
+
+.cabecalho-acoes {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  justify-self: end;
+}
+
+.botao-redondo {
+  display: inline-grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 2.5rem;
+  height: 2.5rem;
+  padding: 0;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.botao-redondo:hover {
+  border-color: var(--color-border-strong);
+  text-decoration: none;
+}
+
+/* Abertura (hero) */
+
+.hero {
+  max-width: var(--page-width);
+  margin-inline: auto;
+  padding: clamp(3rem, 2rem + 4vw, 5.5rem) var(--gutter) 0;
+}
+
+.hero-selo {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0 0 1.5rem;
+  padding: 0.3125rem 0.875rem;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background: var(--color-surface);
+  color: var(--color-muted);
+  font-size: 0.8125rem;
+}
+
+.hero-ponto {
+  width: 0.4375rem;
+  height: 0.4375rem;
+  border-radius: 50%;
+  background: var(--color-success);
 }
 
 h1 {
-  margin: 0 0 0.75rem;
-  font-size: clamp(1.875rem, 4vw + 1rem, 2.75rem);
-  letter-spacing: -0.02em;
-}
-
-.destaque {
-  max-width: 44rem;
+  max-width: 16ch;
   margin: 0;
-  color: var(--texto-suave);
-  font-size: 1.125rem;
+  font-size: clamp(2.5rem, 1.5rem + 4vw, 4.25rem);
+  font-weight: 600;
+  letter-spacing: -0.045em;
+  line-height: 1.02;
+  background: var(--gradient-text);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }
 
-.pagina {
-  display: grid;
-  gap: 1.5rem;
+.hero-subtitulo {
+  margin: 1.25rem 0 0;
+  font-size: clamp(1.125rem, 1rem + 0.6vw, 1.375rem);
+  font-weight: 500;
+  background: var(--gradient-brand);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.hero-texto {
+  max-width: 34rem;
+  margin: 0.75rem 0 0;
+  color: var(--color-muted);
+  font-size: 1.0625rem;
+}
+
+.hero-acoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 1.75rem;
+}
+
+/* Seções, como as do portfólio */
+
+.secao {
+  max-width: var(--page-width);
+  margin-inline: auto;
+  padding: var(--section-gap) var(--gutter) 0;
+}
+
+.secao-cabeca {
+  margin-bottom: 2rem;
+}
+
+.secao-titulo {
+  margin: 0;
+  font-size: clamp(1.875rem, 1.2rem + 2.4vw, 2.75rem);
+  font-weight: 600;
+  letter-spacing: -0.035em;
+  background: var(--gradient-text);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.secao-descricao {
+  max-width: 60ch;
+  margin: 0.75rem 0 0;
+  color: var(--color-muted);
+  font-size: 1.0625rem;
+}
+
+/* Botões em pílula (Button.module.css do portfólio) */
+
+.botao {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 2.75rem;
+  padding: 0 1.125rem;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  font: inherit;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease,
+    transform 0.15s ease;
+}
+
+.botao:hover {
+  text-decoration: none;
+}
+
+.botao:active {
+  transform: translateY(1px) scale(0.98);
+}
+
+.botao.primario {
+  background: var(--button-primary-bg);
+  color: var(--button-primary-text);
+}
+
+.botao.primario:hover:not(:disabled) {
+  background: var(--button-primary-hover);
+}
+
+.botao.secundario {
+  background: var(--color-surface);
+  border-color: var(--color-border-strong);
+  color: var(--color-text);
+}
+
+.botao.secundario:hover:not(:disabled) {
+  background: var(--color-surface-hover);
+}
+
+.botao.discreto {
+  background: transparent;
+  color: var(--color-muted);
+}
+
+.botao.discreto:hover {
+  background: var(--color-surface-hover);
+  color: var(--color-text);
+}
+
+.botao:disabled {
+  opacity: 0.75;
+  cursor: progress;
 }
 
 /* Grade da calculadora. No celular, uma coluna na ordem do HTML: formulário, resultado,
-   passo a passo e consulta de CNPJ. A partir de 64rem (1024 px), o formulário fica à
-   esquerda e o resultado à direita; o passo a passo e a consulta de CNPJ vêm embaixo, em
-   largura total: abrir uma parte não estica só uma das colunas. */
-/* minmax(0, 1fr): a coluna não cresce além da tela por causa de um conteúdo largo. */
+   passo a passo e consulta de CNPJ. A partir de 64rem (1024 px), formulário à esquerda e
+   resultado à direita; passo a passo e consulta embaixo, em largura total: abrir uma parte
+   não estica só uma das colunas. minmax(0, 1fr): conteúdo largo quebra em vez de alargar
+   a página. */
 .layout {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: 1.5rem;
+  gap: 1.25rem;
   align-items: start;
 }
 
@@ -136,8 +509,6 @@ h1 {
   min-width: 0;
 }
 
-/* Mesma regra nas outras grades de uma coluna: o conteúdo quebra em vez de alargar. */
-.pagina,
 .formulario,
 .etapa,
 .revelar-corpo {
@@ -147,7 +518,7 @@ h1 {
 @media (min-width: 64rem) {
   .layout {
     grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
-    column-gap: 2rem;
+    column-gap: 1.5rem;
   }
 
   .lateral {
@@ -158,6 +529,12 @@ h1 {
   .secao-passos,
   .consulta {
     grid-column: 1 / -1;
+  }
+
+  /* .cartao.como: mais específico que o position: relative do .cartao, que vem depois. */
+  .cartao.como {
+    position: sticky;
+    top: calc(var(--header-height) + 1.25rem);
   }
 
   /* Consulta aberta: o campo à esquerda e os dados da empresa à direita. */
@@ -176,20 +553,41 @@ h1 {
     grid-column: 2;
     grid-row: 1 / span 2;
   }
-
-  .como {
-    position: sticky;
-    top: 1.5rem;
-  }
 }
 
+/* Cartões, como os do portfólio: fundo translúcido, borda fina e a borda em degradê da
+   marca quando algo dentro dele recebe foco. */
 .cartao {
   --respiro: 1.25rem;
+  position: relative;
+  isolation: isolate;
   min-width: 0;
   padding: var(--respiro);
-  background: var(--cartao);
-  border: 1px solid var(--linha);
-  border-radius: 0.75rem;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+}
+
+.cartao::after {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  padding: 1px;
+  border-radius: inherit;
+  background: var(--gradient-brand);
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+
+.cartao:focus-within::after {
+  opacity: 1;
 }
 
 @media (min-width: 40rem) {
@@ -230,8 +628,8 @@ h1 {
   width: 0.5625rem;
   height: 0.5625rem;
   margin-right: 0.25rem;
-  border-right: 2px solid var(--texto-suave);
-  border-bottom: 2px solid var(--texto-suave);
+  border-right: 2px solid var(--color-muted);
+  border-bottom: 2px solid var(--color-muted);
   transform: translateY(-0.15rem) rotate(45deg);
   transition: transform 0.2s;
 }
@@ -241,11 +639,11 @@ h1 {
 }
 
 .revelar > summary:hover {
-  background: var(--realce);
+  background: var(--color-surface-hover);
 }
 
 .revelar[open] > summary {
-  border-bottom: 1px solid var(--linha);
+  border-bottom: 1px solid var(--color-border);
   border-bottom-left-radius: 0;
   border-bottom-right-radius: 0;
 }
@@ -258,12 +656,12 @@ h1 {
 }
 
 .revelar-titulo {
-  font-weight: 650;
+  font-weight: 600;
 }
 
 .revelar-dica {
-  color: var(--texto-suave);
-  font-size: 0.9375rem;
+  color: var(--color-muted);
+  font-size: 0.875rem;
 }
 
 .revelar-corpo {
@@ -272,19 +670,16 @@ h1 {
   padding: var(--respiro, 1rem);
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .revelar > summary::after {
-    transition: none;
-  }
-}
-
+/* Etiqueta "opcional", como as tags do portfólio. */
 .selo {
   margin-left: 0.5rem;
-  padding: 0 0.5rem;
-  color: var(--texto-suave);
-  border: 1px solid var(--borda);
+  padding: 0.0625rem 0.5rem;
+  border: 1px solid var(--color-border);
   border-radius: 999px;
-  font-size: 0.8125rem;
+  background: var(--color-surface);
+  color: var(--color-muted);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
   font-weight: 500;
   white-space: nowrap;
 }
@@ -296,8 +691,8 @@ h1 {
   gap: 2rem;
 }
 
-/* min-width: 0 porque o fieldset, por padrão, não encolhe menos que o conteúdo (e passaria
-   da tela em 320 px). A linha fica na legenda: borda no fieldset passaria por cima dela. */
+/* min-width: 0 porque o fieldset, por padrão, não encolhe menos que o conteúdo. A linha
+   fica na legenda: borda no fieldset passaria por cima dela. */
 .etapa {
   display: grid;
   gap: 1.125rem;
@@ -310,10 +705,11 @@ h1 {
 .etapa legend {
   width: 100%;
   margin-bottom: 1.125rem;
-  padding: 0 0 0.5rem;
-  border-bottom: 1px solid var(--linha);
+  padding: 0 0 0.625rem;
+  border-bottom: 1px solid var(--color-border);
   font-size: 1.125rem;
-  font-weight: 650;
+  font-weight: 600;
+  letter-spacing: -0.01em;
 }
 
 .campo label {
@@ -323,15 +719,15 @@ h1 {
 
 .dica {
   margin: 0.125rem 0 0.375rem;
-  color: var(--texto-suave);
-  font-size: 0.9375rem;
+  color: var(--color-muted);
+  font-size: 0.875rem;
 }
 
 .nota {
   margin: 0;
   padding: 0.75rem 1rem;
-  background: var(--destaque-suave);
-  border-radius: 0.5rem;
+  background: color-mix(in srgb, var(--color-accent) 10%, transparent);
+  border-radius: var(--radius-sm);
 }
 
 input,
@@ -339,10 +735,10 @@ select {
   width: 100%;
   min-width: 0;
   padding: 0.6875rem 0.875rem;
-  background-color: var(--cartao);
-  color: var(--texto);
-  border: 1px solid var(--borda);
-  border-radius: 0.5rem;
+  background-color: var(--color-bg-elevated);
+  color: var(--color-text);
+  border: 1px solid var(--campo-borda);
+  border-radius: 10px;
   font: inherit;
   font-variant-numeric: tabular-nums;
 }
@@ -360,7 +756,7 @@ select {
 }
 
 [aria-invalid="true"] {
-  border-color: var(--erro);
+  border-color: var(--color-erro);
   border-width: 2px;
 }
 
@@ -369,25 +765,27 @@ select {
   display: flex;
   align-items: center;
   margin-top: 0.25rem;
-  background: var(--cartao);
-  border: 1px solid var(--borda);
-  border-radius: 0.5rem;
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--campo-borda);
+  border-radius: 10px;
 }
 
 .reais span {
   padding-left: 0.875rem;
-  color: var(--texto-suave);
+  color: var(--color-muted);
+  font-family: var(--font-mono);
+  font-size: 0.875rem;
 }
 
 .reais input {
-  padding-left: 0.375rem;
+  padding-left: 0.5rem;
   background: transparent;
   border: 0;
 }
 
 .reais:focus-within {
-  outline: 3px solid var(--foco);
-  outline-offset: 2px;
+  outline: 2px solid var(--color-focus);
+  outline-offset: 3px;
 }
 
 .reais input:focus-visible {
@@ -395,14 +793,14 @@ select {
 }
 
 .reais.invalido {
-  border-color: var(--erro);
-  box-shadow: inset 0 0 0 1px var(--erro);
+  border-color: var(--color-erro);
+  box-shadow: inset 0 0 0 1px var(--color-erro);
 }
 
 .erro-campo,
 .erro {
   margin: 0.375rem 0 0;
-  color: var(--erro);
+  color: var(--color-erro);
   font-weight: 600;
 }
 
@@ -410,19 +808,17 @@ select {
   margin: 0;
 }
 
-/* Campos do sublimite: uma parte que abre dentro do formulário, num fundo mais claro. */
+/* Campos do sublimite: uma parte que abre dentro do formulário. */
 .opcional {
   --respiro: 1rem;
-  background: var(--fundo);
-  border: 1px solid var(--linha);
-  border-radius: 0.5rem;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
 }
 
 .opcional .revelar-corpo .dica {
   margin: 0;
 }
-
-/* Botões */
 
 .acoes {
   display: flex;
@@ -431,41 +827,8 @@ select {
   gap: 0.75rem;
 }
 
-.botao {
-  padding: 0.75rem 1.25rem;
-  background: var(--destaque);
-  color: var(--botao-texto);
-  border: 1px solid var(--destaque);
-  border-radius: 0.5rem;
-  font: inherit;
-  font-weight: 600;
-  cursor: pointer;
-}
-
 .acoes [type="submit"] {
   min-width: 10rem;
-}
-
-.botao:hover:not(:disabled) {
-  box-shadow: 0 0 0 3px var(--destaque-suave);
-}
-
-.botao.secundario {
-  background: transparent;
-  color: var(--destaque);
-}
-
-.botao.discreto {
-  padding-inline: 0.5rem;
-  background: transparent;
-  color: var(--link);
-  border-color: transparent;
-  text-decoration: underline;
-}
-
-.botao:disabled {
-  opacity: 0.8;
-  cursor: progress;
 }
 
 /* No celular, o "Calcular" ocupa a linha toda. */
@@ -477,7 +840,9 @@ select {
 
 /* Guia vazia, antes do primeiro cálculo: contorno tracejado, como um papel em branco. */
 .como {
-  border: 2px dashed var(--linha);
+  border-style: dashed;
+  border-color: var(--color-border-strong);
+  box-shadow: none;
 }
 
 .como-estado {
@@ -486,14 +851,15 @@ select {
   gap: 0.5rem;
   margin: 0 0 1.5rem;
   padding-bottom: 1.25rem;
-  border-bottom: 1px solid var(--linha);
-  font-size: 1.125rem;
+  border-bottom: 1px solid var(--color-border);
+  font-size: 1.0625rem;
   font-weight: 600;
 }
 
 .como ol {
   margin: 0 0 1rem;
   padding-left: 1.25rem;
+  color: var(--color-muted);
 }
 
 .como li + li {
@@ -501,16 +867,21 @@ select {
 }
 
 .como li::marker {
-  color: var(--destaque);
+  color: var(--color-accent);
+  font-family: var(--font-mono);
   font-weight: 700;
+}
+
+.como strong {
+  color: var(--color-text);
 }
 
 .girando {
   flex: none;
   width: 1.125rem;
   height: 1.125rem;
-  border: 2px solid var(--trilho);
-  border-top-color: var(--destaque);
+  border: 2px solid var(--color-border-strong);
+  border-top-color: var(--color-accent);
   border-radius: 50%;
   animation: girar 0.8s linear infinite;
 }
@@ -521,18 +892,20 @@ select {
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .girando {
-    animation: none;
-  }
-}
-
 /* Resultado com cara de guia: o valor em cima, um picote (linha tracejada com dois
    recortes nas bordas) e, embaixo, o resumo e a divisão. overflow: hidden corta a metade
    dos recortes que ficaria para fora do cartão. */
 .guia {
   overflow: hidden;
-  border-top: 4px solid var(--destaque);
+}
+
+/* Faixa da marca no alto da guia. */
+.guia::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: 3px;
+  background: var(--gradient-brand);
 }
 
 .das {
@@ -542,37 +915,43 @@ select {
 }
 
 .das-rotulo {
-  color: var(--texto-suave);
-  font-size: 0.9375rem;
-  font-weight: 600;
+  color: var(--color-muted);
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  font-weight: 500;
 }
 
+/* O número grande em degradê, como os números do portfólio. */
 .das-valor {
-  color: var(--destaque);
-  font-size: clamp(2.25rem, 4vw + 1.25rem, 3rem);
-  font-weight: 700;
-  line-height: 1.05;
-  letter-spacing: -0.025em;
+  width: fit-content;
+  max-width: 100%;
+  font-size: clamp(2.25rem, 1.5rem + 3vw, 3rem);
+  font-weight: 600;
+  line-height: 1.1;
+  letter-spacing: -0.03em;
   font-variant-numeric: tabular-nums;
   overflow-wrap: anywhere;
+  background: var(--gradient-brand);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }
 
 .das-mes {
   margin: 0.5rem 0 0;
-  color: var(--texto-suave);
+  color: var(--color-muted);
 }
 
 .nota-aviso {
   margin-top: 1rem;
   background: var(--aviso-fundo);
-  border-left: 4px solid var(--aviso-borda);
-  border-radius: 0.375rem;
+  border-left: 3px solid var(--aviso-borda);
 }
 
 .picote {
   position: relative;
   margin: 1.5rem calc(-1 * var(--respiro));
-  border-top: 2px dashed var(--linha);
+  border-top: 2px dashed var(--color-border-strong);
 }
 
 .picote::before,
@@ -582,8 +961,8 @@ select {
   top: calc(-0.75rem - 1px);
   width: 1.5rem;
   height: 1.5rem;
-  background: var(--fundo);
-  border: 1px solid var(--linha);
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
   border-radius: 50%;
 }
 
@@ -595,13 +974,10 @@ select {
   right: -0.75rem;
 }
 
-/* Campos mudaram depois do cálculo: o valor perde o verde e aparece a nota. */
-.desatualizado {
-  border-top-color: var(--aviso-borda);
-}
-
+/* Campos mudaram depois do cálculo: o valor fica apagado e aparece a nota. */
 .desatualizado .das-valor {
-  color: var(--texto-suave);
+  background: none;
+  color: var(--color-muted);
 }
 
 /* Resumo em linhas de rótulo e valor, como numa guia (também na consulta de CNPJ). */
@@ -616,11 +992,11 @@ select {
   justify-content: space-between;
   gap: 0.125rem 1rem;
   padding: 0.5rem 0;
-  border-bottom: 1px dashed var(--linha);
+  border-bottom: 1px dashed var(--color-border-strong);
 }
 
 .resumo dt {
-  color: var(--texto-suave);
+  color: var(--color-muted);
 }
 
 .resumo dd {
@@ -650,14 +1026,14 @@ select {
 
 .tributos caption {
   margin-bottom: 0.5rem;
-  font-weight: 650;
+  font-weight: 600;
   text-align: left;
 }
 
 .tributos th,
 .tributos td {
   padding: 0.5rem 0.375rem;
-  border-bottom: 1px solid var(--linha);
+  border-bottom: 1px solid var(--color-border);
   text-align: right;
   vertical-align: top;
 }
@@ -689,14 +1065,15 @@ select {
 }
 
 .tributos thead th {
-  color: var(--texto-suave);
-  font-size: 0.875rem;
+  color: var(--color-muted);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
   font-weight: 400;
 }
 
 .tributos tfoot th,
 .tributos tfoot td {
-  border-top: 2px solid var(--borda);
+  border-top: 1px solid var(--color-border-strong);
   border-bottom: 0;
   font-weight: 700;
 }
@@ -710,17 +1087,17 @@ select {
 }
 
 .barra-trilho {
-  fill: var(--trilho);
+  fill: var(--color-border-strong);
 }
 
 .barra-parte {
-  fill: var(--destaque);
+  fill: var(--color-accent);
 }
 
 .fonte {
   margin: 0;
-  color: var(--texto-suave);
-  font-size: 0.875rem;
+  color: var(--color-subtle);
+  font-size: 0.8125rem;
 }
 
 /* Conta passo a passo: linha do tempo numerada (é uma sequência). No celular, número à
@@ -750,9 +1127,12 @@ select {
   place-items: center;
   width: 2.25rem;
   height: 2.25rem;
-  background: var(--destaque-suave);
-  color: var(--destaque);
+  background: color-mix(in srgb, var(--color-accent) 14%, transparent);
+  color: var(--color-accent);
+  border: 1px solid color-mix(in srgb, var(--color-accent) 30%, transparent);
   border-radius: 50%;
+  font-family: var(--font-mono);
+  font-size: 0.875rem;
   font-weight: 700;
 }
 
@@ -764,7 +1144,7 @@ select {
   bottom: 0.25rem;
   left: calc(1.125rem - 1px);
   width: 2px;
-  background: var(--linha);
+  background: var(--color-border);
 }
 
 .linha-do-tempo li:last-child {
@@ -788,6 +1168,7 @@ select {
   grid-column: 2;
   max-width: 70ch;
   margin: 0.5rem 0 0;
+  color: var(--color-muted);
   /* Contas longas (com valores em reais) quebram em vez de passar da tela. */
   overflow-wrap: anywhere;
 }
@@ -845,13 +1226,14 @@ select {
   margin-bottom: 0.75rem;
 }
 
-/* Avisos e rodapé */
+/* "Antes de usar" */
 
 .aviso {
-  padding: 1.25rem 1.5rem;
+  padding: 1.5rem 1.75rem;
   background: var(--aviso-fundo);
-  border-left: 4px solid var(--aviso-borda);
-  border-radius: 0.5rem;
+  border: 1px solid var(--color-border);
+  border-left: 3px solid var(--aviso-borda);
+  border-radius: var(--radius);
 }
 
 .aviso ul {
@@ -864,6 +1246,10 @@ select {
   break-inside: avoid;
 }
 
+.aviso li:last-child {
+  margin-bottom: 0;
+}
+
 @media (min-width: 48rem) {
   .aviso ul {
     columns: 2;
@@ -871,9 +1257,50 @@ select {
   }
 }
 
+/* Rodapé, como o do portfólio: linha em cima, lema à esquerda e créditos à direita. */
 .rodape {
-  padding-top: 2rem;
-  padding-bottom: 2.5rem;
-  color: var(--texto-suave);
-  font-size: 0.9375rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem 2rem;
+  width: calc(100% - 2 * var(--gutter));
+  max-width: calc(var(--page-width) - 2 * var(--gutter));
+  margin: var(--section-gap) auto 0;
+  padding: 2rem 0 3rem;
+  border-top: 1px solid var(--color-border);
+  color: var(--color-subtle);
+  font-size: 0.875rem;
+}
+
+.rodape p {
+  margin: 0;
+}
+
+.rodape-lema {
+  color: var(--color-muted);
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+}
+
+/* Sublinhado: no meio do texto, o link não pode depender só da cor. */
+.rodape-meta a {
+  color: var(--color-muted);
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+/* Respeita quem pediu ao sistema para reduzir animações. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  html {
+    scroll-behavior: auto;
+  }
 }

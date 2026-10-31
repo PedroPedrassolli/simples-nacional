@@ -1,6 +1,13 @@
+import { ANEXOS } from "./anexos.js";
 import { dataBrasileira, semQuebra } from "./valores.js";
 
-const ROMANOS = { 1: "I", 2: "II", 3: "III", 4: "IV", 5: "V" };
+// "III – Serviços e locação de bens móveis": o mesmo nome curto da lista de anexos. O
+// título completo da lei ("Locação de bens móveis e serviços não relacionados no § 5º-C")
+// confundia quem presta serviço e caiu no Anexo III pelo Fator R.
+function nomeDoAnexo(numero) {
+  const anexo = ANEXOS.find((opcao) => opcao.valor === String(numero));
+  return anexo.rotulo.replace(/^Anexo /, "");
+}
 
 // O resultado com cara de guia: o DAS em destaque, um "picote" e, embaixo, o resumo e a
 // divisão entre os tributos. A conta passo a passo fica em ContaPassoAPasso, em largura
@@ -36,7 +43,7 @@ export default function Resultado({ resultado, refTitulo, desatualizado }) {
           rotulo="Faixa"
           valor={`${resultado.faixa}ª, alíquota nominal de ${resultado.aliquota_nominal}`}
         />
-        <Item rotulo="Anexo" valor={`${ROMANOS[resultado.anexo]}: ${resultado.anexo_nome}`} largo />
+        <Item rotulo="Anexo" valor={nomeDoAnexo(resultado.anexo)} largo />
       </dl>
 
       <Tributos resultado={resultado} />
