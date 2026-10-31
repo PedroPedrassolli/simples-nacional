@@ -18,7 +18,7 @@ describe "fixtures dos testes da página" do
   }.each do |arquivo, parametros|
     it "#{arquivo} é a resposta atual da API" do
       _status, corpo = subject.responder(parametros)
-      guardado = JSON.parse(File.read(File.expand_path("../web/e2e/fixtures/#{arquivo}", __dir__)))
+      guardado = JSON.parse(File.read(File.expand_path("../web/e2e/fixtures/#{arquivo}", __dir__), encoding: "UTF-8"))
       assert_equal guardado, JSON.parse(JSON.generate(corpo))
     end
   end

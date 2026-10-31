@@ -50,7 +50,7 @@ describe "api/cnpj.rb" do
 
   # Os testes da página (web/e2e) simulam esta API com web/e2e/fixtures/cnpj.json.
   it "devolve o mesmo que a fixture dos testes da página" do
-    guardado = JSON.parse(File.read(File.expand_path("../web/e2e/fixtures/cnpj.json", __dir__)))
+    guardado = JSON.parse(File.read(File.expand_path("../web/e2e/fixtures/cnpj.json", __dir__), encoding: "UTF-8"))
     assert_equal guardado, subject
   end
 

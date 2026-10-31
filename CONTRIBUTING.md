@@ -99,6 +99,10 @@ opcionais na hora certa; um teste confere que ele bate com o YAML.
   LC 214/2025 (card SIMP-16): não basta trocar o ano.
 - O script `.github/scripts/jira-transition.sh` nunca deixa um job vermelho: se o card não
   existe, o Jira não responde ou os secrets faltam, ele só avisa.
+- O `rodape-pr.yml` tira sozinho do corpo de PRs e comentários o rodapé que ferramentas
+  acrescentam ao criar o texto pela API. Não precisa editar à mão.
+- Arquivos com acento (fixtures, YAML) são lidos com `encoding: "UTF-8"`: sem isso, numa
+  máquina sem locale UTF-8 o Ruby lê em US-ASCII e o teste quebra no primeiro "ç".
 - Nunca escreva o marcador que pula a CI (colchetes com "skip ci") numa mensagem de
   commit, nem citado: ele pula a CI do push e do PR, e o PR não entra.
 - **Vercel no plano gratuito:** o espaço de deploys (10 GB) é um só para a conta toda.
