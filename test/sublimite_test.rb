@@ -18,7 +18,7 @@ describe SimplesNacional::Sublimite do
   def porcento(texto) = Rational(texto) / 100
 
   it "lê o sublimite de 2025 e de 2026 com a fonte" do
-    assert_equal [360_000_000, 360_000_000], [2025, 2026].map { |ano| SimplesNacional::Sublimite.valor(ano) }
+    assert_equal([360_000_000, 360_000_000], [2025, 2026].map { |ano| SimplesNacional::Sublimite.valor(ano) })
     assert_match(/Portaria CGSN nº 54/, SimplesNacional::Sublimite.anos.fetch(2026)[:ato])
   end
 
@@ -190,7 +190,7 @@ describe SimplesNacional::Sublimite do
 
     it "compara a receita de 2025 com o sublimite proporcional" do
       resultado = calcular(**inicio, receita_ano_anterior: 200_000_000)
-      assert_equal [:fora, :ano_anterior], [resultado.situacao.tipo, resultado.situacao.motivo]
+      assert_equal %i[fora ano_anterior], [resultado.situacao.tipo, resultado.situacao.motivo]
     end
 
     it "recusa receita de 2025 acima do limite proporcional" do
