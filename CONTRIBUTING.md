@@ -52,6 +52,13 @@ falha enquanto elas forem diferentes da resposta atual.
    faixa não entra ICMS nem ISS.
 3. Abra o PR com o link do trecho da lei na descrição.
 
+## Atualizar o sublimite
+
+Todo fim de ano o Comitê Gestor divulga o sublimite do ano seguinte (notícia no Portal do
+Simples Nacional e portaria no DOU). Acrescente o ano em `data/sublimite.yml` com o ato e o
+link. Se algum estado adotar R$ 1.800.000,00, o arquivo é recusado de propósito: a conta muda
+(4ª faixa, Res. CGSN 140/2018, art. 24, I, b, 1) e o formulário passa a precisar da UF.
+
 ## Cuidados
 
 - A CI roda em todo PR, inclusive nos que só mudam arquivos `.md`: o merge automático

@@ -164,6 +164,28 @@ test("aponta o campo com problema sem chamar a API", async ({ page }) => {
   expect(chamadas).toHaveLength(0);
 });
 
+test("manda a receita do ano para o sublimite e mostra o aviso da API", async ({ page }) => {
+  const aviso =
+    "Parte da receita do mês passou do sublimite: o ICMS dessa parte segue outra regra.";
+  const chamadas = await simularApi(page, { status: 200, corpo: { ...ANEXO_3, aviso } });
+  await page.goto("/");
+  await page.getByLabel("Mês de apuração").selectOption("2026-10");
+  await page.getByLabel("Receita bruta de 2026 até o mês anterior").fill("3.300.000");
+  await page.getByLabel("Receita bruta de 2025").fill("3.500.000");
+  await preencher(page, { periodo: "2026-10", rbt12: "3.900.000", receita: "400.000", anexo: "1" });
+
+  expect(chamadas[0].get("receita_ano")).toBe("3300000.00");
+  expect(chamadas[0].get("receita_ano_anterior")).toBe("3500000.00");
+  await expect(page.getByText(aviso)).toBeVisible();
+});
+
+test("esconde a receita do ano em janeiro", async ({ page }) => {
+  await page.goto("/");
+  await page.getByLabel("Mês de apuração").selectOption("2026-01");
+  await expect(page.getByLabel("Receita bruta de 2026 até o mês anterior")).toHaveCount(0);
+  await expect(page.getByLabel("Receita bruta de 2025")).toBeVisible();
+});
+
 test("mostra a mensagem de erro da API", async ({ page }) => {
   const erro = "A receita bruta dos 12 meses anteriores (RBT12) precisa ser maior que zero.";
   await simularApi(page, { status: 400, corpo: { erro } });

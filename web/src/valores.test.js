@@ -136,11 +136,11 @@ test("muda os rótulos da receita e da folha no início de atividade", () => {
     textosDosCampos("2026-03", "").receita,
     "Receita bruta dos 12 meses anteriores (RBT12)",
   );
-  assert.deepEqual(textosDosCampos("2026-03", "2026-03"), {
-    receita: null,
-    dicaReceita: null,
-    folha: "Folha de salários do mês",
-  });
+  const primeiroMes = textosDosCampos("2026-03", "2026-03");
+  assert.deepEqual(
+    [primeiroMes.receita, primeiroMes.dicaReceita, primeiroMes.folha],
+    [null, null, "Folha de salários do mês"],
+  );
   assert.equal(
     textosDosCampos("2026-03", "2025-11").dicaReceita,
     "A soma dos 4 meses antes de março de 2026. A conta tira a média e multiplica por 12.",
@@ -163,4 +163,44 @@ test("descreve a situação no Simples da consulta de CNPJ", () => {
     "Não consta como optante pelo Simples Nacional (exclusão em 01/07/2007).",
   );
   assert.equal(textoSimples({ optante: false }), "Não consta como optante pelo Simples Nacional.");
+});
+
+test("mostra os campos do sublimite só quando fazem sentido", () => {
+  assert.deepEqual(
+    [textosDosCampos("2026-03", "").receitaAno, textosDosCampos("2026-03", "").receitaAnoAnterior],
+    ["Receita bruta de 2026 até o mês anterior", "Receita bruta de 2025"],
+  );
+  // Janeiro: não há meses antes no ano.
+  assert.equal(textosDosCampos("2026-01", "").receitaAno, null);
+  // Começou no próprio ano: a receita do ano já é a desde o início, e não há ano anterior.
+  assert.deepEqual(
+    [
+      textosDosCampos("2026-08", "2026-06").receitaAno,
+      textosDosCampos("2026-08", "2026-06").receitaAnoAnterior,
+    ],
+    [null, null],
+  );
+  assert.equal(textosDosCampos("2026-03", "2025-11").receitaAnoAnterior, "Receita bruta de 2025");
+  assert.equal(textosDosCampos("", "").receitaAno, null);
+});
+
+test("manda os campos do sublimite só quando preenchidos", () => {
+  const base = { periodo: "2026-10", rbt12: "3.900.000", receita_mes: "400.000", anexo: "1" };
+  assert.equal(conferir(base).parametros.receita_ano, undefined);
+  const { parametros, erros } = conferir({
+    ...base,
+    receita_ano: "3.300.000",
+    receita_ano_anterior: "",
+  });
+  assert.deepEqual(erros, {});
+  assert.equal(parametros.receita_ano, "3300000.00");
+  assert.equal(parametros.receita_ano_anterior, undefined);
+  assert.deepEqual(conferir({ ...base, receita_ano_anterior: "abc" }).erros, {
+    receita_ano_anterior: "Use só números, como 500.000,00.",
+  });
+  // Em janeiro a receita do ano não vai, mesmo preenchida.
+  assert.equal(
+    conferir({ ...base, periodo: "2026-01", receita_ano: "1" }).parametros.receita_ano,
+    undefined,
+  );
 });

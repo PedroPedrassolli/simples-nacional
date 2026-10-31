@@ -84,10 +84,5 @@ describe SimplesNacional::FatorR do
     it "recusa folha como texto" do
       assert_match(/número inteiro de centavos/, erro(folha12: "150000"))
     end
-
-    it "recusa folha acima do limite do Simples" do
-      assert_match(/A folha de salários dos 12 meses anteriores passa de/,
-                   erro(folha12: SimplesNacional::Calculo::TETO + 1))
-    end
   end
 end

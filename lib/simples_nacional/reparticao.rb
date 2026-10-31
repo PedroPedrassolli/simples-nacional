@@ -7,11 +7,15 @@ module SimplesNacional
   #   (Resolução CGSN nº 140/2018, art. 21, III; tabelas "Percentual de Repartição dos
   #   Tributos" dos Anexos I a V da LC 123/2006)
   #
-  # Dois ajustes da mesma regra:
+  # Ajustes da mesma regra:
   # - ISS de no máximo 5%; o que passar vai para os tributos federais, na proporção de cada
   #   um (art. 21, III, a, e as notas dos Anexos III e IV);
   # - na 6ª faixa, a alíquota da tabela cobre só os tributos federais. O ICMS ou o ISS usa a
-  #   alíquota efetiva da 5ª faixa calculada com a RBT12 (art. 21, III, b).
+  #   alíquota efetiva da 5ª faixa calculada com a RBT12 (art. 21, III, b);
+  # - sublimite (ver Sublimite): fora do DAS, o ICMS/ISS sai da conta; na parte da receita
+  #   acima do sublimite, ele usa a alíquota efetiva da 5ª faixa com R$ 3.600.000,00 (art. 24,
+  #   I, b, 2). O teto de 5% do ISS vale também aí: o art. 21, III, a, define o máximo do
+  #   percentual efetivo do ISS para toda a Resolução.
   #
   # https://normas.receita.fazenda.gov.br/sijut2consulta/link.action?idAto=92278 (conferido em 27/10/2026)
   module Reparticao
@@ -19,10 +23,31 @@ module SimplesNacional
 
     # Percentual efetivo de cada tributo, na ordem do anexo: { "IRPJ" => Rational, ... }.
     # A soma é o percentual que o DAS aplica sobre a receita do mês.
-    def self.percentuais(anexo, faixa, rbt12, efetiva)
-      federais = faixa.reparticao.except(*Tabelas::LOCAIS).transform_values { |parte| efetiva * parte }
-      local = imposto_local(anexo)
-      com_teto_do_iss(federais.merge(local => percentual_local(anexo, faixa, rbt12, efetiva)), faixa)
+    def self.percentuais(anexo, faixa, rbt12, efetiva, situacao = Sublimite::NO_DAS)
+      normais = com_local(anexo, faixa, efetiva, percentual_local(anexo, faixa, rbt12, efetiva))
+      case situacao.tipo
+      when :no_das then normais
+      # Na 6ª faixa, sem o ICMS/ISS do art. 21, III, b, não há teto a redistribuir.
+      when :fora then faixa.numero == 6 ? federais(faixa, efetiva) : normais.except(imposto_local(anexo))
+      else misturar(normais, com_local(anexo, faixa, efetiva, percentual_majorado(anexo)), situacao.fracao)
+      end
+    end
+
+    def self.federais(faixa, efetiva) = faixa.reparticao.except(*Tabelas::LOCAIS).transform_values { efetiva * _1 }
+
+    def self.com_local(anexo, faixa, efetiva, local)
+      com_teto_do_iss(federais(faixa, efetiva).merge(imposto_local(anexo) => local), faixa)
+    end
+
+    # Percentual do ICMS ou do ISS na parte da receita acima do sublimite.
+    def self.percentual_majorado(anexo)
+      quinta = anexo.faixas[4]
+      Calculo.aliquota_efetiva(quinta, Sublimite::VALOR) * quinta.reparticao.fetch(imposto_local(anexo))
+    end
+
+    # Parte da receita com cada percentual: (1 − fração) com os normais, fração com os majorados.
+    def self.misturar(normais, majorados, fracao)
+      normais.to_h { |nome, percentual| [nome, ((1 - fracao) * percentual) + (fracao * majorados.fetch(nome))] }
     end
 
     # ICMS nos Anexos I e II, ISS nos Anexos III, IV e V. A 1ª faixa sempre tem um dos dois.
@@ -56,6 +81,6 @@ module SimplesNacional
       federais.transform_values { |parte| parte / soma }
     end
 
-    private_class_method :com_teto_do_iss, :pesos_federais
+    private_class_method :federais, :com_local, :misturar, :com_teto_do_iss, :pesos_federais
   end
 end
