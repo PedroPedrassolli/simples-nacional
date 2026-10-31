@@ -75,6 +75,10 @@ opcionais na hora certa; um teste confere que ele bate com o YAML.
 - A página é pré-renderizada no build (`web/scripts/prerender.mjs`): o HTML já sai pronto e o
   React só hidrata. O primeiro desenho do `App` precisa ser igual no build e no navegador:
   nada de `window`, data atual ou número aleatório durante o render (use `useEffect`).
+- Layout da página: no computador, só o formulário e o resultado ficam lado a lado. O que
+  abre e fecha e pode crescer (passo a passo, consulta de CNPJ) vai em largura total, embaixo
+  (`.layout` no `estilo.css`); senão uma coluna fica muito mais alta que a outra. Mudou o visual?
+  Confira com as partes abertas em 320 px e em 1280 px, nos dois temas.
 - A CSP da página não permite `style` inline. Largura que depende de dado (as barras da
   divisão do DAS) vai como atributo de SVG, não como `style={{ width }}`.
 - As dicas dos anexos (`web/src/anexos.js`) resumem o art. 18 da LC 123/2006, com a data em
