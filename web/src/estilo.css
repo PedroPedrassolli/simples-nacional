@@ -260,6 +260,32 @@ button:disabled {
   margin: 0;
 }
 
+.grupo {
+  display: grid;
+  gap: 1rem;
+  margin: 0;
+  padding: 1rem;
+  border: 1px solid var(--borda);
+  border-radius: 0.5rem;
+}
+
+.grupo legend {
+  padding: 0 0.25rem;
+  font-weight: 600;
+}
+
+.grupo .dica {
+  margin: 0;
+}
+
+.aviso-resultado {
+  margin: 1rem 0 0;
+  padding: 0.75rem 1rem;
+  background: var(--aviso-fundo);
+  border-left: 4px solid var(--aviso-borda);
+  border-radius: 0.5rem;
+}
+
 .tributos {
   width: 100%;
   margin: 0 0 1rem;

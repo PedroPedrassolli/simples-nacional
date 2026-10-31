@@ -71,9 +71,15 @@ export function mesesDeAtividade(periodo, inicio) {
   return contar(periodo) - contar(inicio);
 }
 
-// Rótulos dos campos de receita e folha, que mudam no início de atividade. receita: null
-// quando o campo não é pedido (1º mês: a conta usa a receita do mês × 12).
+// Rótulos dos campos que mudam conforme o mês e o início de atividade. receita: null
+// quando a receita anterior não é pedida (1º mês: a conta usa a receita do mês × 12).
+// receitaAno e receitaAnoAnterior: null quando o campo do sublimite não faz sentido
+// (em janeiro não há meses antes no ano; quem começou no ano não tem ano anterior).
 export function textosDosCampos(periodo, inicio) {
+  return { ...textosDaReceita(periodo, inicio), ...textosDoSublimite(periodo, inicio) };
+}
+
+function textosDaReceita(periodo, inicio) {
   const meses = mesesDeAtividade(periodo, inicio);
   if (meses === null) {
     return {
@@ -92,10 +98,21 @@ export function textosDosCampos(periodo, inicio) {
   };
 }
 
+function textosDoSublimite(periodo, inicio) {
+  if (!periodo) return { receitaAno: null, receitaAnoAnterior: null };
+  const [ano, mes] = periodo.split("-").map(Number);
+  const comecouNoAno = Boolean(inicio) && Number(inicio.slice(0, 4)) === ano;
+  return {
+    receitaAno: mes > 1 && !comecouNoAno ? `Receita bruta de ${ano} até o mês anterior` : null,
+    receitaAnoAnterior: comecouNoAno ? null : `Receita bruta de ${ano - 1}`,
+  };
+}
+
 // Confere o formulário antes de chamar a API. Devolve os parâmetros da URL e os erros
 // por campo (vazio quando está tudo certo). A folha só é pedida no Fator R, e a receita
 // anterior não é pedida no 1º mês de atividade.
-export function conferir({ periodo, inicio, rbt12, receita_mes, anexo, folha12 }) {
+export function conferir(valores) {
+  const { periodo, inicio, rbt12, receita_mes, anexo, folha12 } = valores;
   const erros = {};
   const parametros = { periodo, anexo, ...(inicio ? { inicio } : {}) };
   const primeiroMes = mesesDeAtividade(periodo, inicio) === 0;
@@ -104,6 +121,14 @@ export function conferir({ periodo, inicio, rbt12, receita_mes, anexo, folha12 }
     receita_mes,
     ...(anexo === "fator_r" ? { folha12 } : {}),
   };
+  // Os campos do sublimite são opcionais: em branco, não vão para a API.
+  const textos = textosDoSublimite(periodo, inicio);
+  for (const [nome, rotulo] of [
+    ["receita_ano", textos.receitaAno],
+    ["receita_ano_anterior", textos.receitaAnoAnterior],
+  ]) {
+    if (rotulo && String(valores[nome] ?? "").trim() !== "") campos[nome] = valores[nome];
+  }
 
   for (const [nome, texto] of Object.entries(campos)) {
     const valor = paraApi(texto);

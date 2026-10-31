@@ -12,6 +12,8 @@ export default function Resultado({ resultado, refTitulo }) {
         DAS estimado: {resultado.das}
       </h2>
 
+      {resultado.aviso && <p className="aviso-resultado">{resultado.aviso}</p>}
+
       <dl className="resumo">
         <div>
           <dt>Mês de apuração</dt>

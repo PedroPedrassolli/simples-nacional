@@ -24,6 +24,16 @@ A pessoa informa o mês de apuração (por enquanto, meses de 2026), a receita b
 segue a mesma regra (art. 26, § 4º). RBT12 zero vale R$ 1,00 só para achar a alíquota
 (art. 21, parágrafo único), e RBT12 acima de R$ 4,8 milhões usa a última faixa (art. 22, § 5º).
 
+**Sublimite do ICMS e do ISS:** em 2025 e 2026 é R$ 3.600.000,00 em todos os estados e no DF
+(Portarias CGSN nº 49/2024 e nº 54/2025), por isso a calculadora não pergunta a UF. Com a receita
+do ano até o mês anterior e a do ano passado, ela aplica as regras da LC 123/2006 (arts. 13-A,
+19 e 20) e da Resolução CGSN nº 140/2018 (arts. 12 e 24): na 6ª faixa o ICMS ou o ISS vem da 5ª;
+a parte da receita acima do sublimite usa a alíquota da 5ª faixa no valor do sublimite; com
+excesso de mais de 20%, ou se a receita do ano passado já passou, o ICMS/ISS sai do DAS (a
+calculadora avisa e não estima esse valor). No ano de início, o sublimite é proporcional
+(R$ 300.000,00 por mês). Receita do ano acima de R$ 4.800.000,00 tira a empresa do Simples: a
+calculadora explica e não calcula.
+
 Quando a atividade pode cair no Anexo III ou no V, a calculadora aplica o **Fator R**:
 folha de salários dos últimos 12 meses ÷ RBT12. Com 28% ou mais, a atividade vai para o
 Anexo III; abaixo disso, para o V (art. 18, §§ 5º-J, 5º-K e 5º-M).
@@ -47,8 +57,9 @@ repartição de uma faixa não somar 100%.
 - **Só 2026:** a partir de 1º/1/2027 os Anexos I a V passam a ter a redação da LC 214/2025
   (art. 519), com a CBS e o IBS na divisão do DAS. A calculadora recusa meses de 2027 até ter
   essas tabelas.
-- Ainda não trata: sublimites estaduais, locação de bens móveis (Anexo III sem o ISS) e
-  comparação entre anexos.
+- Ainda não trata: empresa que passou de R$ 4,8 milhões no ano (a parte acima do limite tem
+  outra conta até a exclusão), receitas de mais de um anexo no mesmo mês, locação de bens
+  móveis (Anexo III sem o ISS) e comparação entre anexos.
 
 ## Como funciona
 
@@ -92,14 +103,18 @@ SimplesNacional.calcular(periodo: "2026-03", inicio: "2025-11", rbt12: 10_000_00
 GET /api/calcular?periodo=2026-03&rbt12=500000.00&receita_mes=40000.00&anexo=3
 GET /api/calcular?periodo=2026-03&rbt12=500000.00&receita_mes=40000.00&anexo=fator_r&folha12=150000.00
 GET /api/calcular?periodo=2026-03&inicio=2025-11&rbt12=100000.00&receita_mes=30000.00&anexo=1
+GET /api/calcular?periodo=2026-10&rbt12=3900000.00&receita_mes=400000.00&anexo=1&receita_ano=3300000.00&receita_ano_anterior=3500000.00
 ```
 
 Valores em reais, com ponto e até duas casas; meses como `AAAA-MM`. Com `inicio`, `rbt12` é a
-receita desde o início das atividades (no 1º mês, não vai). A resposta traz `periodo`,
+receita desde o início das atividades (no 1º mês, não vai). `receita_ano` (receita do ano até
+o mês anterior) e `receita_ano_anterior` são opcionais: a API pede a primeira quando a RBT12
+mais a receita do mês passa do sublimite. A resposta traz `periodo`,
 `periodo_nome`, `rbt12` (a usada na conta), `anexo`, `faixa`, `fator_r`,
 `aliquota_nominal`, `aliquota_efetiva`, `das` (já formatados), `das_centavos`, os `tributos`
 (nome, percentual sobre a receita e valor de cada um), os `passos` e a `tabela` usada (fonte,
-redação e vigência). Entrada inválida responde 400 com `erro`.
+redação e vigência) e `aviso` (texto quando o ICMS/ISS sai do DAS ou muda de regra, senão
+`null`). Entrada inválida responde 400 com `erro`.
 
 ```
 GET /api/cnpj?cnpj=11.222.333/0001-81
@@ -120,6 +135,9 @@ art. 18 da LC 123/2006.
 - [Resolução CGSN nº 140/2018 (normas da Receita Federal)](https://normas.receita.fazenda.gov.br/sijut2consulta/link.action?idAto=92278):
   percentual efetivo de cada tributo, teto de 5% do ISS e ICMS/ISS na 6ª faixa (art. 21, III),
   RBT12 no início de atividade (art. 22) e folha do Fator R (art. 26). Conferido em 27/10/2026.
+- Sublimite: [Portal do Simples Nacional, 2026 (Portaria CGSN nº 54/2025)](https://www8.receita.fazenda.gov.br/SIMPLESNACIONAL/noticias/NoticiaCompleta.aspx?id=94c10cc2-7eb5-4ef0-bfb2-5479e72caff8)
+  e [2025 (Portaria CGSN nº 49/2024)](https://www8.receita.fazenda.gov.br/SIMPLESNACIONAL/noticias/NoticiaCompleta.aspx?id=24d7bd11-494d-4ed4-8e28-bb59a8d480e7),
+  em `data/sublimite.yml`. Conferido em 27/10/2026.
 - [Lei Complementar nº 214/2025 (Planalto)](https://www.planalto.gov.br/ccivil_03/leis/lcp/lcp214.htm):
   novos Anexos I a V a partir de 1º/1/2027 (art. 519; art. 544, III). Conferido em 27/10/2026.
 - [Portal do Simples Nacional: opção pelo regime regular do IBS e da CBS para 2027](https://www8.receita.fazenda.gov.br/simplesnacional/noticias/NoticiaCompleta.aspx?id=c739e03c-8482-473f-8e82-f38ec3b13637).

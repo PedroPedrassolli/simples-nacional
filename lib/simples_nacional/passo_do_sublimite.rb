@@ -21,23 +21,27 @@ module SimplesNacional
         "O #{local} deste mês não entra no DAS: é pago à parte, pelas regras normais do " \
           "#{local == 'ICMS' ? 'estado' : 'município'}. A calculadora não estima esse valor."
       when :majorado
-        "Parte da receita do mês passou do sublimite: o #{local} dessa parte usa um percentual maior. " \
+        "Parte da receita do mês passou do sublimite: o #{local} dessa parte segue outra regra. " \
           "Veja o passo a passo."
       end
     end
 
     def self.texto_do_ano_anterior(dados, local)
+      return texto_fora_pelo_ano_anterior(dados, local) if dados.situacao.motivo == :ano_anterior
+
       ano = dados.periodo.year - 1
-      if dados.situacao.motivo == :ano_anterior
-        return "A receita de #{ano}, #{Formato.reais(dados.receita_ano_anterior)}, passou do sublimite. Por isso, " \
-               "em #{ano + 1} o #{local} não entra no DAS: é pago à parte, pelas regras normais."
-      end
       return if dados.inicio&.year.to_i > ano
       return "A receita de #{ano} não passou do sublimite." if dados.receita_ano_anterior
       return unless dados.rbt12 > dados.situacao.sublimite
 
       "Sem a receita de #{ano}, a conta considera que ela não passou do sublimite; se passou, o #{local} " \
         "de #{ano + 1} é pago fora do DAS."
+    end
+
+    def self.texto_fora_pelo_ano_anterior(dados, local)
+      ano = dados.periodo.year
+      "A receita de #{ano - 1}, #{Formato.reais(dados.receita_ano_anterior)}, passou do sublimite. Por isso, " \
+        "em #{ano} o #{local} não entra no DAS: é pago à parte, pelas regras normais."
     end
 
     def self.texto_do_ano(tabela, dados, local)
@@ -76,12 +80,17 @@ module SimplesNacional
       situacao = dados.situacao
       parte = "A parte da receita do mês acima dele, #{Formato.reais(dados.receita_mes * situacao.fracao)},"
       parte = "Toda a receita do mês" if situacao.fracao == 1
-      percentual = Reparticao.percentual_majorado(tabela)
-      teto = " (o ISS fica limitado a 5%)" if local == "ISS" && percentual > Reparticao::TETO_ISS
       efeito = situacao.motivo == :ate_20 ? "só no ano seguinte" : "a partir do mês seguinte"
       "#{parte} paga o #{local} com a alíquota efetiva da 5ª faixa calculada com " \
-        "#{Formato.reais(Sublimite::VALOR)}, vezes o percentual do #{local}: " \
-        "#{Formato.percentual(percentual, 4)}#{teto}. Pelo tamanho do excesso, o #{local} sai do DAS #{efeito}."
+        "#{Formato.reais(Sublimite::VALOR)}, vezes o percentual do #{local}: #{percentual_majorado(tabela, local)}. " \
+        "Pelo tamanho do excesso, o #{local} sai do DAS #{efeito}."
+    end
+
+    # "3,9781%", ou "5,8658% (o ISS fica limitado a 5%)".
+    def self.percentual_majorado(tabela, local)
+      percentual = Reparticao.percentual_majorado(tabela)
+      texto = Formato.percentual(percentual, 4)
+      local == "ISS" && percentual > Reparticao::TETO_ISS ? "#{texto} (o ISS fica limitado a 5%)" : texto
     end
 
     def self.fonte(situacao)
@@ -92,7 +101,7 @@ module SimplesNacional
       end
     end
 
-    private_class_method :texto_do_ano_anterior, :texto_do_ano, :texto_do_sublimite, :texto_do_excesso,
-                         :texto_majorado, :fonte
+    private_class_method :texto_do_ano_anterior, :texto_fora_pelo_ano_anterior, :texto_do_ano, :texto_do_sublimite,
+                         :texto_do_excesso, :texto_majorado, :percentual_majorado, :fonte
   end
 end

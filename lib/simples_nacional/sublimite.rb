@@ -7,8 +7,9 @@ module SimplesNacional
   #
   # - Passou do sublimite no ano anterior: o ICMS/ISS do ano todo fica fora do DAS (LC
   #   123/2006, art. 20, §§ 1º e 1º-A; Res. CGSN 140/2018, art. 12, §§ 1º e 5º).
-  # - Passou no ano: a parte da receita acima do sublimite paga o ICMS/ISS com um
-  #   percentual maior (Res. CGSN 140/2018, art. 24, I) até os efeitos do impedimento, que
+  # - Passou no ano: a parte da receita acima do sublimite paga o ICMS/ISS pela alíquota
+  #   efetiva da 5ª faixa no valor do sublimite (Res. CGSN 140/2018, art. 24, I; LC 123/2006,
+  #   art. 18, §§ 17 e 17-A) até os efeitos do impedimento, que
   #   começam no mês seguinte (excesso de mais de 20%) ou no ano seguinte (até 20%) (art. 12, § 1º).
   # - No ano de início de atividade, o sublimite é proporcional: R$ 300.000,00 por mês, do
   #   início até dezembro; com excesso de mais de 20%, o impedimento volta ao início (art. 12,
@@ -27,8 +28,8 @@ module SimplesNacional
     # Excesso de mais de 20% antecipa os efeitos (art. 12, § 1º, I, e § 4º, I).
     TOLERANCIA = Rational(6, 5)
 
-    # tipo: :no_das, :majorado (parte da receita do mês com o percentual maior) ou :fora.
-    # fracao: a parte da receita do mês com o percentual maior (0 a 1).
+    # tipo: :no_das, :majorado (parte da receita do mês com o percentual do art. 24) ou :fora.
+    # fracao: a parte da receita do mês com esse percentual (0 a 1).
     # sublimite: o do ano (proporcional no ano de início). receita_ano: a receita do ano
     # antes do mês, ou nil quando não foi preciso saber. motivo: o caso, para o passo.
     Situacao = Data.define(:tipo, :fracao, :sublimite, :receita_ano, :motivo)
@@ -45,19 +46,46 @@ module SimplesNacional
       return NO_DAS.with(sublimite:) if receita_ano.nil?
 
       conferir_limite(receita_ano + dados.receita_mes, ano, dados.inicio)
+      conferir_ano_anterior(dados, receita_ano)
       no_ano(dados, sublimite, receita_ano)
+    end
+
+    # A parte do ano passado dentro da RBT12 (RBT12 − receita deste ano) não pode ser maior
+    # que a receita do ano passado inteiro.
+    def self.conferir_ano_anterior(dados, receita_ano)
+      anterior = dados.receita_ano_anterior
+      return if anterior.nil? || dados.rbt12_informada.nil? || inicio_no_ano?(dados)
+      return if anterior >= dados.rbt12_informada - receita_ano
+
+      raise Entrada::EntradaInvalida, "A receita de #{dados.periodo.year - 1} não pode ser menor que a parte " \
+                                      "dela dentro da RBT12 (#{Formato.reais(dados.rbt12_informada - receita_ano)})."
     end
 
     # Com a receita do ano conhecida: dentro do sublimite, acima dele ou já fora do DAS.
     def self.no_ano(dados, sublimite, receita_ano)
       total = receita_ano + dados.receita_mes
       base = NO_DAS.with(sublimite:, receita_ano:)
-      return base.with(tipo: :fora, motivo: :inicio) if inicio_no_ano?(dados) && total > sublimite * TOLERANCIA
-      return base.with(tipo: :fora, motivo: :excesso) if receita_ano > sublimite * TOLERANCIA
+      motivo = motivo_fora(dados, sublimite * TOLERANCIA, receita_ano, total)
+      return base.with(tipo: :fora, motivo:) if motivo
       return base if total <= sublimite
 
-      fracao = Rational(total - [receita_ano, sublimite].max, dados.receita_mes)
-      base.with(tipo: :majorado, fracao:, motivo: total > sublimite * TOLERANCIA ? :mais_de_20 : :ate_20)
+      majorado(base, total, dados.receita_mes)
+    end
+
+    # Excesso de mais de 20%: no ano de início, conta a receita com este mês e o impedimento
+    # volta ao início (art. 12, § 4º, I); nos outros anos, o ICMS/ISS sai a partir do mês
+    # seguinte ao excesso, então conta a receita até o mês anterior (art. 12, § 1º, I).
+    def self.motivo_fora(dados, tolerancia, receita_ano, total)
+      return :inicio if inicio_no_ano?(dados) && total > tolerancia
+
+      :excesso if receita_ano > tolerancia
+    end
+
+    # A parte da receita do mês acima do sublimite (tudo, se ele já tinha passado antes).
+    def self.majorado(base, total, receita_mes)
+      fracao = Rational(total - [base.receita_ano, base.sublimite].max, receita_mes)
+      motivo = total > base.sublimite * TOLERANCIA ? :mais_de_20 : :ate_20
+      base.with(tipo: :majorado, fracao:, motivo:)
     end
 
     # Sublimite ou limite no ano de início: valor ÷ 12 × meses do início até dezembro,
@@ -116,10 +144,12 @@ module SimplesNacional
     end
 
     # { 2025 => { valor:, ato:, fonte: } } do data/sublimite.yml, lido uma vez só.
-    def self.anos
-      @anos ||= YAML.safe_load_file(ARQUIVO)["anos"].transform_values do |ano|
+    def self.anos = @anos ||= ler(ARQUIVO)
+
+    def self.ler(arquivo)
+      YAML.safe_load_file(arquivo)["anos"].transform_values do |ano|
         valor = (Rational(ano["valor"]) * 100).to_i
-        raise "data/sublimite.yml: só o sublimite de R$ 3.600.000,00 tem a fórmula" unless valor == VALOR
+        raise "#{File.basename(arquivo)}: só o sublimite de R$ 3.600.000,00 tem a fórmula" unless valor == VALOR
 
         { valor:, ato: ano["ato"], fonte: ano["fonte"] }
       end
@@ -127,6 +157,7 @@ module SimplesNacional
 
     def self.valor(ano) = anos.fetch(ano)[:valor]
 
-    private_class_method :no_ano, :receita_do_ano, :conferida, :passou_no_ano_anterior?, :conferir_limite, :fora
+    private_class_method :no_ano, :motivo_fora, :majorado, :conferir_ano_anterior, :receita_do_ano, :conferida,
+                         :passou_no_ano_anterior?, :conferir_limite, :fora
   end
 end

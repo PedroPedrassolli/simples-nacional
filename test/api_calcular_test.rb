@@ -123,7 +123,7 @@ describe "api/calcular.rb" do
     end
 
     it "repassa a mensagem da biblioteca para valor acima do limite" do
-      assert_match(/passa de R\$ 4\.800\.000,00/, erro("rbt12" => "4800000.01"))
+      assert_match(/A receita do mês passa de R\$ 4\.800\.000,00/, erro("receita_mes" => "4800000.01"))
     end
 
     it "pede a folha no Fator R" do

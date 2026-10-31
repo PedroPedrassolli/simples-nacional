@@ -24,7 +24,16 @@ const ANEXOS = [
 
 const PERIODOS = MESES_DE_APURACAO.map((mes) => ({ valor: mes, rotulo: nomeDoMes(mes) }));
 
-const VAZIO = { periodo: "", inicio: "", rbt12: "", receita_mes: "", anexo: "", folha12: "" };
+const VAZIO = {
+  periodo: "",
+  inicio: "",
+  rbt12: "",
+  receita_mes: "",
+  receita_ano: "",
+  receita_ano_anterior: "",
+  anexo: "",
+  folha12: "",
+};
 
 export default function Calculadora() {
   const [valores, setValores] = useState(VAZIO);
@@ -105,6 +114,33 @@ export default function Calculadora() {
           erro={erros.receita_mes}
           aoMudar={mudar}
         />
+        {(textos.receitaAno || textos.receitaAnoAnterior) && (
+          <fieldset className="grupo">
+            <legend>Sublimite do ICMS e do ISS (opcional)</legend>
+            <p className="dica">
+              Acima de R$ 3.600.000,00 no ano, o ICMS e o ISS mudam de regra. Em branco, a conta
+              considera que a empresa não passou desse valor; se faltar algum número, ela avisa.
+            </p>
+            {textos.receitaAno && (
+              <CampoReais
+                nome="receita_ano"
+                rotulo={textos.receitaAno}
+                valor={valores.receita_ano}
+                erro={erros.receita_ano}
+                aoMudar={mudar}
+              />
+            )}
+            {textos.receitaAnoAnterior && (
+              <CampoReais
+                nome="receita_ano_anterior"
+                rotulo={textos.receitaAnoAnterior}
+                valor={valores.receita_ano_anterior}
+                erro={erros.receita_ano_anterior}
+                aoMudar={mudar}
+              />
+            )}
+          </fieldset>
+        )}
         <CampoLista
           nome="anexo"
           rotulo="Anexo da atividade"

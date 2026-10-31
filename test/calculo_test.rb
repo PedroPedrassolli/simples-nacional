@@ -9,8 +9,9 @@ describe SimplesNacional::Calculo do
 
   subject { SimplesNacional.calcular(**entrada) }
 
-  # Mesmo mês de apuração em todos os exemplos (2026 é o ano das tabelas).
-  def calcular(**dados) = SimplesNacional.calcular(periodo: "2026-03", **dados)
+  # Janeiro: a receita do ano antes do mês é zero, então a RBT12 alta não esbarra no
+  # sublimite (ver test/sublimite_test.rb) e os exemplos testam só a faixa.
+  def calcular(**dados) = SimplesNacional.calcular(periodo: "2026-01", **dados)
 
   def erro(**mudancas)
     assert_raises(SimplesNacional::Calculo::EntradaInvalida) { SimplesNacional.calcular(**entrada, **mudancas) }.message
@@ -37,7 +38,7 @@ describe SimplesNacional::Calculo do
       # ISS pela 5ª faixa: (4.000.000 × 23% − 62.100) ÷ 4.000.000 = 21,4475%; × 23,5% = 5,0401625%,
       # acima do teto: fica 5% (Res. CGSN 140/2018, art. 21, III, a e b).
       # 300.000 × (17% + 5,0401625%) = 66.120,4875 → 66.120,49.
-      let(:entrada) { { periodo: "2026-03", rbt12: 400_000_000, receita_mes: 30_000_000, anexo: 5 } }
+      let(:entrada) { { periodo: "2026-01", rbt12: 400_000_000, receita_mes: 30_000_000, anexo: 5 } }
 
       it "soma o ISS calculado com a 5ª faixa aos tributos federais" do
         assert_equal 6_612_049, subject.das
@@ -67,7 +68,8 @@ describe SimplesNacional::Calculo do
     end
 
     it "aceita a RBT12 exatamente no limite da empresa de pequeno porte" do
-      assert_equal 6, SimplesNacional.calcular(**entrada, rbt12: SimplesNacional::Calculo::TETO).faixa.numero
+      no_limite = entrada.merge(periodo: "2026-01", rbt12: SimplesNacional::Calculo::TETO)
+      assert_equal 6, SimplesNacional.calcular(**no_limite).faixa.numero
     end
   end
 
@@ -110,7 +112,7 @@ describe SimplesNacional::Calculo do
     describe "quando o arredondamento de cada tributo muda a soma" do
       # Anexo IV, 5ª faixa, com o ISS no teto: a soma dos tributos dá R$ 66.996,58 e o DAS,
       # R$ 66.996,57 (16,74914...% de R$ 400.000,00).
-      let(:entrada) { { periodo: "2026-03", rbt12: 350_000_000, receita_mes: 40_000_000, anexo: 4 } }
+      let(:entrada) { { periodo: "2026-01", rbt12: 350_000_000, receita_mes: 40_000_000, anexo: 4 } }
 
       it "avisa no passo do DAS" do
         assert_equal [6_699_657, 6_699_658], [subject.das, subject.tributos.sum(&:valor)]
@@ -164,10 +166,6 @@ describe SimplesNacional::Calculo do
 
     it "recusa número com casas decimais (Float)" do
       assert_match(/número inteiro de centavos/, erro(receita_mes: 40_000.5))
-    end
-
-    it "recusa RBT12 acima do limite do Simples" do
-      assert_match(/passa de R\$ 4\.800\.000,00/, erro(rbt12: SimplesNacional::Calculo::TETO + 1))
     end
 
     it "recusa receita do mês acima do limite do Simples" do
