@@ -51,6 +51,9 @@ export default function Calculadora({ consulta }) {
   const [tentativasComErro, setTentativasComErro] = useState(0);
   // Número do último pedido à API: uma resposta atrasada de um pedido antigo é ignorada.
   const pedido = useRef(0);
+  // Quantas vezes os campos mudaram: se a pessoa mexer enquanto a API responde, o
+  // resultado que chega já foi calculado com os valores antigos e nasce desatualizado.
+  const mudancas = useRef(0);
   const formulario = useRef(null);
   const tituloResultado = useRef(null);
   const textos = textosDosCampos(valores.periodo, valores.inicio);
@@ -73,6 +76,7 @@ export default function Calculadora({ consulta }) {
     if (name === "periodo" && !mesesDeInicio(value).includes(novos.inicio)) novos.inicio = "";
     // Os valores acabaram de passar do sublimite: abre os campos opcionais dele.
     if (!podePassarDoSublimite(valores) && podePassarDoSublimite(novos)) setSublimiteAberto(true);
+    mudancas.current++;
     if (estado.resultado) setDesatualizado(true);
     setValores(novos);
   }
@@ -102,12 +106,13 @@ export default function Calculadora({ consulta }) {
     }
 
     const estePedido = ++pedido.current;
+    const mudancasNoPedido = mudancas.current;
     setEstado({ carregando: true, resultado: null, erro: null });
     const { resultado, erro } = await calcular(conferido.parametros);
     // Enquanto esperava, a pessoa limpou o formulário ou pediu outro cálculo.
     if (estePedido !== pedido.current) return;
     setEstado({ carregando: false, resultado: resultado ?? null, erro: erro ?? null });
-    setDesatualizado(false);
+    setDesatualizado(mudancas.current !== mudancasNoPedido);
   }
 
   function recomecar(novosValores) {

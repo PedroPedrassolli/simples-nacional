@@ -230,9 +230,24 @@ test("avisa quando os dados mudam depois do cálculo", async ({ page }) => {
   await simularApi(page);
   await page.goto("/");
   await preencher(page, { rbt12: "500000", receita: "40000", anexo: "3" });
+  await expect(page.getByRole("heading", { name: /DAS estimado/ })).toBeVisible();
   await expect(page.getByText("Você mudou os dados")).toHaveCount(0);
 
   await page.getByLabel("Receita bruta do mês").fill("41000");
+  await expect(page.getByText("Você mudou os dados depois deste cálculo")).toBeVisible();
+});
+
+test("avisa também quando os dados mudam enquanto a conta é feita", async ({ page }) => {
+  // A API demora; a pessoa muda a receita antes da resposta chegar.
+  await page.route("**/api/calcular?*", async (route) => {
+    await new Promise((pronto) => setTimeout(pronto, 500));
+    await route.fulfill({ status: 200, json: ANEXO_3 });
+  });
+  await page.goto("/");
+  await preencher(page, { rbt12: "500000", receita: "40000", anexo: "3" });
+  await page.getByLabel("Receita bruta do mês").fill("41000");
+
+  await expect(page.getByRole("heading", { name: /DAS estimado/ })).toBeVisible();
   await expect(page.getByText("Você mudou os dados depois deste cálculo")).toBeVisible();
 });
 

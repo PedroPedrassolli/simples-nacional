@@ -163,6 +163,13 @@ a:hover {
   text-underline-offset: 0.2em;
 }
 
+/* Link no meio de um texto: sublinhado sempre, para não depender só da cor (o axe cobra). */
+p a,
+li a {
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
 :focus-visible {
   outline: 2px solid var(--color-focus);
   outline-offset: 3px;
@@ -276,6 +283,7 @@ main:focus {
 
 .menu a {
   display: block;
+  text-decoration: none;
   padding: 0.375rem 0.875rem;
   border-radius: 999px;
   color: var(--color-muted);
