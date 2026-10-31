@@ -1,0 +1,22 @@
+# Sublimite de receita bruta para recolher o ICMS e o ISS no Simples Nacional.
+#
+# A regra é da LC 123/2006 (art. 13-A e art. 19, § 4º): R$ 3.600.000,00, salvo nos estados
+# com até 1% do PIB que optarem por R$ 1.800.000,00 (art. 19, caput). O Comitê Gestor
+# divulga todo ano quais estados optaram. Em 2025 e em 2026, nenhum: o sublimite é
+# R$ 3.600.000,00 em todos os estados e no Distrito Federal. Por isso a calculadora não
+# pergunta a UF.
+#
+# 2025 entra porque a receita do ano anterior também conta: quem passou do sublimite em 2025
+# não recolhe o ICMS nem o ISS pelo Simples em 2026 (LC 123/2006, art. 20, §§ 1º e 1º-A).
+#
+# valor: em R$, como texto com duas casas (o Ruby converte para centavos).
+conferido_em: "2026-10-27"
+anos:
+  2025:
+    valor: "3600000.00"
+    ato: Portaria CGSN nº 49, de 25 de novembro de 2024 (DOU de 27/11/2024)
+    fonte: https://www8.receita.fazenda.gov.br/SIMPLESNACIONAL/noticias/NoticiaCompleta.aspx?id=24d7bd11-494d-4ed4-8e28-bb59a8d480e7
+  2026:
+    valor: "3600000.00"
+    ato: Portaria CGSN nº 54, de 17 de novembro de 2025 (DOU de 19/11/2025)
+    fonte: https://www8.receita.fazenda.gov.br/SIMPLESNACIONAL/noticias/NoticiaCompleta.aspx?id=94c10cc2-7eb5-4ef0-bfb2-5479e72caff8

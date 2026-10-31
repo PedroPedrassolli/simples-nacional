@@ -22,15 +22,17 @@ module SimplesNacional
     # início de atividade). fator_r: o Fator R, ou nil quando o anexo foi informado.
     # aliquota_efetiva: o percentual que o DAS aplica sobre a receita do mês.
     # tributos: a divisão do DAS, na ordem do anexo.
-    Resultado = Data.define(:periodo, :anexo, :fator_r, :faixa, :rbt12, :aliquota_efetiva, :das, :tributos, :passos)
+    # situacao: o ICMS/ISS e o sublimite (Sublimite::Situacao).
+    Resultado = Data.define(:periodo, :anexo, :fator_r, :faixa, :rbt12, :situacao, :aliquota_efetiva, :das,
+                            :tributos, :passos)
 
     # percentual: parte da receita do mês (Rational); valor: em centavos, arredondado.
     Tributo = Data.define(:nome, :percentual, :valor)
 
     # Recebe os argumentos de Entrada.conferir: periodo ("2026-03"), anexo (1 a 5, ou
     # :fator_r para as atividades que ficam no Anexo III ou no V conforme o Fator R),
-    # receita_mes, rbt12, folha12 (só no Fator R) e inicio ("2025-11", se a empresa tem
-    # menos de 12 meses de atividade).
+    # receita_mes, rbt12, folha12 (só no Fator R), inicio ("2025-11", se a empresa tem
+    # menos de 12 meses de atividade), receita_ano e receita_ano_anterior (sublimite).
     def self.calcular(**)
       dados = Entrada.conferir(**)
       passos = Passos.inicio(dados)
@@ -55,14 +57,20 @@ module SimplesNacional
     # como o anexo foi escolhido; a faixa, a alíquota e o DAS entram aqui.
     def self.resultado(tabela, dados, fator_r, passos)
       rbt12, faixa, efetiva = faixa_e_aliquota(tabela, dados.rbt12)
-      percentuais = Reparticao.percentuais(tabela, faixa, rbt12, efetiva)
-      total, das, tributos = valores(dados.receita_mes, percentuais)
-
+      percentuais = Reparticao.percentuais(tabela, faixa, rbt12, efetiva, dados.situacao)
       passos += [Passos.faixa(tabela, faixa, dados.rbt12), Passos.aliquota_efetiva(faixa, rbt12, efetiva),
                  PassoDaDivisao.montar(tabela, faixa, rbt12, efetiva, percentuais),
-                 Passos.das(dados.receita_mes, efetiva, total, das, tributos)]
-      Resultado.new(periodo: dados.periodo, anexo: tabela, fator_r:, faixa:, rbt12: dados.rbt12,
-                    aliquota_efetiva: total, das:, tributos:, passos:)
+                 *PassoDoSublimite.montar(tabela, dados)]
+      sem_das = Resultado.new(periodo: dados.periodo, anexo: tabela, fator_r:, faixa:, rbt12: dados.rbt12,
+                              situacao: dados.situacao, aliquota_efetiva: nil, das: nil, tributos: nil, passos:)
+      com_das(sem_das, dados.receita_mes, efetiva, percentuais)
+    end
+
+    # Completa o resultado com o DAS, o valor de cada tributo e o passo do DAS.
+    def self.com_das(resultado, receita_mes, efetiva, percentuais)
+      total, das, tributos = valores(receita_mes, percentuais)
+      resultado.with(aliquota_efetiva: total, das:, tributos:,
+                     passos: resultado.passos + [Passos.das(receita_mes, efetiva, total, das, tributos)])
     end
 
     # [RBT12 da alíquota, faixa, alíquota efetiva]. RBT12 zero vira R$ 1,00, só para achar a
@@ -98,6 +106,6 @@ module SimplesNacional
     # Reais (Rational, como vêm das tabelas) → centavos (Integer).
     def self.centavos(reais) = (reais * 100).round
 
-    private_class_method :com_fator_r, :resultado, :faixa_e_aliquota, :valores
+    private_class_method :com_fator_r, :resultado, :com_das, :faixa_e_aliquota, :valores
   end
 end

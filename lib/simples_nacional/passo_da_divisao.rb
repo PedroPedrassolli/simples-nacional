@@ -7,7 +7,8 @@ module SimplesNacional
     def self.montar(tabela, faixa, rbt12, efetiva, percentuais)
       iss = Reparticao.percentual_local(tabela, faixa, rbt12, efetiva)
       teto = percentuais.key?("ISS") && iss > Reparticao::TETO_ISS
-      textos = [texto_reparticao(tabela, faixa, efetiva, exemplo: !teto), texto_sexta_faixa(tabela, faixa, rbt12)]
+      textos = [texto_reparticao(tabela, faixa, efetiva, exemplo: !teto),
+                texto_sexta_faixa(tabela, faixa, rbt12, percentuais)]
       textos << texto_teto_do_iss(iss, percentuais) if teto
       textos << texto_cpp(tabela)
       Passos::Passo.new(titulo: "Divisão entre os tributos", texto: textos.compact.join(" "), fonte: fonte(tabela))
@@ -37,12 +38,13 @@ module SimplesNacional
         "Anexo #{Passos.romano(tabela.numero)}"
     end
 
-    # Na 6ª faixa, o ICMS ou o ISS vem da alíquota efetiva da 5ª faixa, com a mesma RBT12.
-    def self.texto_sexta_faixa(tabela, faixa, rbt12)
-      return unless faixa.numero == 6
+    # Na 6ª faixa, o ICMS ou o ISS vem da alíquota efetiva da 5ª faixa, com a mesma RBT12
+    # (quando ele está no DAS: acima do sublimite, ver o passo do sublimite).
+    def self.texto_sexta_faixa(tabela, faixa, rbt12, percentuais)
+      local = Reparticao.imposto_local(tabela)
+      return unless faixa.numero == 6 && percentuais.key?(local)
 
       quinta = tabela.faixas[4]
-      local = Reparticao.imposto_local(tabela)
       "O #{local} usa a alíquota efetiva da 5ª faixa com a mesma RBT12, #{conta_da_quinta(quinta, rbt12)}, " \
         "vezes os #{Formato.percentual(quinta.reparticao.fetch(local))} do #{local} na 5ª faixa."
     end

@@ -9,11 +9,14 @@ require_relative "../lib/simples_nacional"
 #   GET /api/calcular?periodo=2026-03&rbt12=500000.00&receita_mes=40000.00&anexo=3
 #   GET /api/calcular?periodo=2026-03&rbt12=500000.00&receita_mes=40000.00&anexo=fator_r&folha12=150000.00
 #   GET /api/calcular?periodo=2026-03&inicio=2025-11&rbt12=100000.00&receita_mes=30000.00&anexo=1
+#   GET /api/calcular?periodo=2026-10&rbt12=3900000.00&receita_mes=400000.00&anexo=1&receita_ano=3300000.00
 #
 # Os valores vão em reais, com ponto e até duas casas ("500000.00"); a página converte o
 # que a pessoa digitou ("500.000,00") antes de chamar. anexo: 1 a 5 ou fator_r.
 # periodo: mês de apuração (AAAA-MM). inicio: mês de início das atividades, só para empresa
 # com menos de 12 meses; aí rbt12 é a receita desde o início (no 1º mês, não vai).
+# receita_ano (receita do ano até o mês anterior) e receita_ano_anterior: para o sublimite
+# do ICMS e do ISS; a biblioteca diz quando a receita do ano é necessária.
 module CalcularApi
   # Até R$ 9.999.999,99: cobre o limite do Simples e recusa textos enormes logo de cara.
   VALOR = /\A(\d{1,7})(?:\.(\d{1,2}))?\z/
@@ -23,7 +26,9 @@ module CalcularApi
   NOMES = {
     "rbt12" => "a receita bruta dos meses anteriores (RBT12)",
     "receita_mes" => "a receita do mês",
-    "folha12" => "a folha de salários"
+    "folha12" => "a folha de salários",
+    "receita_ano" => "a receita do ano até o mês anterior",
+    "receita_ano_anterior" => "a receita do ano anterior"
   }.freeze
 
   # Parâmetro com problema: vira resposta 400 com a mensagem.
@@ -34,8 +39,7 @@ module CalcularApi
     anexo = ANEXOS[parametros["anexo"].to_s] || raise(ParametroInvalido, "Escolha o anexo: 1, 2, 3, 4, 5 ou fator_r.")
     resultado = SimplesNacional.calcular(periodo: texto(parametros, "periodo"), inicio: texto(parametros, "inicio"),
                                          anexo:, receita_mes: centavos(parametros, "receita_mes"),
-                                         rbt12: opcional(parametros, "rbt12"),
-                                         folha12: (opcional(parametros, "folha12") if anexo == :fator_r))
+                                         **opcionais(parametros, anexo))
     [200, corpo(resultado)]
   rescue ParametroInvalido, SimplesNacional::Calculo::EntradaInvalida => e
     [400, { erro: e.message }]
@@ -49,6 +53,13 @@ module CalcularApi
 
   # Valor que pode faltar (a biblioteca diz quando ele é necessário): vazio vira nil.
   def self.opcional(parametros, nome) = texto(parametros, nome) && centavos(parametros, nome)
+
+  # A folha só vale no Fator R.
+  def self.opcionais(parametros, anexo)
+    { rbt12: opcional(parametros, "rbt12"), folha12: (opcional(parametros, "folha12") if anexo == :fator_r),
+      receita_ano: opcional(parametros, "receita_ano"),
+      receita_ano_anterior: opcional(parametros, "receita_ano_anterior") }
+  end
 
   # "500000.5" → 50_000_050 centavos.
   def self.centavos(parametros, nome)
@@ -64,6 +75,7 @@ module CalcularApi
     cabecalho(resultado)
       .merge(valores(resultado))
       .merge(tributos: tributos(resultado.tributos), passos: resultado.passos.map(&:to_h),
+             aviso: SimplesNacional::PassoDoSublimite.aviso(resultado.anexo, resultado.situacao),
              tabela: tabela(resultado.anexo))
   end
 
