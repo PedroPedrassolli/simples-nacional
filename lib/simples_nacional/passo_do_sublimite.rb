@@ -19,10 +19,10 @@ module SimplesNacional
       case situacao.tipo
       when :fora
         "O #{local} deste mês não entra no DAS: é pago à parte, pelas regras normais do " \
-          "#{local == 'ICMS' ? 'estado' : 'município'}. A calculadora não estima esse valor."
+        "#{local == 'ICMS' ? 'estado' : 'município'}. A calculadora não estima esse valor."
       when :majorado
         "Parte da receita do mês passou do sublimite: o #{local} dessa parte segue outra regra. " \
-          "Veja o passo a passo."
+        "Veja o passo a passo."
       end
     end
 
@@ -53,7 +53,7 @@ module SimplesNacional
       case situacao.motivo
       when :inicio then "#{inicio}, mais de 20% acima dele: o #{local} sai do DAS desde o início das atividades."
       when :excesso then "#{inicio}. #{texto_do_excesso(local)}"
-      when :ate_20, :mais_de_20 then "#{inicio}, acima do sublimite. #{texto_majorado(tabela, dados, local)}"
+      when :pouco_acima, :muito_acima then "#{inicio}, acima do sublimite. #{texto_majorado(tabela, dados, local)}"
       else "#{inicio}: não passa do sublimite, e o #{local} fica no DAS."
       end
     end
@@ -80,7 +80,7 @@ module SimplesNacional
       situacao = dados.situacao
       parte = "A parte da receita do mês acima dele, #{Formato.reais(dados.receita_mes * situacao.fracao)},"
       parte = "Toda a receita do mês" if situacao.fracao == 1
-      efeito = situacao.motivo == :ate_20 ? "só no ano seguinte" : "a partir do mês seguinte"
+      efeito = situacao.motivo == :pouco_acima ? "só no ano seguinte" : "a partir do mês seguinte"
       "#{parte} paga o #{local} com a alíquota efetiva da 5ª faixa calculada com " \
         "#{Formato.reais(Sublimite::VALOR)}, vezes o percentual do #{local}: #{percentual_majorado(tabela, local)}. " \
         "Pelo tamanho do excesso, o #{local} sai do DAS #{efeito}."
@@ -96,7 +96,7 @@ module SimplesNacional
     def self.fonte(situacao)
       case situacao.motivo
       when :ano_anterior then "LC 123/2006, art. 20, §§ 1º e 1º-A; Res. CGSN 140/2018, art. 12"
-      when :ate_20, :mais_de_20 then "LC 123/2006, art. 18, §§ 17 e 17-A; Res. CGSN 140/2018, arts. 12 e 24, I"
+      when :pouco_acima, :muito_acima then "LC 123/2006, art. 18, §§ 17 e 17-A; Res. CGSN 140/2018, arts. 12 e 24, I"
       else "LC 123/2006, arts. 13-A, 19 e 20; Res. CGSN 140/2018, arts. 9º e 12"
       end
     end

@@ -73,7 +73,7 @@ describe SimplesNacional::Sublimite do
       icms = (Rational(3, 4) * Rational(470_400, 3_900_000) * porcento("33.5")) +
              (Rational(1, 4) * porcento("3.978125"))
       total = Rational(363_000, 3_900_000) + icms
-      assert_equal [:majorado, Rational(1, 4), :ate_20], subject.situacao.to_h.values_at(:tipo, :fracao, :motivo)
+      assert_equal [:majorado, Rational(1, 4), :pouco_acima], subject.situacao.to_h.values_at(:tipo, :fracao, :motivo)
       assert_equal (40_000_000 * total).round(half: :up), subject.das
       assert_equal 5_333_074, subject.das
     end
@@ -96,7 +96,7 @@ describe SimplesNacional::Sublimite do
     subject { calcular(periodo: "2026-10", rbt12: 420_000_000, receita_mes: 60_000_000, receita_ano: 380_000_000) }
 
     it "usa o percentual do art. 24 em toda a receita do mês" do
-      assert_equal [:majorado, 1, :mais_de_20], subject.situacao.to_h.values_at(:tipo, :fracao, :motivo)
+      assert_equal [:majorado, 1, :muito_acima], subject.situacao.to_h.values_at(:tipo, :fracao, :motivo)
       assert_equal 8_386_875, subject.das
       assert_includes passo(subject).texto, "Toda a receita do mês paga o ICMS"
       assert_includes passo(subject).texto, "o ICMS sai do DAS a partir do mês seguinte."
@@ -162,7 +162,7 @@ describe SimplesNacional::Sublimite do
     it "usa o percentual do art. 24 acima do sublimite proporcional, até 20%" do
       # 2.000.000 + 200.000 = 2.200.000: 100.000 acima de 2.100.000, metade da receita do mês.
       resultado = calcular(**inicio, rbt12: 200_000_000, receita_mes: 20_000_000)
-      assert_equal [:majorado, Rational(1, 2), :ate_20], resultado.situacao.to_h.values_at(:tipo, :fracao, :motivo)
+      assert_equal [:majorado, Rational(1, 2), :pouco_acima], resultado.situacao.to_h.values_at(:tipo, :fracao, :motivo)
     end
 
     it "tira o ICMS do DAS desde o início com mais de 20%" do

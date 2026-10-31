@@ -31,7 +31,9 @@ module SimplesNacional
     # tipo: :no_das, :majorado (parte da receita do mês com o percentual do art. 24) ou :fora.
     # fracao: a parte da receita do mês com esse percentual (0 a 1).
     # sublimite: o do ano (proporcional no ano de início). receita_ano: a receita do ano
-    # antes do mês, ou nil quando não foi preciso saber. motivo: o caso, para o passo.
+    # antes do mês, ou nil quando não foi preciso saber. motivo: o caso, para o passo
+    # (:abaixo, :ano_anterior, :excesso, :inicio, ou, quando o mês passa do sublimite,
+    # :pouco_acima, com excesso de até 20%, e :muito_acima, com mais de 20%).
     Situacao = Data.define(:tipo, :fracao, :sublimite, :receita_ano, :motivo)
 
     # Quando não há sublimite a conferir (o caso comum).
@@ -45,9 +47,15 @@ module SimplesNacional
       receita_ano = receita_do_ano(dados, sublimite)
       return NO_DAS.with(sublimite:) if receita_ano.nil?
 
-      conferir_limite(receita_ano + dados.receita_mes, ano, dados.inicio)
-      conferir_ano_anterior(dados, receita_ano)
+      conferir_receitas(dados, receita_ano)
       no_ano(dados, sublimite, receita_ano)
+    end
+
+    # Recusa receitas que não fecham: o ano acima do limite do Simples ou o ano anterior
+    # menor que a parte dele dentro da RBT12.
+    def self.conferir_receitas(dados, receita_ano)
+      conferir_limite(receita_ano + dados.receita_mes, dados.periodo.year, dados.inicio)
+      conferir_ano_anterior(dados, receita_ano)
     end
 
     # A parte do ano passado dentro da RBT12 (RBT12 − receita deste ano) não pode ser maior
@@ -84,7 +92,7 @@ module SimplesNacional
     # A parte da receita do mês acima do sublimite (tudo, se ele já tinha passado antes).
     def self.majorado(base, total, receita_mes)
       fracao = Rational(total - [base.receita_ano, base.sublimite].max, receita_mes)
-      motivo = total > base.sublimite * TOLERANCIA ? :mais_de_20 : :ate_20
+      motivo = total > base.sublimite * TOLERANCIA ? :muito_acima : :pouco_acima
       base.with(tipo: :majorado, fracao:, motivo:)
     end
 
@@ -157,7 +165,7 @@ module SimplesNacional
 
     def self.valor(ano) = anos.fetch(ano)[:valor]
 
-    private_class_method :no_ano, :motivo_fora, :majorado, :conferir_ano_anterior, :receita_do_ano, :conferida,
-                         :passou_no_ano_anterior?, :conferir_limite, :fora
+    private_class_method :conferir_receitas, :no_ano, :motivo_fora, :majorado, :conferir_ano_anterior,
+                         :receita_do_ano, :conferida, :passou_no_ano_anterior?, :conferir_limite, :fora
   end
 end
