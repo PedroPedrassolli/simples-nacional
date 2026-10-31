@@ -10,21 +10,19 @@ export default function App() {
   return (
     <>
       <header className="topo">
-        <p className="sobretitulo">Estimativa educativa · apuração de 2026</p>
         <h1>Calculadora do Simples Nacional</h1>
         <p className="destaque">
-          Informe a receita e o anexo da atividade e veja a alíquota efetiva, o valor estimado do
-          DAS, quanto vai para cada tributo e a conta explicada passo a passo, com a base legal.
+          Estimativa educativa do DAS para meses de 2026. Informe a receita e o anexo da atividade e
+          veja a alíquota efetiva, quanto vai para cada tributo e a conta explicada passo a passo,
+          com a base legal.
         </p>
       </header>
 
-      <main>
-        {/* No computador, o formulário fica à esquerda e o resultado à direita, com a
-            consulta de CNPJ e os avisos embaixo dele; no celular, tudo em uma coluna. */}
-        <Calculadora>
-          <ConsultaCnpj />
-          <Aviso />
-        </Calculadora>
+      <main className="pagina">
+        {/* No computador, formulário e consulta de CNPJ à esquerda, resultado à direita; no
+            celular, tudo em uma coluna. Os avisos ficam embaixo, em largura total. */}
+        <Calculadora consulta={<ConsultaCnpj />} />
+        <Aviso />
       </main>
 
       <footer className="rodape">
