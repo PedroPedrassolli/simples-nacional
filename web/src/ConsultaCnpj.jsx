@@ -24,7 +24,7 @@ export default function ConsultaCnpj() {
   }
 
   return (
-    <details className="cnpj">
+    <details className="cartao cnpj">
       <summary>Consultar um CNPJ (opcional)</summary>
       <form onSubmit={consultar} noValidate>
         <label htmlFor={id}>CNPJ</label>
@@ -46,7 +46,7 @@ export default function ConsultaCnpj() {
             onChange={(evento) => setCnpj(evento.target.value)}
             aria-describedby={`${id}-dica`}
           />
-          <button type="submit" disabled={estado.carregando}>
+          <button type="submit" className="botao secundario" disabled={estado.carregando}>
             {estado.carregando ? "Consultando…" : "Consultar"}
           </button>
         </div>
@@ -81,11 +81,11 @@ function Empresa({ empresa }) {
           <dt>Situação</dt>
           <dd>{empresa.situacao}</dd>
         </div>
-        <div>
+        <div className="largo">
           <dt>CNAE principal</dt>
           <dd>{cnae}</dd>
         </div>
-        <div>
+        <div className="largo">
           <dt>Simples</dt>
           <dd>{textoSimples(empresa.simples)}</dd>
         </div>

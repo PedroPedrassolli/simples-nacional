@@ -58,12 +58,13 @@ module SimplesNacional
       end
     end
 
-    # "Em 2026, o sublimite é de R$ 3.600.000,00 em todos os estados e no DF (...)", e o
+    # "Em 2026, o sublimite é de R$ 3.600.000,00 em todos os estados e no DF, conforme a (...)", e o
     # proporcional no ano de início.
     def self.texto_do_sublimite(dados)
       ano = dados.periodo.year
       inteiro = Formato.reais(Sublimite.valor(ano))
-      texto = "Em #{ano}, o sublimite é de #{inteiro} em todos os estados e no DF (#{Sublimite.anos.fetch(ano)[:ato]})."
+      texto = "Em #{ano}, o sublimite é de #{inteiro} em todos os estados e no DF, conforme a " \
+              "#{Sublimite.anos.fetch(ano)[:ato]}."
       return texto unless Sublimite.inicio_no_ano?(dados)
 
       "#{texto} No ano de início, ele é proporcional aos meses de #{Formato.mes(dados.inicio)} a dezembro: " \

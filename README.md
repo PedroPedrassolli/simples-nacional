@@ -41,6 +41,13 @@ Anexo III; abaixo disso, para o V (art. 18, §§ 5º-J, 5º-K e 5º-M).
 Opcional: informe um CNPJ para ver a empresa, o CNAE principal e se ela consta como optante
 pelo Simples (dados públicos da Receita Federal, pela BrasilAPI).
 
+**Na página:** o formulário vem em três etapas (mês e empresa, receitas, atividade). Cada anexo
+mostra exemplos de atividades do art. 18 da LC 123/2006, os valores ficam no formato brasileiro
+ao sair do campo e os campos do sublimite abrem sozinhos quando a receita pode passar dele.
+"Usar um exemplo" preenche números fictícios. No computador, o resultado fica ao lado do
+formulário, com o DAS em destaque e a parte de cada tributo; se um campo muda depois do
+cálculo, a página avisa que o resultado ficou desatualizado.
+
 As tabelas dos Anexos I a V ficam em `data/anexos/`, cada arquivo com o link da fonte
 oficial, a lei que deu a redação atual e a data de vigência, as alíquotas e os percentuais de
 repartição de cada faixa. Um teste falha se um arquivo não tiver a fonte ou a vigência, ou se a

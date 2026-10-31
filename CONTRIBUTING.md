@@ -58,6 +58,8 @@ Todo fim de ano o Comitê Gestor divulga o sublimite do ano seguinte (notícia n
 Simples Nacional e portaria no DOU). Acrescente o ano em `data/sublimite.yml` com o ato e o
 link. Se algum estado adotar R$ 1.800.000,00, o arquivo é recusado de propósito: a conta muda
 (4ª faixa, Res. CGSN 140/2018, art. 24, I, b, 1) e o formulário passa a precisar da UF.
+A página usa o mesmo valor (`SUBLIMITE` em `web/src/valores.js`) só para abrir os campos
+opcionais na hora certa; um teste confere que ele bate com o YAML.
 
 ## Cuidados
 
@@ -73,6 +75,10 @@ link. Se algum estado adotar R$ 1.800.000,00, o arquivo é recusado de propósit
 - A página é pré-renderizada no build (`web/scripts/prerender.mjs`): o HTML já sai pronto e o
   React só hidrata. O primeiro desenho do `App` precisa ser igual no build e no navegador:
   nada de `window`, data atual ou número aleatório durante o render (use `useEffect`).
+- A CSP da página não permite `style` inline. Largura que depende de dado (as barras da
+  divisão do DAS) vai como atributo de SVG, não como `style={{ width }}`.
+- As dicas dos anexos (`web/src/anexos.js`) resumem o art. 18 da LC 123/2006, com a data em
+  que foram conferidas. Mudou a lei? Confira as dicas junto com as tabelas.
 - O Uptime confere uma conta conhecida (`/api/calcular`, março de 2026, DAS de R$ 3.988,80).
   Mudou essa conta ou os parâmetros obrigatórios de propósito? Mude o `uptime.yml` no mesmo PR.
   Atraso de algumas horas nos agendados do GitHub é normal.

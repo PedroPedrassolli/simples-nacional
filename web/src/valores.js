@@ -21,6 +21,34 @@ export function paraApi(texto) {
   return `${reais.replace(/^0+(?=\d)/, "")}.${centavos.padEnd(2, "0")}`;
 }
 
+// Ao sair do campo: "500000" → "500.000,00". Texto que não é valor em reais volta como
+// está, para a conferência apontar o erro. Os pontos de milhar vão num laço, e não numa
+// expressão regular, para não travar com um texto muito longo.
+export function formatarReais(texto) {
+  const valor = paraApi(texto);
+  if (valor === null) return texto;
+
+  const [reais, centavos] = valor.split(".");
+  let comPontos = "";
+  for (let posicao = 0; posicao < reais.length; posicao++) {
+    if (posicao > 0 && (reais.length - posicao) % 3 === 0) comPontos += ".";
+    comPontos += reais[posicao];
+  }
+  return `${comPontos},${centavos}`;
+}
+
+// Sublimite do ICMS e do ISS em 2025 e 2026, igual ao data/sublimite.yml (um teste confere).
+// Aqui ele só serve para abrir os campos opcionais na hora certa: a regra fica na API.
+export const SUBLIMITE = 3_600_000;
+
+// A RBT12 inclui os meses do ano antes do mês de apuração, então RBT12 + receita do mês é
+// o máximo que a receita do ano pode ter. Acima do sublimite, a API pede a receita do ano.
+export function podePassarDoSublimite({ periodo, inicio, rbt12, receita_mes }) {
+  if (!textosDoSublimite(periodo, inicio).receitaAno) return false;
+  const soma = Number(paraApi(rbt12 ?? "") ?? 0) + Number(paraApi(receita_mes ?? "") ?? 0);
+  return soma > SUBLIMITE;
+}
+
 const NOMES_DOS_MESES = [
   "janeiro",
   "fevereiro",
