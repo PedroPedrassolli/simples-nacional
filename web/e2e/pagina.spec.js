@@ -33,7 +33,7 @@ async function simularCnpj(page, resposta = { status: 200, corpo: CNPJ }) {
 }
 
 async function consultarCnpj(page, cnpj) {
-  await page.getByText("Consultar um CNPJ (opcional)").click();
+  await page.getByText("Consultar um CNPJ").click();
   await page.getByLabel("CNPJ", { exact: true }).fill(cnpj);
   await page.getByRole("button", { name: "Consultar", exact: true }).click();
 }

@@ -10,7 +10,7 @@ import {
   podePassarDoSublimite,
   textosDosCampos,
 } from "./valores.js";
-import Resultado from "./Resultado.jsx";
+import Resultado, { ContaPassoAPasso } from "./Resultado.jsx";
 
 const PERIODOS = MESES_DE_APURACAO.map((mes) => ({ valor: mes, rotulo: nomeDoMes(mes) }));
 
@@ -37,9 +37,10 @@ const EXEMPLO = {
 
 const SEM_RESULTADO = { carregando: false, resultado: null, erro: null };
 
-// O formulário e, ao lado (abaixo, no celular), o painel com o resultado. children: o que
-// vai embaixo do resultado, na mesma coluna (a consulta de CNPJ e os avisos).
-export default function Calculadora({ children }) {
+// O formulário e, ao lado (abaixo, no celular), o resultado. Embaixo do formulário vai a
+// consulta de CNPJ (consulta), e a conta passo a passo ocupa a largura toda. A posição de
+// cada parte no computador fica no estilo.css (.layout).
+export default function Calculadora({ consulta }) {
   const [valores, setValores] = useState(VAZIO);
   const [erros, setErros] = useState({});
   const [estado, setEstado] = useState(SEM_RESULTADO);
@@ -127,7 +128,7 @@ export default function Calculadora({ children }) {
   return (
     <div className="layout">
       <form ref={formulario} className="formulario cartao" onSubmit={enviar} noValidate>
-        <Etapa numero="1" titulo="Mês e empresa">
+        <Etapa titulo="Mês e empresa">
           <CampoLista
             nome="periodo"
             rotulo="Mês de apuração"
@@ -145,7 +146,7 @@ export default function Calculadora({ children }) {
           />
         </Etapa>
 
-        <Etapa numero="2" titulo="Receitas">
+        <Etapa titulo="Receitas">
           {textos.receita ? (
             <CampoReais nome="rbt12" rotulo={textos.receita} dica={textos.dicaReceita} {...campo} />
           ) : (
@@ -161,14 +162,21 @@ export default function Calculadora({ children }) {
           />
           {(textos.receitaAno || textos.receitaAnoAnterior) && (
             <details
-              className="opcional"
+              className="revelar opcional"
               open={sublimiteAberto}
               onToggle={(evento) => setSublimiteAberto(evento.currentTarget.open)}
             >
               <summary>
-                Sublimite do ICMS e do ISS <span className="selo">opcional</span>
+                <span className="revelar-textos">
+                  <span className="revelar-titulo">
+                    Sublimite do ICMS e do ISS <span className="selo">opcional</span>
+                  </span>
+                  <span className="revelar-dica">
+                    Para quem pode passar de R$ 3.600.000,00 de receita no ano
+                  </span>
+                </span>
               </summary>
-              <div className="opcional-corpo">
+              <div className="revelar-corpo">
                 <p className="dica">
                   {podePassarDoSublimite(valores)
                     ? "Com esses valores, a receita do ano pode passar de R$ 3.600.000,00. Informe a receita do ano para a conta do ICMS e do ISS."
@@ -189,7 +197,7 @@ export default function Calculadora({ children }) {
           )}
         </Etapa>
 
-        <Etapa numero="3" titulo="Atividade">
+        <Etapa titulo="Atividade">
           <CampoLista
             nome="anexo"
             rotulo="Anexo da atividade"
@@ -237,37 +245,36 @@ export default function Calculadora({ children }) {
         ) : (
           <ComoFunciona carregando={estado.carregando} />
         )}
-        {children}
       </div>
+
+      {estado.resultado && <ContaPassoAPasso resultado={estado.resultado} />}
+
+      <div className="consulta">{consulta}</div>
     </div>
   );
 }
 
-// Um grupo numerado do formulário (fieldset), para a pessoa ver em que parte está.
-function Etapa({ numero, titulo, children }) {
+// Um grupo de campos do formulário (fieldset), com o título na legenda.
+function Etapa({ titulo, children }) {
   return (
     <fieldset className="etapa">
-      <legend>
-        <span className="etapa-numero" aria-hidden="true">
-          {numero}
-        </span>
-        {titulo}
-      </legend>
+      <legend>{titulo}</legend>
       {children}
     </fieldset>
   );
 }
 
-// O que o painel mostra antes do primeiro cálculo (e enquanto a API responde).
+// A guia "em branco" antes do primeiro cálculo (e enquanto a API responde): diz onde o
+// resultado vai aparecer e resume a conta.
 function ComoFunciona({ carregando }) {
   return (
     <section className="cartao como" aria-labelledby="como-titulo" aria-busy={carregando}>
-      {carregando && (
-        <p className="carregando">
-          <span className="girando" aria-hidden="true" />
-          Calculando o DAS…
-        </p>
-      )}
+      <p className={carregando ? "como-estado carregando" : "como-estado"}>
+        {carregando && <span className="girando" aria-hidden="true" />}
+        {carregando
+          ? "Calculando o DAS…"
+          : "Preencha os dados e clique em Calcular: o DAS aparece aqui."}
+      </p>
       <h2 id="como-titulo">Como a conta é feita</h2>
       <ol>
         <li>
@@ -286,9 +293,6 @@ function ComoFunciona({ carregando }) {
         </li>
       </ol>
       <p className="fonte">LC 123/2006, art. 18, §§ 1º, 1º-A e 3º, e Anexos I a V.</p>
-      <p className="nota">
-        Preencha os dados e clique em <strong>Calcular</strong>, ou veja com o exemplo.
-      </p>
     </section>
   );
 }

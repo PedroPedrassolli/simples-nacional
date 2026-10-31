@@ -173,6 +173,12 @@ export function conferir(valores) {
   return { parametros, erros };
 }
 
+// Troca o espaço depois de "R$", "§" e "nº" por um espaço que não quebra: no celular, o
+// texto da conta não fica com "R$" no fim de uma linha e o número na outra.
+export function semQuebra(texto) {
+  return texto.replace(/(R\$|§§?|nº) /g, "$1\u00a0");
+}
+
 // "2018-01-01" → "01/01/2018".
 export function dataBrasileira(iso) {
   const [ano, mes, dia] = iso.split("-");

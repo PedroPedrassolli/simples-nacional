@@ -1,15 +1,14 @@
-import { dataBrasileira } from "./valores.js";
+import { dataBrasileira, semQuebra } from "./valores.js";
 
 const ROMANOS = { 1: "I", 2: "II", 3: "III", 4: "IV", 5: "V" };
 
-// Mostra o que a API devolveu: o DAS em destaque, o resumo, a divisão entre os tributos e
-// a conta passo a passo (que abre e fecha).
+// O resultado com cara de guia: o DAS em destaque, um "picote" e, embaixo, o resumo e a
+// divisão entre os tributos. A conta passo a passo fica em ContaPassoAPasso, em largura
+// total, para não esticar só esta coluna quando abre.
 export default function Resultado({ resultado, refTitulo, desatualizado }) {
-  const { tabela } = resultado;
-
   return (
     <section
-      className={desatualizado ? "cartao resultado desatualizado" : "cartao resultado"}
+      className={desatualizado ? "cartao guia desatualizado" : "cartao guia"}
       aria-labelledby="resultado-titulo"
     >
       {/* O espaço entre os dois textos não aparece (são blocos), mas o leitor de tela lê
@@ -21,44 +20,61 @@ export default function Resultado({ resultado, refTitulo, desatualizado }) {
       <p className="das-mes">Referente a {resultado.periodo_nome}</p>
 
       {desatualizado && (
-        <p className="nota-desatualizado">
+        <p className="nota nota-aviso">
           Você mudou os dados depois deste cálculo. Clique em Calcular para atualizar.
         </p>
       )}
-      {resultado.aviso && <p className="aviso-resultado">{resultado.aviso}</p>}
+      {resultado.aviso && <p className="nota nota-aviso">{semQuebra(resultado.aviso)}</p>}
+
+      <div className="picote" aria-hidden="true" />
 
       <dl className="resumo">
         <Item rotulo="Alíquota efetiva" valor={resultado.aliquota_efetiva} />
         <Item rotulo="RBT12" valor={resultado.rbt12} />
         {resultado.fator_r && <Item rotulo="Fator R" valor={resultado.fator_r} />}
-        <Item rotulo="Anexo" valor={`${ROMANOS[resultado.anexo]}: ${resultado.anexo_nome}`} largo />
         <Item
           rotulo="Faixa"
-          valor={`${resultado.faixa}ª, com alíquota nominal de ${resultado.aliquota_nominal}`}
-          largo
+          valor={`${resultado.faixa}ª, alíquota nominal de ${resultado.aliquota_nominal}`}
         />
+        <Item rotulo="Anexo" valor={`${ROMANOS[resultado.anexo]}: ${resultado.anexo_nome}`} largo />
       </dl>
 
       <Tributos resultado={resultado} />
+    </section>
+  );
+}
 
-      <details className="passos">
-        <summary>Ver a conta passo a passo</summary>
-        <ol>
-          {resultado.passos.map((passo) => (
+// A conta explicada, um passo por linha: título e base legal à esquerda, a conta à direita
+// (no celular, um embaixo do outro). Fecha por padrão; aberta, ocupa a largura da página.
+export function ContaPassoAPasso({ resultado }) {
+  const { tabela, passos } = resultado;
+
+  return (
+    <details className="cartao revelar secao-passos">
+      <summary>
+        <span className="revelar-textos">
+          <span className="revelar-titulo">Ver a conta passo a passo</span>
+          <span className="revelar-dica">{passos.length} passos, com a base legal de cada um</span>
+        </span>
+      </summary>
+      <div className="revelar-corpo">
+        <ol className="linha-do-tempo">
+          {passos.map((passo) => (
             <li key={passo.titulo}>
-              <h3>{passo.titulo}</h3>
-              <p>{passo.texto}</p>
-              <p className="fonte">{passo.fonte}</p>
+              <div className="passo-cabeca">
+                <h3>{passo.titulo}</h3>
+                <p className="fonte">{semQuebra(passo.fonte)}</p>
+              </div>
+              <p className="passo-texto">{semQuebra(passo.texto)}</p>
             </li>
           ))}
         </ol>
-      </details>
-
-      <p className="fonte">
-        Tabela na redação da {tabela.redacao}, em vigor desde {dataBrasileira(tabela.vigencia)}.{" "}
-        <a href={tabela.fonte}>Texto da LC 123/2006 no Planalto</a>.
-      </p>
-    </section>
+        <p className="fonte">
+          Tabela na redação da {tabela.redacao}, em vigor desde {dataBrasileira(tabela.vigencia)}.{" "}
+          <a href={tabela.fonte}>Texto da LC 123/2006 no Planalto</a>.
+        </p>
+      </div>
+    </details>
   );
 }
 

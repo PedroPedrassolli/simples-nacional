@@ -24,42 +24,55 @@ export default function ConsultaCnpj() {
   }
 
   return (
-    <details className="cartao cnpj">
-      <summary>Consultar um CNPJ (opcional)</summary>
-      <form onSubmit={consultar} noValidate>
-        <label htmlFor={id}>CNPJ</label>
-        <p id={`${id}-dica`} className="dica">
-          Mostra a empresa, o CNAE principal e se ela consta como optante pelo Simples. Não muda a
-          conta.
-        </p>
-        <div className="linha">
-          <input
-            id={id}
-            name="cnpj"
-            autoComplete="off"
-            // O CNPJ novo pode ter letras (Receita Federal, desde julho de 2026), por isso o
-            // teclado é o de texto, em maiúsculas e sem corretor ortográfico.
-            autoCapitalize="characters"
-            spellCheck={false}
-            placeholder="00.000.000/0000-00"
-            value={cnpj}
-            onChange={(evento) => setCnpj(evento.target.value)}
-            aria-describedby={`${id}-dica`}
-          />
-          <button type="submit" className="botao secundario" disabled={estado.carregando}>
-            {estado.carregando ? "Consultando…" : "Consultar"}
-          </button>
-        </div>
-      </form>
+    <details className="cartao revelar cnpj">
+      <summary>
+        <span className="revelar-textos">
+          <span className="revelar-titulo">
+            Consultar um CNPJ <span className="selo">opcional</span>
+          </span>
+          <span className="revelar-dica">
+            Mostra a atividade principal (CNAE), que ajuda a escolher o anexo
+          </span>
+        </span>
+      </summary>
+      <div className="revelar-corpo">
+        <form onSubmit={consultar} noValidate>
+          <label htmlFor={id}>CNPJ</label>
+          <p id={`${id}-dica`} className="dica">
+            Também mostra se a empresa consta como optante pelo Simples. A consulta não muda a
+            conta.
+          </p>
+          <div className="linha">
+            <input
+              id={id}
+              name="cnpj"
+              autoComplete="off"
+              // O CNPJ novo pode ter letras (Receita Federal, desde julho de 2026), por isso o
+              // teclado é o de texto, em maiúsculas e sem corretor ortográfico.
+              autoCapitalize="characters"
+              spellCheck={false}
+              placeholder="00.000.000/0000-00"
+              value={cnpj}
+              onChange={(evento) => setCnpj(evento.target.value)}
+              aria-describedby={`${id}-dica`}
+            />
+            <button type="submit" className="botao secundario" disabled={estado.carregando}>
+              {estado.carregando ? "Consultando…" : "Consultar"}
+            </button>
+          </div>
+        </form>
 
-      {estado.erro && (
-        <p className="erro" role="alert">
-          {estado.erro}
-        </p>
-      )}
-      {/* A região fica sempre na página (vazia até a resposta) para o leitor de tela
+        {estado.erro && (
+          <p className="erro" role="alert">
+            {estado.erro}
+          </p>
+        )}
+        {/* A região fica sempre na página (vazia até a resposta) para o leitor de tela
           anunciar a empresa quando ela aparece. */}
-      <div aria-live="polite">{estado.empresa && <Empresa empresa={estado.empresa} />}</div>
+        <div className="cnpj-resposta" aria-live="polite">
+          {estado.empresa && <Empresa empresa={estado.empresa} />}
+        </div>
+      </div>
     </details>
   );
 }

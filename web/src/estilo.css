@@ -1,10 +1,12 @@
 /* Cores em variáveis: o tema escuro só troca os valores (segue o sistema do visitante).
    Todos os pares de texto e fundo passam no contraste AA (o axe confere nos testes).
-   --linha é só decoração (separadores e contorno dos cartões); campos usam --borda (3:1). */
+   --linha é só decoração (separadores e contorno dos cartões); campos usam --borda (3:1).
+   --seta é a seta das listas de opções (SVG em data:, permitido pela CSP em img-src). */
 :root {
-  --fundo: #f4f6f3;
+  --fundo: #f3f5f4;
   --cartao: #ffffff;
-  --texto: #1c2321;
+  --realce: #f6f8f7;
+  --texto: #17201d;
   --texto-suave: #4a5552;
   --borda: #6b7672;
   --linha: #d5dbd8;
@@ -17,9 +19,8 @@
   --erro: #b42318;
   --link: #0b5c8f;
   --foco: #0b5c8f;
-  --sombra: 0 1px 2px rgb(16 24 20 / 6%), 0 6px 20px rgb(16 24 20 / 5%);
+  --seta: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%234a5552' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
   --fonte: "Geist Variable", system-ui, sans-serif;
-  --fonte-mono: "Geist Mono Variable", ui-monospace, monospace;
   color-scheme: light;
 }
 
@@ -27,20 +28,21 @@
   :root {
     --fundo: #0f1412;
     --cartao: #171e1b;
+    --realce: #1d2622;
     --texto: #e8ece9;
     --texto-suave: #b4bdb9;
     --borda: #8a9590;
-    --linha: #2c3632;
+    --linha: #2f3a35;
     --destaque: #6fd3a0;
     --destaque-suave: #16261f;
     --botao-texto: #0b1210;
-    --trilho: #2c3632;
+    --trilho: #2f3a35;
     --aviso-fundo: #2b2410;
     --aviso-borda: #e0b45a;
     --erro: #ff9b8f;
     --link: #7cc4f2;
     --foco: #7cc4f2;
-    --sombra: none;
+    --seta: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%23b4bdb9' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
     color-scheme: dark;
   }
 }
@@ -53,8 +55,7 @@
 
 body {
   margin: 0;
-  /* Um verde bem claro atrás do título, que some antes do formulário. */
-  background: linear-gradient(var(--destaque-suave), var(--fundo) 24rem) var(--fundo);
+  background: var(--fundo);
   color: var(--texto);
   font-family: var(--fonte);
   font-size: 1.0625rem;
@@ -77,38 +78,27 @@ h3 {
 }
 
 h2 {
-  font-size: 1.125rem;
   margin: 0 0 0.75rem;
+  font-size: 1.125rem;
 }
 
 h3 {
-  font-size: 1rem;
   margin: 0;
+  font-size: 1.0625rem;
 }
 
 /* Largura e margens: em 320 px sobram 16 px de cada lado. */
 .topo,
-.layout,
+.pagina,
 .rodape {
   max-width: 72rem;
   margin: 0 auto;
-  padding: 0 1rem;
+  padding-inline: 1rem;
 }
-
-/* Cabeçalho */
 
 .topo {
-  padding-top: 2.5rem;
-  padding-bottom: 1.75rem;
-}
-
-.sobretitulo {
-  margin: 0 0 0.5rem;
-  color: var(--destaque);
-  font-size: 0.875rem;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+  padding-top: 2.75rem;
+  padding-bottom: 2rem;
 }
 
 h1 {
@@ -120,44 +110,183 @@ h1 {
 .destaque {
   max-width: 44rem;
   margin: 0;
+  color: var(--texto-suave);
   font-size: 1.125rem;
 }
 
-/* Grade: uma coluna no celular; a partir de 64rem (1024 px), formulário à esquerda e
-   resultado à direita. */
+.pagina {
+  display: grid;
+  gap: 1.5rem;
+}
 
+/* Grade da calculadora. No celular, uma coluna na ordem do HTML: formulário, resultado,
+   passo a passo e consulta de CNPJ. A partir de 64rem (1024 px), o formulário fica à
+   esquerda e o resultado à direita; o passo a passo e a consulta de CNPJ vêm embaixo, em
+   largura total: abrir uma parte não estica só uma das colunas. */
+/* minmax(0, 1fr): a coluna não cresce além da tela por causa de um conteúdo largo. */
 .layout {
   display: grid;
-  gap: 1.25rem;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1.5rem;
   align-items: start;
 }
 
-.lateral {
-  display: grid;
-  gap: 1.25rem;
+.lateral,
+.consulta {
   min-width: 0;
+}
+
+/* Mesma regra nas outras grades de uma coluna: o conteúdo quebra em vez de alargar. */
+.pagina,
+.formulario,
+.etapa,
+.revelar-corpo {
+  grid-template-columns: minmax(0, 1fr);
 }
 
 @media (min-width: 64rem) {
   .layout {
     grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
-    gap: 1.5rem;
+    column-gap: 2rem;
+  }
+
+  .lateral {
+    /* Estica até a altura do formulário, para a guia vazia acompanhar a rolagem. */
+    align-self: stretch;
+  }
+
+  .secao-passos,
+  .consulta {
+    grid-column: 1 / -1;
+  }
+
+  /* Consulta aberta: o campo à esquerda e os dados da empresa à direita. */
+  .cnpj .revelar-corpo {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 2.5rem;
+    align-items: start;
+  }
+
+  .cnpj form,
+  .cnpj .erro {
+    grid-column: 1;
+  }
+
+  .cnpj-resposta {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+  }
+
+  .como {
+    position: sticky;
+    top: 1.5rem;
   }
 }
 
 .cartao {
+  --respiro: 1.25rem;
   min-width: 0;
-  padding: 1.25rem;
+  padding: var(--respiro);
   background: var(--cartao);
   border: 1px solid var(--linha);
-  border-radius: 0.875rem;
-  box-shadow: var(--sombra);
+  border-radius: 0.75rem;
 }
 
 @media (min-width: 40rem) {
   .cartao {
-    padding: 1.75rem;
+    --respiro: 1.75rem;
   }
+}
+
+@media (max-width: 30rem) {
+  .cartao {
+    --respiro: 1rem;
+  }
+}
+
+/* Partes que abrem e fecham (sublimite, consulta de CNPJ, passo a passo): o mesmo
+   desenho em todas. O título ocupa a linha toda, que é clicável, com a seta à direita. */
+.revelar {
+  padding: 0;
+}
+
+.revelar > summary {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: var(--respiro, 1rem);
+  border-radius: inherit;
+  cursor: pointer;
+  list-style: none;
+}
+
+.revelar > summary::-webkit-details-marker {
+  display: none;
+}
+
+.revelar > summary::after {
+  content: "";
+  flex: none;
+  width: 0.5625rem;
+  height: 0.5625rem;
+  margin-right: 0.25rem;
+  border-right: 2px solid var(--texto-suave);
+  border-bottom: 2px solid var(--texto-suave);
+  transform: translateY(-0.15rem) rotate(45deg);
+  transition: transform 0.2s;
+}
+
+.revelar[open] > summary::after {
+  transform: translateY(0.15rem) rotate(-135deg);
+}
+
+.revelar > summary:hover {
+  background: var(--realce);
+}
+
+.revelar[open] > summary {
+  border-bottom: 1px solid var(--linha);
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.revelar-textos {
+  display: grid;
+  flex: 1;
+  gap: 0.125rem;
+  min-width: 0;
+}
+
+.revelar-titulo {
+  font-weight: 650;
+}
+
+.revelar-dica {
+  color: var(--texto-suave);
+  font-size: 0.9375rem;
+}
+
+.revelar-corpo {
+  display: grid;
+  gap: 1rem;
+  padding: var(--respiro, 1rem);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .revelar > summary::after {
+    transition: none;
+  }
+}
+
+.selo {
+  margin-left: 0.5rem;
+  padding: 0 0.5rem;
+  color: var(--texto-suave);
+  border: 1px solid var(--borda);
+  border-radius: 999px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  white-space: nowrap;
 }
 
 /* Formulário */
@@ -168,7 +297,7 @@ h1 {
 }
 
 /* min-width: 0 porque o fieldset, por padrão, não encolhe menos que o conteúdo (e passaria
-   da tela em 320 px com o texto longo dos anexos). */
+   da tela em 320 px). A linha fica na legenda: borda no fieldset passaria por cima dela. */
 .etapa {
   display: grid;
   gap: 1.125rem;
@@ -179,26 +308,12 @@ h1 {
 }
 
 .etapa legend {
-  display: flex;
-  align-items: center;
-  gap: 0.625rem;
+  width: 100%;
   margin-bottom: 1.125rem;
-  padding: 0;
+  padding: 0 0 0.5rem;
+  border-bottom: 1px solid var(--linha);
   font-size: 1.125rem;
   font-weight: 650;
-}
-
-.etapa-numero {
-  display: inline-grid;
-  place-items: center;
-  width: 1.75rem;
-  height: 1.75rem;
-  background: var(--destaque-suave);
-  color: var(--destaque);
-  border-radius: 50%;
-  font-family: var(--fonte-mono);
-  font-size: 0.9375rem;
-  font-weight: 700;
 }
 
 .campo label {
@@ -214,14 +329,8 @@ h1 {
 
 .nota {
   margin: 0;
-  color: var(--texto-suave);
-  font-size: 0.9375rem;
-}
-
-.etapa .nota {
   padding: 0.75rem 1rem;
   background: var(--destaque-suave);
-  color: var(--texto);
   border-radius: 0.5rem;
 }
 
@@ -229,20 +338,25 @@ input,
 select {
   width: 100%;
   min-width: 0;
-  padding: 0.625rem 0.75rem;
-  background: var(--cartao);
+  padding: 0.6875rem 0.875rem;
+  background-color: var(--cartao);
   color: var(--texto);
   border: 1px solid var(--borda);
   border-radius: 0.5rem;
   font: inherit;
+  font-variant-numeric: tabular-nums;
 }
 
 select {
   margin-top: 0.25rem;
-}
-
-input {
-  font-family: var(--fonte-mono);
+  padding-right: 2.5rem;
+  appearance: none;
+  background-image: var(--seta);
+  background-position: right 0.875rem center;
+  background-repeat: no-repeat;
+  background-size: 0.75rem auto;
+  text-overflow: ellipsis;
+  cursor: pointer;
 }
 
 [aria-invalid="true"] {
@@ -261,13 +375,12 @@ input {
 }
 
 .reais span {
-  padding-left: 0.75rem;
+  padding-left: 0.875rem;
   color: var(--texto-suave);
-  font-family: var(--fonte-mono);
 }
 
 .reais input {
-  padding-left: 0.5rem;
+  padding-left: 0.375rem;
   background: transparent;
   border: 0;
 }
@@ -297,41 +410,16 @@ input {
   margin: 0;
 }
 
-/* Campos opcionais do sublimite: fechados até a receita chegar perto dele. */
+/* Campos do sublimite: uma parte que abre dentro do formulário, num fundo mais claro. */
 .opcional {
+  --respiro: 1rem;
   background: var(--fundo);
   border: 1px solid var(--linha);
   border-radius: 0.5rem;
 }
 
-.opcional summary {
-  padding: 0.75rem 1rem;
-  cursor: pointer;
-  font-weight: 600;
-}
-
-.opcional[open] summary {
-  border-bottom: 1px solid var(--linha);
-}
-
-.opcional-corpo {
-  display: grid;
-  gap: 1rem;
-  padding: 1rem;
-}
-
-.opcional-corpo .dica {
+.opcional .revelar-corpo .dica {
   margin: 0;
-}
-
-.selo {
-  margin-left: 0.375rem;
-  padding: 0 0.5rem;
-  color: var(--texto-suave);
-  border: 1px solid var(--borda);
-  border-radius: 999px;
-  font-size: 0.8125rem;
-  font-weight: 500;
 }
 
 /* Botões */
@@ -387,7 +475,21 @@ input {
   }
 }
 
-/* Painel antes do resultado */
+/* Guia vazia, antes do primeiro cálculo: contorno tracejado, como um papel em branco. */
+.como {
+  border: 2px dashed var(--linha);
+}
+
+.como-estado {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0 0 1.5rem;
+  padding-bottom: 1.25rem;
+  border-bottom: 1px solid var(--linha);
+  font-size: 1.125rem;
+  font-weight: 600;
+}
 
 .como ol {
   margin: 0 0 1rem;
@@ -403,17 +505,10 @@ input {
   font-weight: 700;
 }
 
-.carregando {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  margin: 0 0 1rem;
-  font-weight: 600;
-}
-
 .girando {
-  width: 1rem;
-  height: 1rem;
+  flex: none;
+  width: 1.125rem;
+  height: 1.125rem;
   border: 2px solid var(--trilho);
   border-top-color: var(--destaque);
   border-radius: 50%;
@@ -432,9 +527,11 @@ input {
   }
 }
 
-/* Resultado */
-
-.resultado {
+/* Resultado com cara de guia: o valor em cima, um picote (linha tracejada com dois
+   recortes nas bordas) e, embaixo, o resumo e a divisão. overflow: hidden corta a metade
+   dos recortes que ficaria para fora do cartão. */
+.guia {
+  overflow: hidden;
   border-top: 4px solid var(--destaque);
 }
 
@@ -452,16 +549,50 @@ input {
 
 .das-valor {
   color: var(--destaque);
-  font-size: clamp(2.125rem, 6vw + 1rem, 2.75rem);
+  font-size: clamp(2.25rem, 4vw + 1.25rem, 3rem);
   font-weight: 700;
-  letter-spacing: -0.02em;
+  line-height: 1.05;
+  letter-spacing: -0.025em;
   font-variant-numeric: tabular-nums;
   overflow-wrap: anywhere;
 }
 
 .das-mes {
-  margin: 0.25rem 0 0;
+  margin: 0.5rem 0 0;
   color: var(--texto-suave);
+}
+
+.nota-aviso {
+  margin-top: 1rem;
+  background: var(--aviso-fundo);
+  border-left: 4px solid var(--aviso-borda);
+  border-radius: 0.375rem;
+}
+
+.picote {
+  position: relative;
+  margin: 1.5rem calc(-1 * var(--respiro));
+  border-top: 2px dashed var(--linha);
+}
+
+.picote::before,
+.picote::after {
+  content: "";
+  position: absolute;
+  top: calc(-0.75rem - 1px);
+  width: 1.5rem;
+  height: 1.5rem;
+  background: var(--fundo);
+  border: 1px solid var(--linha);
+  border-radius: 50%;
+}
+
+.picote::before {
+  left: -0.75rem;
+}
+
+.picote::after {
+  right: -0.75rem;
 }
 
 /* Campos mudaram depois do cálculo: o valor perde o verde e aparece a nota. */
@@ -473,43 +604,39 @@ input {
   color: var(--texto-suave);
 }
 
-.nota-desatualizado,
-.aviso-resultado {
-  margin: 1rem 0 0;
-  padding: 0.75rem 1rem;
-  background: var(--aviso-fundo);
-  border-left: 4px solid var(--aviso-borda);
-  border-radius: 0.5rem;
-}
-
+/* Resumo em linhas de rótulo e valor, como numa guia (também na consulta de CNPJ). */
 .resumo {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
-  gap: 0.5rem;
-  margin: 1.25rem 0;
+  margin: 0 0 1.5rem;
 }
 
 .resumo div {
-  min-width: 0;
-  padding: 0.625rem 0.75rem;
-  background: var(--fundo);
-  border-radius: 0.5rem;
-}
-
-.resumo .largo {
-  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.125rem 1rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px dashed var(--linha);
 }
 
 .resumo dt {
   color: var(--texto-suave);
-  font-size: 0.875rem;
 }
 
 .resumo dd {
   margin: 0;
   font-weight: 600;
+  text-align: right;
   font-variant-numeric: tabular-nums;
   overflow-wrap: anywhere;
+}
+
+.resumo .largo {
+  display: grid;
+}
+
+.resumo .largo dd {
+  text-align: left;
 }
 
 .tributos {
@@ -535,6 +662,11 @@ input {
   vertical-align: top;
 }
 
+/* Valores em reais não quebram entre o "R$" e o número. */
+.tributos td {
+  white-space: nowrap;
+}
+
 .tributos th:first-child {
   padding-left: 0;
   text-align: left;
@@ -544,24 +676,15 @@ input {
   padding-right: 0;
 }
 
-/* Valores em reais não quebram entre o "R$" e o número. */
-.tributos td {
-  white-space: nowrap;
-}
-
-@media (max-width: 30rem) {
-  .cartao {
-    padding: 1rem;
-  }
-
-  .tributos {
-    font-size: 0.875rem;
-  }
-}
-
 @media (min-width: 30rem) {
   .tributos th:first-child {
     width: 40%;
+  }
+}
+
+@media (max-width: 30rem) {
+  .tributos {
+    font-size: 0.875rem;
   }
 }
 
@@ -594,45 +717,107 @@ input {
   fill: var(--destaque);
 }
 
-.passos {
-  margin-top: 1rem;
-}
-
-.passos summary {
-  cursor: pointer;
-  font-weight: 600;
-  color: var(--link);
-}
-
-.passos ol {
-  padding-left: 1.25rem;
-}
-
-.passos li + li {
-  margin-top: 0.75rem;
-}
-
-.passos p {
-  margin: 0.25rem 0 0;
-  /* Contas longas (com valores em reais) quebram em vez de passar da tela. */
-  overflow-wrap: anywhere;
-}
-
 .fonte {
+  margin: 0;
   color: var(--texto-suave);
   font-size: 0.875rem;
 }
 
-/* Consulta de CNPJ (opcional) */
-
-.cnpj summary {
-  cursor: pointer;
-  font-weight: 600;
-  color: var(--link);
+/* Conta passo a passo: linha do tempo numerada (é uma sequência). No celular, número à
+   esquerda e o texto embaixo do título; a partir de 56rem, título e base legal numa coluna
+   e a conta em outra, com no máximo ~70 caracteres por linha. */
+.linha-do-tempo {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: passo;
 }
 
+.linha-do-tempo li {
+  position: relative;
+  display: grid;
+  grid-template-columns: 2.25rem minmax(0, 1fr);
+  column-gap: 1rem;
+  padding-bottom: 1.75rem;
+  counter-increment: passo;
+}
+
+.linha-do-tempo li::before {
+  content: counter(passo);
+  display: grid;
+  grid-row: 1 / span 2;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  background: var(--destaque-suave);
+  color: var(--destaque);
+  border-radius: 50%;
+  font-weight: 700;
+}
+
+/* A linha que liga um número ao próximo. */
+.linha-do-tempo li::after {
+  content: "";
+  position: absolute;
+  top: 2.5rem;
+  bottom: 0.25rem;
+  left: calc(1.125rem - 1px);
+  width: 2px;
+  background: var(--linha);
+}
+
+.linha-do-tempo li:last-child {
+  padding-bottom: 0.5rem;
+}
+
+.linha-do-tempo li:last-child::after {
+  display: none;
+}
+
+.passo-cabeca {
+  grid-column: 2;
+  padding-top: 0.375rem;
+}
+
+.passo-cabeca .fonte {
+  margin-top: 0.25rem;
+}
+
+.passo-texto {
+  grid-column: 2;
+  max-width: 70ch;
+  margin: 0.5rem 0 0;
+  /* Contas longas (com valores em reais) quebram em vez de passar da tela. */
+  overflow-wrap: anywhere;
+}
+
+@media (min-width: 56rem) {
+  .linha-do-tempo li {
+    grid-template-columns: 2.25rem minmax(0, 15rem) minmax(0, 1fr);
+    column-gap: 1.5rem;
+  }
+
+  .linha-do-tempo li::before {
+    grid-row: 1;
+  }
+
+  .passo-texto {
+    grid-column: 3;
+    margin-top: 0;
+    padding-top: 0.375rem;
+  }
+}
+
+.secao-passos .revelar-corpo {
+  gap: 1.5rem;
+  padding-top: 1.75rem;
+}
+
+/* Consulta de CNPJ (opcional) */
+
 .cnpj form {
-  margin-top: 1rem;
+  margin: 0;
 }
 
 .cnpj label {
@@ -651,23 +836,19 @@ input {
   width: auto;
 }
 
-.cnpj .erro {
-  margin-top: 1rem;
-}
-
-.empresa {
-  margin-top: 1rem;
-}
-
 .empresa p {
-  margin: 0;
+  margin: 0 0 0.5rem;
   overflow-wrap: anywhere;
+}
+
+.empresa .resumo {
+  margin-bottom: 0.75rem;
 }
 
 /* Avisos e rodapé */
 
 .aviso {
-  padding: 1rem 1.25rem;
+  padding: 1.25rem 1.5rem;
   background: var(--aviso-fundo);
   border-left: 4px solid var(--aviso-borda);
   border-radius: 0.5rem;
@@ -678,13 +859,21 @@ input {
   padding-left: 1.25rem;
 }
 
-.aviso li + li {
-  margin-top: 0.375rem;
+.aviso li {
+  margin-bottom: 0.5rem;
+  break-inside: avoid;
+}
+
+@media (min-width: 48rem) {
+  .aviso ul {
+    columns: 2;
+    column-gap: 3rem;
+  }
 }
 
 .rodape {
   padding-top: 2rem;
-  padding-bottom: 2rem;
+  padding-bottom: 2.5rem;
   color: var(--texto-suave);
   font-size: 0.9375rem;
 }

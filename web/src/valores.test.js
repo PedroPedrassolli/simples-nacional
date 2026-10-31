@@ -11,6 +11,7 @@ import {
   nomeDoMes,
   paraApi,
   podePassarDoSublimite,
+  semQuebra,
   SUBLIMITE,
   textoSimples,
   textosDosCampos,
@@ -242,4 +243,12 @@ test("usa o mesmo sublimite do data/sublimite.yml", () => {
   const valores = [...yaml.matchAll(/valor: "([\d.]+)"/g)].map((achado) => Number(achado[1]));
   assert.ok(valores.length >= 2);
   for (const valor of valores) assert.equal(valor, SUBLIMITE);
+});
+
+test("não deixa a linha quebrar depois de R$, § e nº", () => {
+  assert.equal(
+    semQuebra("R$ 3.600.000,00 (art. 18, § 1º; §§ 24 e 26; Portaria nº 54)"),
+    "R$\u00a03.600.000,00 (art. 18, §\u00a01º; §§\u00a024 e 26; Portaria nº\u00a054)",
+  );
+  assert.equal(semQuebra("sem nada"), "sem nada");
 });
