@@ -54,3 +54,15 @@ const details = [
     .join(", ")}`,
 ];
 console.log(`::notice title=Lighthouse (detalhes)::${details.join(" | ")}`);
+
+// O que se mexeu na tela durante o carregamento (CLS) e por quê (fonte, imagem sem
+// tamanho, conteúdo inserido...). Sem isso, um CLS ruim na CI é difícil de reproduzir.
+const shifts = report.audits["layout-shifts"]?.details?.items ?? [];
+if (shifts.length > 0) {
+  const lines = shifts.map((item) => {
+    const causes = (item.subItems?.items ?? []).map((sub) => sub.cause).filter(Boolean);
+    const where = item.node?.selector ?? item.node?.snippet ?? "?";
+    return `${where} (${item.score?.toFixed(3)}${causes.length ? `; ${causes.join(", ")}` : ""})`;
+  });
+  console.log(`::notice title=Lighthouse (deslocamentos)::${lines.join(" | ")}`);
+}

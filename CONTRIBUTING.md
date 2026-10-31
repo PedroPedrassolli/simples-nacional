@@ -84,6 +84,10 @@ opcionais na hora certa; um teste confere que ele bate com o YAML.
   abre e fecha e pode crescer (passo a passo, consulta de CNPJ) vai em largura total, embaixo
   (`.layout` no `estilo.css`); senão uma coluna fica muito mais alta que a outra. Mudou o visual?
   Confira com as partes abertas em 320 px e em 1280 px, nos dois temas.
+- Fontes: os arquivos da Geist ficam em `web/public/fontes/` (licença OFL junto), com
+  `font-display: optional` e preload no `index.html`. Com o `swap` do pacote, a troca de fonte
+  depois da primeira pintura empurrava a calculadora (CLS 0,103 no Lighthouse da CI, que só
+  aparecia lá: o resumo do Lighthouse lista o que se deslocou e por quê).
 - A CSP da página não permite `style` inline. Largura que depende de dado (as barras da
   divisão do DAS) vai como atributo de SVG, não como `style={{ width }}`.
 - As dicas dos anexos (`web/src/anexos.js`) resumem o art. 18 da LC 123/2006, com a data em
