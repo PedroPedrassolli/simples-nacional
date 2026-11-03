@@ -78,6 +78,8 @@ jobs:
           expect "/api/calcular?periodo=2026-03&anexo=3&rbt12=500000.00&receita_mes=40000.00" 200 '"das_centavos":398880'
           # Duas receitas (test/segregacao_test.rb): R$ 1.342,24 + R$ 997,20 = R$ 2.339,44.
           expect "/api/calcular?periodo=2026-03&rbt12=500000.00&atividades=revenda:30000.00:st_icms;servicos_3:10000.00" 200 '"das_centavos":233944'
+          # MEI de comércio (test/mei_test.rb): 5% de R$ 1.621,00 + R$ 1,00 de ICMS = R$ 82,05.
+          expect "/api/calcular?regime=mei&periodo=2026-03&mei_atividade=comercio" 200 '"das_centavos":8205'
           expect "/api/calcular?periodo=2026-03&anexo=9&rbt12=1.00&receita_mes=1.00" 400 "Escolha o anexo"
           # CNPJ com dígito errado: responde sem chamar a BrasilAPI.
           expect "/api/cnpj?cnpj=11222333000180" 400 "CNPJ inválido"

@@ -31,10 +31,13 @@ module SimplesNacional
     # meses: meses de atividade antes do mês de apuração, ou nil quando já vale a regra normal.
     # primeira_faixa: 2027 em diante, no 1º e no 2º mês de atividade (sem RBT12).
     # historico: a janela da RBT12 quando a pessoa usou o mês a mês (lista de Date), ou nil.
-    # situacao: o ICMS/ISS, o sublimite e o limite (ver Sublimite).
+    # situacao: o ICMS/ISS, o sublimite e o limite (ver Sublimite); situacao_exportacao: o limite
+    # extra da exportação (ver LimiteDaExportacao). valores_fixos: { "ISS" => centavos } (ver
+    # ValoresFixos). pagamento: a data do pagamento em atraso (Date) ou nil (ver Atraso).
     Dados = Data.define(:periodo, :regras, :inicio, :meses, :primeira_faixa, :atividades, :interno, :exportacao,
-                        :folha, :receita_ano, :receita_ano_anterior, :receita_mes_anterior, :historico,
-                        :ibs_cbs_fora, :fora_do_das, :situacao)
+                        :folha, :receita_ano, :receita_ano_anterior, :receita_mes_anterior, :receita_ano_exportacao,
+                        :historico, :ibs_cbs_fora, :fora_do_das, :valores_fixos, :pagamento, :situacao,
+                        :situacao_exportacao)
 
     # O jeito antigo de chamar (um anexo e a receita do mês) vira uma atividade só.
     ANEXOS = { 1 => "revenda", 2 => "industria", 3 => "servicos_3", 4 => "servicos_4", 5 => "servicos_5",
@@ -42,16 +45,30 @@ module SimplesNacional
 
     def self.conferir(periodo:, atividades: nil, anexo: nil, receita_mes: nil, rbt12: nil, rbt12_exportacao: nil,
                       folha12: nil, inicio: nil, receita_ano: nil, receita_ano_anterior: nil, receita_mes_anterior: nil,
-                      historico: nil, ibs_cbs_fora: false, fora_do_das: {})
+                      receita_ano_exportacao: nil, historico: nil, ibs_cbs_fora: false, fora_do_das: {},
+                      valores_fixos: {}, pagamento: nil)
       periodo, regras = mes_de_apuracao(periodo)
       inicio, meses = inicio_de_atividade(inicio, periodo, regras)
-      lista = Atividades.conferir(atividades || do_anexo(anexo, receita_mes, regras), regras)
-      valores = { rbt12:, rbt12_exportacao:, folha12:, receita_ano:, receita_mes_anterior: }
+      lista = AtividadesInformadas.conferir(atividades || do_anexo(anexo, receita_mes, regras), regras)
+      valores = { rbt12:, rbt12_exportacao:, folha12:, receita_ano:, receita_mes_anterior:, receita_ano_exportacao: }
       valores, janela = Historico.de_entrada(historico, valores, periodo, regras, inicio) if historico
       dados = montar({ periodo:, regras:, inicio:, meses: }, lista, valores)
-      dados.with(receita_ano_anterior: opcional(receita_ano_anterior, "A receita do ano anterior"), historico: janela,
-                 ibs_cbs_fora: conferir_ibs_cbs(ibs_cbs_fora, regras), fora_do_das: ForaDoDas.conferir(fora_do_das))
-           .then { |pronto| pronto.with(situacao: Sublimite.situacao(pronto)) }
+      dados = dados.with(receita_ano_anterior: opcional(receita_ano_anterior, "A receita do ano anterior"),
+                         historico: janela, ibs_cbs_fora: conferir_ibs_cbs(ibs_cbs_fora, regras),
+                         **extras(fora_do_das, valores_fixos, pagamento, periodo))
+      com_limites(dados)
+    end
+
+    # O que não entra na RBT12: o que se paga fora do DAS, os valores fixos e a data do pagamento.
+    def self.extras(fora_do_das, valores_fixos, pagamento, periodo)
+      { fora_do_das: ForaDoDas.conferir(fora_do_das), valores_fixos: ValoresFixos.conferir(valores_fixos),
+        pagamento: Atraso.conferir(pagamento, periodo) }
+    end
+
+    # O sublimite e os limites (do mercado interno e da exportação) dependem de tudo o que veio antes.
+    def self.com_limites(dados)
+      dados = dados.with(situacao: Sublimite.situacao(dados))
+      dados.with(situacao_exportacao: LimiteDaExportacao.situacao(dados))
     end
 
     # base: periodo, regras, inicio e meses.
@@ -61,7 +78,10 @@ module SimplesNacional
       campos = { primeira_faixa: primeira, atividades: lista, receita_ano_anterior: nil, historico: nil,
                  receita_ano: opcional(valores[:receita_ano], "A receita do ano até o mês anterior"),
                  receita_mes_anterior: opcional(valores[:receita_mes_anterior], "A receita do mês anterior"),
-                 ibs_cbs_fora: false, fora_do_das: nil, situacao: nil }
+                 receita_ano_exportacao: opcional(valores[:receita_ano_exportacao],
+                                                  "A receita de exportação do ano até o mês anterior"),
+                 ibs_cbs_fora: false, fora_do_das: nil, valores_fixos: {}, pagamento: nil, situacao: nil,
+                 situacao_exportacao: nil }
       Dados.new(**base, **Acumulados.todos(valores, lista, contexto), **campos)
     end
 
@@ -120,6 +140,7 @@ module SimplesNacional
       raise EntradaInvalida, "#{nome} não pode ser negativa." if valor.negative?
     end
 
-    private_class_method :montar, :mes_de_apuracao, :inicio_de_atividade, :do_anexo, :conferir_ibs_cbs, :opcional
+    private_class_method :montar, :extras, :com_limites, :mes_de_apuracao, :inicio_de_atividade, :do_anexo,
+                         :conferir_ibs_cbs, :opcional
   end
 end

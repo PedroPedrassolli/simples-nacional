@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { dicaDoTipo, opcao, opcoesDoTipo, TIPOS } from "./atividades.js";
-import { Caixa, CampoLista, CampoReais, Revelar } from "./campos.jsx";
+import { dicaDoTipo, marcarOpcao, opcao, opcoesDoTipo, REDUCOES, TIPOS } from "./atividades.js";
+import { Caixa, CampoLista, CampoPercentual, CampoReais, Revelar } from "./campos.jsx";
 import { novaReceita } from "./formulario.js";
 import { paraApi, reais } from "./valores.js";
 
@@ -67,10 +67,7 @@ function LinhaDaReceita({ receita, indice, total, ano, erros, aoMudar, aoRemover
   const numero = total > 1 ? ` ${indice + 1}` : "";
 
   function marcar(codigo, marcada) {
-    const novas = marcada
-      ? [...receita.opcoes, codigo]
-      : receita.opcoes.filter((item) => item !== codigo);
-    aoMudar({ opcoes: novas });
+    aoMudar({ opcoes: marcarOpcao(receita.opcoes, codigo, marcada) });
   }
 
   return (
@@ -109,7 +106,7 @@ function LinhaDaReceita({ receita, indice, total, ano, erros, aoMudar, aoRemover
         <Revelar
           className="mini"
           titulo={`Situações especiais${numero}`}
-          dica="Substituição tributária, monofásico, ISS retido, exportação"
+          dica="Substituição tributária, monofásico, ISS retido, exportação, isenção ou redução"
           selo={
             marcadas.length > 0
               ? `${marcadas.length} marcada${marcadas.length > 1 ? "s" : ""}`
@@ -126,7 +123,19 @@ function LinhaDaReceita({ receita, indice, total, ano, erros, aoMudar, aoRemover
               dica={opcao(codigo, ano).dica}
               marcada={receita.opcoes.includes(codigo)}
               aoMudar={(marcada) => marcar(codigo, marcada)}
-            />
+            >
+              {codigo in REDUCOES && receita.opcoes.includes(codigo) && (
+                <CampoPercentual
+                  nome={`receitas.${indice}.${codigo}.percentual`}
+                  rotulo={`Redução do ${REDUCOES[codigo]}${numero}`}
+                  valor={receita.reducoes?.[codigo] ?? ""}
+                  erro={erros[`receitas.${indice}.${codigo}`]}
+                  aoMudar={(valor) =>
+                    aoMudar({ reducoes: { ...receita.reducoes, [codigo]: valor } })
+                  }
+                />
+              )}
+            </Caixa>
           ))}
         </Revelar>
       )}

@@ -69,7 +69,8 @@ module SimplesNacional
       return unless situacao.exclusao
 
       Passos::Passo.new(titulo: "Limite do Simples", fonte: "#{FONTE}; #{dados.regras.res}, art. 24, II",
-                        texto: "#{texto_do_limite(dados)} #{texto_do_ano(dados)} #{parte(dados)}Pelo tamanho do " \
+                        texto: "#{texto_do_limite(dados)} #{texto_do_ano(dados)} " \
+                               "#{parte(dados, dados.interno.do_mes, situacao.fracao_limite)}Pelo tamanho do " \
                                "excesso, a empresa sai do Simples #{saida(situacao.exclusao, dados.periodo.year)}.")
     end
 
@@ -86,16 +87,16 @@ module SimplesNacional
         "#{13 - dados.inicio.month} = #{Formato.reais(dados.situacao.limite)}."
     end
 
-    def self.parte(dados)
-      fracao = dados.situacao.fracao_limite
+    # do_mes: a receita do mês no mercado (interno ou exportação); fracao: a parte acima do limite.
+    def self.parte(dados, do_mes, fracao, nome = "receita")
       unless dados.regras.majora_excesso
         return "A partir de 2027, a receita acima do limite é tributada junto com o resto, pela alíquota normal, " \
                "até a exclusão. "
       end
       return "" unless fracao.positive?
 
-      quanto = "A parte da receita do mês acima do limite, #{Formato.reais(dados.interno.do_mes * fracao)},"
-      quanto = "Toda a receita do mês" if fracao == 1
+      quanto = "A parte da #{nome} do mês acima do limite, #{Formato.reais(do_mes * fracao)},"
+      quanto = "Toda a #{nome} do mês" if fracao == 1
       "#{quanto} paga os tributos federais com a alíquota efetiva da 6ª faixa calculada com " \
         "#{Formato.reais(Entrada::LIMITE)}. "
     end
@@ -107,12 +108,33 @@ module SimplesNacional
     def self.exportacao(resultado)
       return unless resultado.atividades.any? { |apurada| apurada.atividade.exportacao? }
 
-      Passos::Passo.new(titulo: "Exportação",
-                        texto: "A receita de exportação tem RBT12 própria e um limite próprio, igual ao do mercado " \
-                               "interno. A calculadora confere o sublimite e o limite só do mercado interno.",
-                        fonte: "LC 123/2006, art. 3º, §§ 14 e 15; #{resultado.dados.regras.res}, art. 23")
+      dados = resultado.dados
+      Passos::Passo.new(titulo: "Exportação", texto: texto_da_exportacao(dados),
+                        fonte: "LC 123/2006, art. 3º, §§ 14 e 15; #{dados.regras.res}, arts. 2º, § 1º, 23 e 24, § 8º")
     end
 
-    private_class_method :limite, :texto_do_limite, :texto_do_ano, :parte, :exportacao
+    SEM_A_EXPORTACAO_DO_ANO = "Sem a receita de exportação do ano até o mês anterior, a calculadora não confere " \
+                              "esse limite."
+
+    # Limite extra da exportação: dentro, acima ou sem a receita do ano para conferir.
+    def self.texto_da_exportacao(dados)
+      situacao = dados.situacao_exportacao
+      texto = "A receita de exportação tem RBT12 própria e um limite extra, igual ao do mercado interno " \
+              "(#{Formato.reais(situacao.limite)}#{' no ano de início' if Sublimite.inicio_no_ano?(dados)})."
+      "#{texto} #{situacao.receita_ano.nil? ? SEM_A_EXPORTACAO_DO_ANO : conferencia_da_exportacao(dados, situacao)}"
+    end
+
+    # Com a receita de exportação do ano: dentro ou acima do limite.
+    def self.conferencia_da_exportacao(dados, situacao)
+      do_mes = dados.exportacao.do_mes
+      total = "Com este mês, a exportação do ano soma #{Formato.reais(situacao.receita_ano + do_mes)}"
+      return "#{total}, dentro do limite." unless situacao.exclusao
+
+      "#{total}, acima dele. #{parte(dados, do_mes, situacao.fracao_limite, 'exportação')}" \
+        "Pelo tamanho do excesso, a empresa sai do Simples #{saida(situacao.exclusao, dados.periodo.year)}."
+    end
+
+    private_class_method :limite, :texto_do_limite, :texto_do_ano, :parte, :exportacao, :texto_da_exportacao,
+                         :conferencia_da_exportacao
   end
 end

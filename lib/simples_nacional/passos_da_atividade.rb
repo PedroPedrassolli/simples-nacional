@@ -13,7 +13,7 @@ module SimplesNacional
       passos = [anexo(apurada, dados), PassoDaFaixa.faixa(apurada, dados),
                 PassoDaFaixa.aliquota_efetiva(apurada, dados), PassoDaDivisao.montar(apurada, dados),
                 *PassoDosAjustes.montar(apurada, dados)]
-      passos << valor(apurada) unless unica
+      passos << valor(apurada) unless unica && dados.valores_fixos.empty?
       [unica ? "Receita do mês" : "Receita #{apurada.numero}: #{apurada.atividade.tipo.nome}", passos]
     end
 

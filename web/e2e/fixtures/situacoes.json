@@ -1,0 +1,309 @@
+{
+  "periodo": "2026-03",
+  "periodo_nome": "março de 2026",
+  "ano": 2026,
+  "fator_r": null,
+  "anexo": 2,
+  "anexo_nome": "Indústria",
+  "faixa": 3,
+  "rbt12": "R$ 500.000,00",
+  "aliquota_nominal": "10,00%",
+  "das": "R$ 2.505,28",
+  "das_centavos": 250528,
+  "receita": "R$ 40.000,00",
+  "aliquota_efetiva": "6,2632%",
+  "tributos": [
+    {
+      "nome": "IRPJ",
+      "percentual": "0,3906%",
+      "valor": "R$ 156,26",
+      "valor_centavos": 15626
+    },
+    {
+      "nome": "CSLL",
+      "percentual": "0,2486%",
+      "valor": "R$ 99,44",
+      "valor_centavos": 9944
+    },
+    {
+      "nome": "Cofins",
+      "percentual": "0,8382%",
+      "valor": "R$ 335,29",
+      "valor_centavos": 33529
+    },
+    {
+      "nome": "PIS/Pasep",
+      "percentual": "0,1814%",
+      "valor": "R$ 72,56",
+      "valor_centavos": 7256
+    },
+    {
+      "nome": "CPP",
+      "percentual": "2,7393%",
+      "valor": "R$ 1.095,73",
+      "valor_centavos": 109573
+    },
+    {
+      "nome": "IPI",
+      "percentual": "0,4065%",
+      "valor": "R$ 162,63",
+      "valor_centavos": 16263
+    },
+    {
+      "nome": "ISS",
+      "percentual": "1,4584%",
+      "valor": "R$ 583,36",
+      "valor_centavos": 58336
+    }
+  ],
+  "total_estimado": "R$ 2.523,98",
+  "total_estimado_centavos": 252398,
+  "atividades": [
+    {
+      "numero": 1,
+      "tipo": "industria_iss",
+      "nome": "Industrialização com IPI e ISS ao mesmo tempo",
+      "opcoes": ["Redução do ISS dada pelo município (40,00%)"],
+      "exportacao": false,
+      "receita": "R$ 30.000,00",
+      "anexo": 2,
+      "anexo_nome": "Indústria",
+      "faixa": 3,
+      "rbt12": "R$ 500.000,00",
+      "aliquota_nominal": "10,00%",
+      "aliquota_efetiva": "7,2280%",
+      "percentual": "6,8595%",
+      "valor": "R$ 2.057,87",
+      "valor_centavos": 205787,
+      "tributos": [
+        {
+          "nome": "IRPJ",
+          "percentual": "0,3975%",
+          "valor": "R$ 119,26",
+          "valor_centavos": 11926
+        },
+        {
+          "nome": "CSLL",
+          "percentual": "0,2529%",
+          "valor": "R$ 75,89",
+          "valor_centavos": 7589
+        },
+        {
+          "nome": "Cofins",
+          "percentual": "0,8319%",
+          "valor": "R$ 249,58",
+          "valor_centavos": 24958
+        },
+        {
+          "nome": "PIS/Pasep",
+          "percentual": "0,1799%",
+          "valor": "R$ 53,99",
+          "valor_centavos": 5399
+        },
+        {
+          "nome": "CPP",
+          "percentual": "2,7105%",
+          "valor": "R$ 813,15",
+          "valor_centavos": 81315
+        },
+        {
+          "nome": "IPI",
+          "percentual": "0,5421%",
+          "valor": "R$ 162,63",
+          "valor_centavos": 16263
+        },
+        {
+          "nome": "ISS",
+          "percentual": "1,9445%",
+          "valor": "R$ 583,36",
+          "valor_centavos": 58336
+        }
+      ]
+    },
+    {
+      "numero": 2,
+      "tipo": "revenda",
+      "nome": "Revenda de mercadorias",
+      "opcoes": ["Isenção do ICMS dada pelo estado"],
+      "exportacao": false,
+      "receita": "R$ 10.000,00",
+      "anexo": 1,
+      "anexo_nome": "Comércio",
+      "faixa": 3,
+      "rbt12": "R$ 500.000,00",
+      "aliquota_nominal": "9,50%",
+      "aliquota_efetiva": "6,7280%",
+      "percentual": "4,4741%",
+      "valor": "R$ 447,41",
+      "valor_centavos": 44741,
+      "tributos": [
+        {
+          "nome": "IRPJ",
+          "percentual": "0,3700%",
+          "valor": "R$ 37,00",
+          "valor_centavos": 3700
+        },
+        {
+          "nome": "CSLL",
+          "percentual": "0,2354%",
+          "valor": "R$ 23,55",
+          "valor_centavos": 2355
+        },
+        {
+          "nome": "Cofins",
+          "percentual": "0,8571%",
+          "valor": "R$ 85,71",
+          "valor_centavos": 8571
+        },
+        {
+          "nome": "PIS/Pasep",
+          "percentual": "0,1856%",
+          "valor": "R$ 18,57",
+          "valor_centavos": 1857
+        },
+        {
+          "nome": "CPP",
+          "percentual": "2,8257%",
+          "valor": "R$ 282,58",
+          "valor_centavos": 28258
+        }
+      ]
+    }
+  ],
+  "fora_do_das": [
+    {
+      "tributo": "ICMS-ST",
+      "base": "R$ 140,00",
+      "valor": "R$ 13,20",
+      "valor_centavos": 1320,
+      "texto": "O ICMS da substituição tributária (a empresa é a substituta) é pago fora do DAS. Base: (R$ 100,00 + R$ 0,00 de IPI e encargos) × (1 + 40,00% de MVA) = R$ 140,00. Imposto: R$ 140,00 × 18,00% − R$ 12,00 (12,00% da operação própria) = R$ 13,20.",
+      "falta": null,
+      "fonte": "LC 123/2006, art. 13, § 1º, XIII, a, e § 5º; Convênio ICMS 142/2018, cláusulas décima primeira, § 1º, e décima terceira, § 1º"
+    },
+    {
+      "tributo": "DIFAL",
+      "base": "R$ 100,00",
+      "valor": "R$ 5,50",
+      "valor_centavos": 550,
+      "texto": "O diferencial de alíquota do ICMS nas compras de outros estados é pago fora do DAS. Estimativa: R$ 100,00 × (17,50% − 12,00%) = R$ 5,50.",
+      "falta": null,
+      "fonte": "LC 123/2006, art. 13, § 1º, XIII, g, 2, e h, e § 5º"
+    }
+  ],
+  "passos": [
+    {
+      "titulo": "Anexo",
+      "texto": "Industrialização com IPI e ISS ao mesmo tempo: Anexo II (Indústria).",
+      "fonte": "LC 123/2006, art. 18, § 4º, VI; Res. CGSN 140/2018, art. 25, § 1º, VII, e Anexo II",
+      "grupo": "Receita 1: Industrialização com IPI e ISS ao mesmo tempo"
+    },
+    {
+      "titulo": "Faixa",
+      "texto": "A RBT12 é de R$ 500.000,00 e fica na 3ª faixa do Anexo II, de R$ 360.000,01 a R$ 720.000,00: alíquota nominal de 10,00% e parcela a deduzir de R$ 13.860,00.",
+      "fonte": "LC 123/2006, art. 18, § 1º, e Anexo II",
+      "grupo": "Receita 1: Industrialização com IPI e ISS ao mesmo tempo"
+    },
+    {
+      "titulo": "Alíquota efetiva",
+      "texto": "(RBT12 × alíquota nominal − parcela a deduzir) ÷ RBT12 = (R$ 500.000,00 × 10,00% − R$ 13.860,00) ÷ R$ 500.000,00 = 7,2280%.",
+      "fonte": "LC 123/2006, art. 18, § 1º-A",
+      "grupo": "Receita 1: Industrialização com IPI e ISS ao mesmo tempo"
+    },
+    {
+      "titulo": "Divisão entre os tributos",
+      "texto": "A alíquota efetiva é dividida entre os tributos pelos percentuais da 3ª faixa do Anexo II: IRPJ 5,50%, CSLL 3,50%, Cofins 11,51%, PIS/Pasep 2,49%, CPP 37,50%, IPI 7,50% e ICMS 32,00%. Por exemplo, IRPJ = 7,2280% × 5,50% = 0,3975%.",
+      "fonte": "Res. CGSN 140/2018, art. 21, III; LC 123/2006, Anexo II",
+      "grupo": "Receita 1: Industrialização com IPI e ISS ao mesmo tempo"
+    },
+    {
+      "titulo": "O que esta receita não paga no DAS",
+      "texto": "Saem da conta: o ICMS (a atividade com IPI e ISS paga ISS, e não ICMS). Entra o ISS do Anexo III na mesma faixa: 3,2409%. O ISS tem redução de 40,00% (redução dada pelo município): 3,2409% × (1 − 40,00%) = 1,9445%. Soma dos percentuais desta receita: 6,8595%.",
+      "fonte": "LC 123/2006, art. 18, § 4º, VI; Res. CGSN 140/2018, art. 25, § 1º, VII; LC 123/2006, art. 18, §§ 20 e 20-A; Res. CGSN 140/2018, art. 35, II",
+      "grupo": "Receita 1: Industrialização com IPI e ISS ao mesmo tempo"
+    },
+    {
+      "titulo": "Valor desta receita",
+      "texto": "Receita × soma dos percentuais = R$ 30.000,00 × 6,8595% = R$ 2.057,87.",
+      "fonte": "LC 123/2006, art. 18, § 3º",
+      "grupo": "Receita 1: Industrialização com IPI e ISS ao mesmo tempo"
+    },
+    {
+      "titulo": "Anexo",
+      "texto": "Revenda de mercadorias: Anexo I (Comércio).",
+      "fonte": "LC 123/2006, art. 18, § 4º, I, e Anexo I",
+      "grupo": "Receita 2: Revenda de mercadorias"
+    },
+    {
+      "titulo": "Faixa",
+      "texto": "A RBT12 é de R$ 500.000,00 e fica na 3ª faixa do Anexo I, de R$ 360.000,01 a R$ 720.000,00: alíquota nominal de 9,50% e parcela a deduzir de R$ 13.860,00.",
+      "fonte": "LC 123/2006, art. 18, § 1º, e Anexo I",
+      "grupo": "Receita 2: Revenda de mercadorias"
+    },
+    {
+      "titulo": "Alíquota efetiva",
+      "texto": "(RBT12 × alíquota nominal − parcela a deduzir) ÷ RBT12 = (R$ 500.000,00 × 9,50% − R$ 13.860,00) ÷ R$ 500.000,00 = 6,7280%.",
+      "fonte": "LC 123/2006, art. 18, § 1º-A",
+      "grupo": "Receita 2: Revenda de mercadorias"
+    },
+    {
+      "titulo": "Divisão entre os tributos",
+      "texto": "A alíquota efetiva é dividida entre os tributos pelos percentuais da 3ª faixa do Anexo I: IRPJ 5,50%, CSLL 3,50%, Cofins 12,74%, PIS/Pasep 2,76%, CPP 42,00% e ICMS 33,50%. Por exemplo, IRPJ = 6,7280% × 5,50% = 0,3700%.",
+      "fonte": "Res. CGSN 140/2018, art. 21, III; LC 123/2006, Anexo I",
+      "grupo": "Receita 2: Revenda de mercadorias"
+    },
+    {
+      "titulo": "O que esta receita não paga no DAS",
+      "texto": "Saem da conta: o ICMS (isenção dada pelo estado). Soma dos percentuais desta receita: 4,4741%.",
+      "fonte": "LC 123/2006, art. 18, §§ 20 e 20-A; Res. CGSN 140/2018, art. 35, I",
+      "grupo": "Receita 2: Revenda de mercadorias"
+    },
+    {
+      "titulo": "Valor desta receita",
+      "texto": "Receita × soma dos percentuais = R$ 10.000,00 × 4,4741% = R$ 447,41.",
+      "fonte": "LC 123/2006, art. 18, § 3º",
+      "grupo": "Receita 2: Revenda de mercadorias"
+    },
+    {
+      "titulo": "ICMS-ST fora do DAS",
+      "texto": "O ICMS da substituição tributária (a empresa é a substituta) é pago fora do DAS. Base: (R$ 100,00 + R$ 0,00 de IPI e encargos) × (1 + 40,00% de MVA) = R$ 140,00. Imposto: R$ 140,00 × 18,00% − R$ 12,00 (12,00% da operação própria) = R$ 13,20.",
+      "fonte": "LC 123/2006, art. 13, § 1º, XIII, a, e § 5º; Convênio ICMS 142/2018, cláusulas décima primeira, § 1º, e décima terceira, § 1º",
+      "grupo": "Fora do DAS"
+    },
+    {
+      "titulo": "DIFAL fora do DAS",
+      "texto": "O diferencial de alíquota do ICMS nas compras de outros estados é pago fora do DAS. Estimativa: R$ 100,00 × (17,50% − 12,00%) = R$ 5,50.",
+      "fonte": "LC 123/2006, art. 13, § 1º, XIII, g, 2, e h, e § 5º",
+      "grupo": "Fora do DAS"
+    },
+    {
+      "titulo": "DAS estimado",
+      "texto": "Soma das receitas: R$ 2.057,87 + R$ 447,41 = R$ 2.505,28.",
+      "fonte": "LC 123/2006, art. 18, § 3º",
+      "grupo": "Total do mês"
+    },
+    {
+      "titulo": "Multa e juros",
+      "texto": "O DAS vence em 20/04/2026 (dia 20 do mês seguinte ou o dia útil depois). Pago em 15/07/2026: 86 dias de atraso. Multa de mora: 0,33% × 86 = 20,00%, limitada a 20%, ou R$ 501,06. Juros de mora: Selic de maio de 2026 a junho de 2026 (2,19%) e 1% do mês do pagamento = 3,19%, ou R$ 79,92. Total a pagar: R$ 2.505,28 + R$ 501,06 + R$ 79,92 = R$ 3.086,26.",
+      "fonte": "LC 123/2006, art. 35; Res. CGSN 140/2018, art. 40, §§ 2º e 3º; Lei 9.430/1996, arts. 5º, § 3º, e 61",
+      "grupo": "Pagamento em atraso"
+    }
+  ],
+  "aviso": null,
+  "avisos": [],
+  "atraso": {
+    "vencimento": "20/04/2026",
+    "pagamento": "15/07/2026",
+    "dias": 86,
+    "total_centavos": 308626,
+    "multa_percentual": "20,00%",
+    "multa": "R$ 501,06",
+    "juros_percentual": "3,19%",
+    "juros": "R$ 79,92",
+    "total": "R$ 3.086,26"
+  },
+  "tabela": {
+    "fonte": "https://www.planalto.gov.br/ccivil_03/leis/lcp/lcp123.htm",
+    "redacao": "Lei Complementar nº 155/2016",
+    "vigencia": "2018-01-01"
+  }
+}

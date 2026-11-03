@@ -1,4 +1,5 @@
 import { linhasDaMemoria, resumoDasReceitas } from "./formulario.js";
+import { linhasDaMemoriaDoMei } from "./mei.js";
 import { mesesDoHistorico, regrasDoAno } from "./periodos.js";
 import { agrupar, Tributos } from "./Resultado.jsx";
 import { formatarReais, mesCurto, semQuebra } from "./valores.js";
@@ -9,28 +10,34 @@ import { formatarReais, mesCurto, semQuebra } from "./valores.js";
 // aqui tudo fica aberto e em ordem, sem botões.
 export default function MemoriaDeCalculo({ resultado, entradas }) {
   const hoje = new Date().toLocaleDateString("pt-BR");
+  const doMei = resultado.regime === "mei";
+  const { atraso } = resultado;
 
   return (
     <article className="memoria" aria-labelledby="memoria-titulo">
       <header>
-        <h2 id="memoria-titulo">Memória de cálculo do DAS de {resultado.periodo_nome}</h2>
+        <h2 id="memoria-titulo">
+          Memória de cálculo do DAS{doMei && " do MEI"} de {resultado.periodo_nome}
+        </h2>
         <p>
           Gerada em {hoje} pela Calculadora do Simples Nacional (simples-nacional-br.vercel.app).
-          Estimativa educativa: o valor a pagar é o da guia gerada no PGDAS-D.
+          Estimativa educativa: o valor a pagar é o da guia gerada no {doMei ? "PGMEI" : "PGDAS-D"}.
         </p>
       </header>
 
       <h3>Dados informados</h3>
       <dl className="memoria-dados">
-        {linhasDaMemoria(entradas).map(([rotulo, valor]) => (
-          <div key={rotulo}>
-            <dt>{rotulo}</dt>
-            <dd>{valor}</dd>
-          </div>
-        ))}
+        {(doMei ? linhasDaMemoriaDoMei(entradas) : linhasDaMemoria(entradas)).map(
+          ([rotulo, valor]) => (
+            <div key={rotulo}>
+              <dt>{rotulo}</dt>
+              <dd>{valor}</dd>
+            </div>
+          ),
+        )}
       </dl>
-      <ReceitasInformadas atividades={resultado.atividades} />
-      {entradas.modo === "meses" && <MesAMes entradas={entradas} />}
+      {!doMei && <ReceitasInformadas atividades={resultado.atividades} />}
+      {!doMei && entradas.modo === "meses" && <MesAMes entradas={entradas} />}
 
       <h3>Resultado</h3>
       <dl className="memoria-dados">
@@ -38,25 +45,49 @@ export default function MemoriaDeCalculo({ resultado, entradas }) {
           <dt>DAS estimado</dt>
           <dd>{resultado.das}</dd>
         </div>
-        <div>
-          <dt>Alíquota sobre a receita do mês</dt>
-          <dd>{resultado.aliquota_efetiva}</dd>
-        </div>
-        {resultado.fora_do_das.length > 0 && (
+        {!doMei && (
+          <div>
+            <dt>Alíquota sobre a receita do mês</dt>
+            <dd>{resultado.aliquota_efetiva}</dd>
+          </div>
+        )}
+        {atraso && atraso.dias > 0 && (
+          <>
+            <div>
+              <dt>
+                Multa de mora ({atraso.multa_percentual}, {atraso.dias} dias)
+              </dt>
+              <dd>{atraso.multa}</dd>
+            </div>
+            <div>
+              <dt>Juros de mora ({atraso.juros_percentual})</dt>
+              <dd>{atraso.juros}</dd>
+            </div>
+            <div>
+              <dt>Total a pagar em {atraso.pagamento}</dt>
+              <dd>{atraso.total}</dd>
+            </div>
+          </>
+        )}
+        {resultado.fora_do_das?.length > 0 && (
           <div>
             <dt>Total estimado do mês (DAS + fora do DAS)</dt>
             <dd>{resultado.total_estimado}</dd>
           </div>
         )}
       </dl>
-      {resultado.avisos.map((aviso) => (
+      {(resultado.avisos ?? []).map((aviso) => (
         <p key={aviso}>{semQuebra(aviso)}</p>
       ))}
-      <Tributos
-        tributos={resultado.tributos}
-        rodape={["DAS", resultado.aliquota_efetiva, resultado.das]}
-      />
-      {resultado.fora_do_das.length > 0 && (
+      {doMei ? (
+        <ValoresDoMei resultado={resultado} />
+      ) : (
+        <Tributos
+          tributos={resultado.tributos}
+          rodape={["DAS", resultado.aliquota_efetiva, resultado.das]}
+        />
+      )}
+      {resultado.fora_do_das?.length > 0 && (
         <ul>
           {resultado.fora_do_das.map((estimativa) => (
             <li key={estimativa.tributo}>
@@ -86,11 +117,35 @@ export default function MemoriaDeCalculo({ resultado, entradas }) {
 
       <footer>
         <p>
-          Tabelas: {resultado.tabela.fonte}. Confira os dados e o valor no PGDAS-D antes de pagar; a
-          calculadora não guarda nem envia nada além do que está na URL do cálculo.
+          {resultado.tabela && `Tabelas: ${resultado.tabela.fonte}. `}
+          Confira os dados e o valor no {doMei ? "PGMEI" : "PGDAS-D"} antes de pagar; a calculadora
+          não guarda nem envia nada além do que está na URL do cálculo.
         </p>
       </footer>
     </article>
+  );
+}
+
+// Os valores fixos do DAS do MEI.
+function ValoresDoMei({ resultado }) {
+  return (
+    <table className="tabela">
+      <caption>Valores fixos do mês</caption>
+      <tbody>
+        {resultado.tributos.map((tributo) => (
+          <tr key={tributo.nome}>
+            <th scope="row">{tributo.nome}</th>
+            <td>{tributo.valor}</td>
+          </tr>
+        ))}
+      </tbody>
+      <tfoot>
+        <tr>
+          <th scope="row">DAS</th>
+          <td>{resultado.das}</td>
+        </tr>
+      </tfoot>
+    </table>
   );
 }
 

@@ -1,0 +1,19 @@
+# Taxa Selic acumulada no mês, em %, para os juros de mora do DAS pago em atraso (Lei
+# 9.430/1996, arts. 5º, § 3º, e 61, § 3º; LC 123/2006, art. 35; Res. CGSN 140/2018, art. 40, § 2º).
+#
+# Série 4390 do Banco Central ("Taxa de juros - Selic acumulada no mês"). O workflow
+# .github/workflows/selic.yml busca a série todo mês, regrava este arquivo
+# (SimplesNacional::Atraso.yaml_da_serie), roda os testes e faz o commit na main.
+fonte: https://api.bcb.gov.br/dados/serie/bcdata.sgs.4390/dados?formato=json
+conferido_em: "2026-11-03"
+meses:
+  "2026-01": "1.16"
+  "2026-02": "1.00"
+  "2026-03": "1.21"
+  "2026-04": "1.09"
+  "2026-05": "1.07"
+  "2026-06": "1.12"
+  "2026-07": "1.22"
+  "2026-08": "1.09"
+  "2026-09": "1.08"
+  "2026-10": "1.07"

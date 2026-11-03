@@ -1,0 +1,74 @@
+{
+  "regime": "mei",
+  "periodo": "2026-03",
+  "periodo_nome": "março de 2026",
+  "ano": 2026,
+  "atividade": "Comércio e serviços",
+  "transportador": false,
+  "das": "R$ 87,05",
+  "das_centavos": 8705,
+  "tributos": [
+    {
+      "nome": "INSS",
+      "valor": "R$ 81,05"
+    },
+    {
+      "nome": "ICMS",
+      "valor": "R$ 1,00"
+    },
+    {
+      "nome": "ISS",
+      "valor": "R$ 5,00"
+    }
+  ],
+  "limite": {
+    "limite": "R$ 81.000,00",
+    "receita_ano": "R$ 90.000,00",
+    "excesso": "R$ 9.000,00",
+    "diferenca": null,
+    "situacao": "ate_vinte_por_cento"
+  },
+  "atraso": {
+    "vencimento": "20/04/2026",
+    "pagamento": "04/05/2026",
+    "dias": 14,
+    "total_centavos": 9194,
+    "multa_percentual": "4,62%",
+    "multa": "R$ 4,02",
+    "juros_percentual": "1,00%",
+    "juros": "R$ 0,87",
+    "total": "R$ 91,94"
+  },
+  "passos": [
+    {
+      "titulo": "INSS",
+      "texto": "5% do salário mínimo: 5% × R$ 1.621,00 (Decreto nº 12.797, de 23 de dezembro de 2025) = R$ 81,05.",
+      "fonte": "LC 123/2006, art. 18-A, § 3º, IV e V, a; Res. CGSN 140/2018, art. 101, I; Lei 8.212/1991, art. 21, § 2º",
+      "grupo": "DAS do MEI"
+    },
+    {
+      "titulo": "Valores fixos",
+      "texto": "ICMS R$ 1,00 e ISS R$ 5,00. Comércio e serviços pagam o ICMS e o ISS.",
+      "fonte": "LC 123/2006, art. 18-A, § 3º, V, b e c; Res. CGSN 140/2018, art. 101, II e III",
+      "grupo": "DAS do MEI"
+    },
+    {
+      "titulo": "DAS do MEI",
+      "texto": "R$ 81,05 + R$ 1,00 + R$ 5,00 = R$ 87,05, o mesmo valor todo mês, qualquer que seja a receita.",
+      "fonte": "LC 123/2006, art. 18-A, § 3º, V; Res. CGSN 140/2018, art. 101",
+      "grupo": "DAS do MEI"
+    },
+    {
+      "titulo": "Limite do MEI",
+      "texto": "Limite de R$ 81.000,00 no ano; receita do ano: R$ 90.000,00. Excesso: R$ 9.000,00. Como o excesso é de até 20%, o MEI vira ME em 1º de janeiro do ano seguinte e paga a diferença sobre o excesso, sem multa, junto com o DAS de janeiro (com comércio e serviços, a conta usa a receita de cada um, na DASN-Simei).",
+      "fonte": "LC 123/2006, art. 18-A, §§ 1º, 7º, III, e 10; Res. CGSN 140/2018, arts. 100 e 115, §§ 8º e 9º",
+      "grupo": "DAS do MEI"
+    },
+    {
+      "titulo": "Multa e juros",
+      "texto": "O DAS vence em 20/04/2026 (dia 20 do mês seguinte ou o dia útil depois). Pago em 04/05/2026: 14 dias de atraso. Multa de mora: 0,33% × 14 = 4,62%, ou R$ 4,02. Juros de mora: 1% do mês do pagamento = 1,00%, ou R$ 0,87. Total a pagar: R$ 87,05 + R$ 4,02 + R$ 0,87 = R$ 91,94.",
+      "fonte": "LC 123/2006, art. 35; Res. CGSN 140/2018, art. 40, §§ 2º e 3º; Lei 9.430/1996, arts. 5º, § 3º, e 61",
+      "grupo": "DAS do MEI"
+    }
+  ]
+}

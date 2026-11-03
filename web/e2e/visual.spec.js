@@ -7,6 +7,8 @@ import fs from "node:fs";
 const fixture = (nome) => JSON.parse(fs.readFileSync(new URL(`fixtures/${nome}`, import.meta.url)));
 const VARIAS = fixture("varias-receitas.json");
 const ANEXO_4 = fixture("anexo-4.json");
+const MEI = fixture("mei.json");
+const SITUACOES = fixture("situacoes.json");
 
 const OPCOES = {
   fullPage: true,
@@ -28,7 +30,8 @@ async function abrir(page, tema, resposta) {
 }
 
 async function duasReceitas(page) {
-  await page.getByLabel("Mês de apuração").selectOption("2026-03");
+  await page.getByLabel("Mês de apuração").selectOption("03");
+  await page.getByLabel("Ano de apuração").selectOption("2026");
   await page.getByLabel("Tipo da receita", { exact: true }).selectOption("revenda");
   await page.getByLabel("Valor no mês", { exact: true }).fill("30.000,00");
   await page.getByRole("button", { name: "+ Adicionar outra receita" }).click();
@@ -59,7 +62,8 @@ test.describe("no celular", () => {
 
   test("mês a mês com receita, exportação e folha", async ({ page }) => {
     await abrir(page, "dark");
-    await page.getByLabel("Mês de apuração").selectOption("2026-03");
+    await page.getByLabel("Mês de apuração").selectOption("03");
+    await page.getByLabel("Ano de apuração").selectOption("2026");
     await page.getByLabel("Tipo da receita", { exact: true }).selectOption("fator_r");
     await page.locator("summary", { hasText: "Situações especiais" }).click();
     await page.getByLabel("Exportação", { exact: true }).check();
@@ -70,12 +74,61 @@ test.describe("no celular", () => {
 
   test("resultado com a CPP fora do DAS", async ({ page }) => {
     await abrir(page, "light", ANEXO_4);
-    await page.getByLabel("Mês de apuração").selectOption("2026-03");
+    await page.getByLabel("Mês de apuração").selectOption("03");
+    await page.getByLabel("Ano de apuração").selectOption("2026");
     await page.getByLabel("Tipo da receita", { exact: true }).selectOption("servicos_4");
     await page.getByLabel("Valor no mês", { exact: true }).fill("40.000,00");
     await page.getByLabel(/^Receita bruta dos 12/).fill("500.000,00");
     await page.getByRole("button", { name: "Calcular" }).click();
     await expect(page.locator(".guia")).toHaveScreenshot("fora-do-das-celular.png", OPCOES);
+  });
+});
+
+// Os campos de fora do DAS abertos, com todos os grupos (2027, Anexo IV e regime regular).
+async function foraDoDasAberto(page) {
+  await page.getByLabel("Mês de apuração").selectOption("03");
+  await page.getByLabel("Ano de apuração").selectOption("2027");
+  await page.getByLabel("Tipo da receita", { exact: true }).selectOption("servicos_4");
+  await page.getByLabel("A empresa optou por pagar o IBS e a CBS fora do DAS").check();
+  await page.getByText("Tributos pagos fora do DAS").click();
+  await page.getByLabel("MVA").fill("40");
+}
+
+for (const [largura, nome] of [
+  [360, "celular"],
+  [1280, "computador"],
+]) {
+  test(`campos de fora do DAS no ${nome}`, async ({ page }) => {
+    await page.setViewportSize({ width: largura, height: 900 });
+    await abrir(page, "light");
+    await foraDoDasAberto(page);
+    const parte = page.locator(".opcional", { hasText: "Tributos pagos fora do DAS" });
+    await expect(parte).toHaveScreenshot(`fora-do-das-campos-${nome}.png`, OPCOES);
+  });
+}
+
+test.describe("no celular, MEI e atraso", () => {
+  test.use({ viewport: { width: 360, height: 780 } });
+
+  test("resultado do MEI com o limite e o atraso", async ({ page }) => {
+    await abrir(page, "dark", MEI);
+    await page.getByLabel("MEI", { exact: true }).check();
+    await page.getByLabel("Mês de apuração").selectOption("03");
+    await page.getByLabel("Ano de apuração").selectOption("2026");
+    await page.getByLabel("Atividade do MEI").selectOption("comercio_servicos");
+    await page.getByRole("button", { name: "Calcular" }).click();
+    await expect(page.locator(".guia")).toHaveScreenshot("mei-celular.png", OPCOES);
+  });
+
+  test("resultado com redução, ICMS-ST, DIFAL e atraso", async ({ page }) => {
+    await abrir(page, "light", SITUACOES);
+    await page.getByLabel("Mês de apuração").selectOption("03");
+    await page.getByLabel("Ano de apuração").selectOption("2026");
+    await page.getByLabel("Tipo da receita", { exact: true }).selectOption("industria_iss");
+    await page.getByLabel("Valor no mês", { exact: true }).fill("30.000,00");
+    await page.getByLabel(/^Receita bruta dos 12/).fill("500.000,00");
+    await page.getByRole("button", { name: "Calcular" }).click();
+    await expect(page.locator(".guia")).toHaveScreenshot("situacoes-celular.png", OPCOES);
   });
 });
 

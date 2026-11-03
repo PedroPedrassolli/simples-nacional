@@ -14,6 +14,18 @@ module SimplesNacional
       "R$ #{milhares},#{resto.to_s.rjust(2, '0')}"
     end
 
+    # Como reais, mas com milésimos quando o valor tem fração de centavo: a CBS e o IBS do MEI
+    # em 2027 são R$ 0,994 e R$ 0,006 (LC 123/2006, Anexo VII).
+    def self.reais_exatos(centavos)
+      return reais(centavos) if (centavos % 1).zero?
+
+      inteiro, resto = (centavos * 10).round(half: :up).divmod(1000)
+      "#{reais(inteiro * 100).delete_suffix(',00')},#{resto.to_s.rjust(3, '0')}"
+    end
+
+    # 20/12/2026 (Date) → "20/12/2026".
+    def self.data(dia) = dia.strftime("%d/%m/%Y")
+
     # 1º/3/2026 (Date) → "março de 2026".
     def self.mes(data) = "#{MESES[data.month - 1]} de #{data.year}"
 

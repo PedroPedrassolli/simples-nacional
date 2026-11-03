@@ -19,7 +19,7 @@ module SimplesNacional
 
     def self.locais_da(apurada)
       tipo = apurada.atividade.tipo
-      Reparticao.locais_do(apurada.tabela) - tipo.tira + (tipo.icms_do_anexo_i ? ["ICMS"] : [])
+      Reparticao.locais_do(apurada.tabela) - tipo.tira + tipo.de_outro_anexo.keys
     end
 
     def self.sublimite(resultado)

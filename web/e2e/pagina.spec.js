@@ -11,12 +11,16 @@ const VARIAS = fixture("varias-receitas.json");
 const ANEXO_4 = fixture("anexo-4.json");
 const ANO_2027 = fixture("ano-2027.json");
 const SUBLIMITE = fixture("sublimite.json");
+const SITUACOES = fixture("situacoes.json");
+const MEI = fixture("mei.json");
 // Empresa fictícia; test/api_cnpj_test.rb confere que é a resposta atual de api/cnpj.rb.
 const CNPJ = fixture("cnpj.json");
 
 // A resposta guardada que combina com o que a página pediu.
 function respostaPara(parametros) {
   const atividades = parametros.get("atividades") ?? "";
+  if (parametros.get("regime") === "mei") return MEI;
+  if (atividades.startsWith("industria_iss")) return SITUACOES;
   if (atividades.includes(";")) return VARIAS;
   if (atividades.startsWith("fator_r")) return FATOR_R;
   if (atividades.startsWith("servicos_4")) return ANEXO_4;
@@ -54,12 +58,19 @@ async function consultarCnpj(page, cnpj) {
   await page.getByRole("button", { name: "Consultar", exact: true }).click();
 }
 
+// O mês e o ano ficam em duas listas: "2026-03" escolhe março e 2026.
+async function escolherMes(page, periodo) {
+  const [ano, mes] = periodo.split("-");
+  await page.getByLabel("Mês de apuração").selectOption(mes);
+  await page.getByLabel("Ano de apuração").selectOption(ano);
+}
+
 // Uma receita só: o caso mais comum.
 async function preencher(
   page,
   { periodo = "2026-03", inicio, tipo = "servicos_3", valor = "40.000", rbt12, folha },
 ) {
-  await page.getByLabel("Mês de apuração").selectOption(periodo);
+  await escolherMes(page, periodo);
   if (inicio) await page.getByLabel("Início das atividades").selectOption(inicio);
   await page.getByLabel("Tipo da receita", { exact: true }).selectOption(tipo);
   await page.getByLabel("Valor no mês", { exact: true }).fill(valor);
@@ -110,7 +121,7 @@ test("calcula uma receita e mostra o DAS, a divisão e o passo a passo", async (
     "DAS",
   ]);
   // Uma receita só: sem a tabela das receitas e sem o "fora do DAS".
-  await expect(page.getByRole("table", { name: "DAS de cada receita" })).toHaveCount(0);
+  await expect(page.getByRole("heading", { name: "DAS de cada receita" })).toHaveCount(0);
   await expect(page.getByRole("heading", { name: "Fora do DAS" })).toHaveCount(0);
 
   await page.getByText("Ver a conta passo a passo").click();
@@ -153,10 +164,10 @@ test("separa as receitas por atividade, como no PGDAS-D", async ({ page }) => {
   await calcular(page);
 
   await expect(das(page, "R\\$ 2\\.339,44")).toBeVisible();
-  const receitas = page.getByRole("table", { name: "DAS de cada receita" });
-  await expect(receitas.getByRole("row")).toHaveCount(3);
-  await expect(receitas.getByRole("row").nth(1)).toContainText("Revenda de mercadorias");
-  await expect(receitas.getByRole("row").nth(1)).toContainText("R$ 1.342,24");
+  const receitas = page.locator(".receitas-resultado li");
+  await expect(receitas).toHaveCount(2);
+  await expect(receitas.first()).toContainText("Revenda de mercadorias");
+  await expect(receitas.first()).toContainText("R$ 1.342,24");
   await expect(page.locator(".resumo")).toContainText("Alíquota média");
   expect(chamadas[0].get("atividades")).toBe("revenda:30000.00:st_icms;servicos_3:10000.00");
 
@@ -168,7 +179,7 @@ test("separa as receitas por atividade, como no PGDAS-D", async ({ page }) => {
 
 test("mostra só as situações especiais que valem para o tipo e o ano", async ({ page }) => {
   await page.goto("/");
-  await page.getByLabel("Mês de apuração").selectOption("2026-03");
+  await escolherMes(page, "2026-03");
   const tipo = page.getByLabel("Tipo da receita", { exact: true });
   await tipo.selectOption("industria");
   await page.locator("summary", { hasText: "Situações especiais" }).click();
@@ -176,7 +187,7 @@ test("mostra só as situações especiais que valem para o tipo e o ano", async 
   await expect(page.getByLabel("Produto com IPI mantido (Zona Franca de Manaus)")).toHaveCount(0);
 
   // Em 2027 o monofásico muda de nome e aparece o IPI mantido.
-  await page.getByLabel("Mês de apuração").selectOption("2027-03");
+  await escolherMes(page, "2027-03");
   await expect(page.getByLabel("IBS e CBS com tributação concentrada (monofásica)")).toBeVisible();
   await expect(page.getByLabel("Produto com IPI mantido (Zona Franca de Manaus)")).toBeVisible();
 
@@ -189,7 +200,7 @@ test("mostra só as situações especiais que valem para o tipo e o ano", async 
 test("no 1º mês de atividade, não pede a RBT12 e manda o início", async ({ page }) => {
   const chamadas = await simularApi(page);
   await page.goto("/");
-  await page.getByLabel("Mês de apuração").selectOption("2026-03");
+  await escolherMes(page, "2026-03");
   await page.getByLabel("Início das atividades").selectOption("2026-03");
   await expect(page.getByLabel(/^Receita bruta (dos 12|desde)/)).toHaveCount(0);
   await expect(
@@ -208,7 +219,7 @@ test("no 1º mês de atividade, não pede a RBT12 e manda o início", async ({ p
 test("com poucos meses de atividade, pede a receita desde o início", async ({ page }) => {
   const chamadas = await simularApi(page);
   await page.goto("/");
-  await page.getByLabel("Mês de apuração").selectOption("2026-03");
+  await escolherMes(page, "2026-03");
   await page.getByLabel("Início das atividades").selectOption("2025-11");
 
   const campo = page.getByLabel("Receita bruta desde o início das atividades");
@@ -219,7 +230,7 @@ test("com poucos meses de atividade, pede a receita desde o início", async ({ p
   expect(chamadas[0].get("rbt12")).toBe("100000.00");
 
   // Trocar o mês de apuração para um que deixa o início fora da lista volta para "12 meses ou mais".
-  await page.getByLabel("Mês de apuração").selectOption("2026-12");
+  await escolherMes(page, "2026-12");
   await expect(page.getByLabel("Início das atividades")).toHaveValue("");
 });
 
@@ -236,7 +247,7 @@ test("em 2027, pede o mês anterior à parte e estima o IBS e a CBS fora do DAS"
   await page.getByLabel(/optou por pagar o IBS e a CBS fora do DAS/).check();
   await page.getByText("Tributos pagos fora do DAS").click();
   await page.getByLabel("Alíquota da CBS").fill("8,8");
-  await page.getByLabel("Créditos de CBS do mês").fill("1.000");
+  await page.getByLabel("Créditos de CBS").fill("1.000");
   await calcular(page);
 
   await expect(das(page, "R\\$ 3\\.326,66")).toBeVisible();
@@ -259,7 +270,7 @@ test("em 2027, pede o mês anterior à parte e estima o IBS e a CBS fora do DAS"
 
 test("no 1º e no 2º mês de 2027, usa a 1ª faixa sem pedir a RBT12", async ({ page }) => {
   await page.goto("/");
-  await page.getByLabel("Mês de apuração").selectOption("2027-03");
+  await escolherMes(page, "2027-03");
   await page.getByLabel("Início das atividades").selectOption("2027-02");
   await expect(page.getByLabel(/^Receita bruta (dos 12|desde)/)).toHaveCount(0);
   await expect(
@@ -271,7 +282,7 @@ test("no 1º e no 2º mês de 2027, usa a 1ª faixa sem pedir a RBT12", async ({
 test("aceita os meses anteriores mês a mês e mostra as somas", async ({ page }) => {
   const chamadas = await simularApi(page);
   await page.goto("/");
-  await page.getByLabel("Mês de apuração").selectOption("2026-03");
+  await escolherMes(page, "2026-03");
   await page.getByLabel("Tipo da receita", { exact: true }).selectOption("servicos_3");
   await page.getByLabel("Valor no mês", { exact: true }).fill("40.000");
   await page.getByLabel("Mês a mês", { exact: true }).check();
@@ -304,7 +315,7 @@ test("aceita os meses anteriores mês a mês e mostra as somas", async ({ page }
 test("pede a folha e mostra o Fator R só quando a receita depende dele", async ({ page }) => {
   const chamadas = await simularApi(page);
   await page.goto("/");
-  await page.getByLabel("Mês de apuração").selectOption("2026-03");
+  await escolherMes(page, "2026-03");
   await expect(page.getByLabel(/^Folha de salários/)).toHaveCount(0);
 
   await preencher(page, { tipo: "fator_r", valor: "40000", rbt12: "500000", folha: "139.999,99" });
@@ -320,10 +331,10 @@ test("no Anexo IV, estima a CPP paga fora do DAS", async ({ page }) => {
   await page.goto("/");
   await page.getByText("Tributos pagos fora do DAS").click();
   // Os campos da CPP só aparecem com uma receita do Anexo IV.
-  await expect(page.getByLabel("Salários dos empregados no mês")).toHaveCount(0);
+  await expect(page.getByLabel("Salários dos empregados")).toHaveCount(0);
   await preencher(page, { tipo: "servicos_4", rbt12: "500.000" });
-  await page.getByLabel("Salários dos empregados no mês").fill("30.000");
-  await page.getByLabel("Pró-labore e autônomos no mês").fill("5.000");
+  await page.getByLabel("Salários dos empregados").fill("30.000");
+  await page.getByLabel("Pró-labore e autônomos").fill("5.000");
   await page.getByLabel("RAT", { exact: true }).selectOption("2");
   await page.getByLabel("FAP", { exact: true }).fill("1,5");
   await calcular(page);
@@ -353,7 +364,7 @@ test("abre os campos do sublimite sozinho e mostra o ICMS fora do DAS", async ({
   await page.getByLabel("Receita bruta de 2025").fill("3.700.000");
   await page.getByText("Tributos pagos fora do DAS").click();
   await page.getByLabel("Alíquota do ICMS").fill("18");
-  await page.getByLabel("Créditos de ICMS do mês").fill("20.000");
+  await page.getByLabel("Créditos de ICMS").fill("20.000");
   await calcular(page);
 
   expect([chamadas[0].get("receita_ano"), chamadas[0].get("receita_ano_anterior")]).toEqual([
@@ -366,7 +377,7 @@ test("abre os campos do sublimite sozinho e mostra o ICMS fora do DAS", async ({
 
 test("esconde a receita do ano em janeiro", async ({ page }) => {
   await page.goto("/");
-  await page.getByLabel("Mês de apuração").selectOption("2026-01");
+  await escolherMes(page, "2026-01");
   await page.getByText("Sublimite e limite do ano").click();
   await expect(page.getByLabel("Receita bruta de 2026 até o mês anterior")).toHaveCount(0);
   await expect(page.getByLabel("Receita bruta de 2025")).toBeVisible();
@@ -560,6 +571,162 @@ test("mostra uma mensagem quando a consulta de CNPJ não responde", async ({ pag
   );
 });
 
+test("escolhe o mês e o ano em duas listas e pede os dois", async ({ page }) => {
+  const chamadas = await simularApi(page);
+  await page.goto("/");
+  await page.getByLabel("Mês de apuração").selectOption("10");
+  await page.getByLabel("Tipo da receita", { exact: true }).selectOption("servicos_3");
+  await page.getByLabel("Valor no mês", { exact: true }).fill("40.000");
+  await calcular(page);
+
+  // Falta o ano: o foco vai para ele, com a mensagem; o mês escolhido não fica marcado.
+  const ano = page.getByLabel("Ano de apuração");
+  await expect(ano).toBeFocused();
+  await expect(ano).toHaveAccessibleDescription(/Escolha o mês e o ano de apuração\./);
+  await expect(page.getByLabel("Mês de apuração")).not.toHaveAttribute("aria-invalid", "true");
+
+  // Com os dois, o resto do formulário passa a seguir o mês escolhido.
+  await ano.selectOption("2026");
+  await expect(
+    page.getByLabel("Início das atividades").locator("option", { hasText: "outubro de 2026" }),
+  ).toHaveCount(1);
+  await page.getByLabel(/^Receita bruta dos 12/).fill("500.000");
+  await calcular(page);
+  await expect(das(page)).toBeVisible();
+  expect(chamadas[0].get("periodo")).toBe("2026-10");
+});
+
+test("calcula o DAS do MEI, com o limite do ano e o atraso", async ({ page }) => {
+  const chamadas = await simularApi(page);
+  await page.goto("/");
+  await page.getByLabel("MEI", { exact: true }).check();
+  // O MEI paga valores fixos: sem receitas do mês, meses anteriores ou fora do DAS.
+  await expect(page.getByLabel("Tipo da receita", { exact: true })).toHaveCount(0);
+  await expect(page.getByText("Tributos pagos fora do DAS")).toHaveCount(0);
+  await escolherMes(page, "2026-03");
+  await page.getByLabel("Atividade do MEI").selectOption("comercio_servicos");
+  await expect(page.getByText("Paga os valores fixos de ICMS e de ISS.")).toBeVisible();
+  await page.getByLabel("Receita bruta de 2026", { exact: true }).fill("90.000");
+  await page.locator("summary", { hasText: "Pagamento em atraso" }).click();
+  await page.getByLabel("Data do pagamento").fill("2026-05-04");
+  await calcular(page);
+
+  await expect(page.getByRole("heading", { name: /DAS do MEI\s*R\$ 87,05/ })).toBeFocused();
+  const tabela = page.getByRole("table", { name: "Valores fixos do mês" });
+  await expect(tabela.getByRole("rowheader")).toHaveText(["INSS", "ICMS", "ISS", "DAS"]);
+  await expect(page.locator(".guia")).toContainText(
+    "passa do limite de R$ 81.000,00 em R$ 9.000,00",
+  );
+  await expect(page.locator(".atraso")).toContainText("Pago em 04/05/2026");
+  await expect(page.locator(".atraso-total")).toContainText("R$ 91,94");
+  expect(Object.fromEntries(chamadas[0])).toEqual({
+    periodo: "2026-03",
+    regime: "mei",
+    mei_atividade: "comercio_servicos",
+    receita_ano: "90000.00",
+    pagamento: "2026-05-04",
+  });
+
+  await page.getByText("Ver a conta passo a passo").click();
+  await expect(page.locator(".secao-passos h3")).toHaveText(["DAS do MEI"]);
+  await expect(page.locator(".secao-passos h4").last()).toHaveText("Multa e juros");
+
+  // A memória de cálculo também é a do MEI.
+  await page.emulateMedia({ media: "print" });
+  const memoria = page.locator(".memoria");
+  await expect(memoria.getByRole("heading", { level: 2 })).toHaveText(
+    "Memória de cálculo do DAS do MEI de março de 2026",
+  );
+  await expect(memoria).toContainText("Atividade");
+  await expect(memoria).toContainText("PGMEI");
+});
+
+test("aplica a redução e a isenção, estima o ICMS-ST e o DIFAL e calcula o atraso", async ({
+  page,
+}) => {
+  const chamadas = await simularApi(page);
+  await page.goto("/");
+  await preencher(page, { tipo: "industria_iss", valor: "30.000", rbt12: "500.000" });
+  await page.getByRole("button", { name: "+ Adicionar outra receita" }).click();
+  await page.getByLabel("Tipo da receita 2").selectOption("revenda");
+  await page.getByLabel("Valor no mês 2").fill("10.000");
+
+  // O percentual aparece embaixo da caixa marcada; a isenção desmarca a redução (e o contrário).
+  await page.locator("summary", { hasText: "Situações especiais 1" }).click();
+  const reducao = page.getByLabel("Redução do ISS dada pelo município");
+  const isencao = page.getByLabel("Isenção do ISS dada pelo município");
+  await reducao.check();
+  await page.getByLabel("Redução do ISS 1", { exact: true }).fill("40");
+  await isencao.check();
+  await expect(reducao).not.toBeChecked();
+  await expect(page.getByLabel("Redução do ISS 1", { exact: true })).toHaveCount(0);
+  await reducao.check();
+  await expect(isencao).not.toBeChecked();
+  await expect(page.getByLabel("Redução do ISS 1", { exact: true })).toHaveValue("40");
+  await page.locator("summary", { hasText: "Situações especiais 2" }).click();
+  await page.getByLabel("Isenção do ICMS dada pelo estado").check();
+
+  // Cada tributo de fora do DAS é um grupo, com nomes curtos nos campos.
+  await page.getByText("Tributos pagos fora do DAS").click();
+  const st = page.getByRole("group", { name: "ICMS por substituição tributária" });
+  await st.getByLabel("Valor da venda").fill("100");
+  await st.getByLabel("MVA").fill("40");
+  await st.getByLabel("Alíquota no destino").fill("18");
+  await st.getByLabel("Alíquota própria").fill("12");
+  const difal = page.getByRole("group", { name: "Diferencial de alíquota (DIFAL)" });
+  await difal.getByLabel("Compras do mês").fill("100");
+  await difal.getByLabel("Alíquota interna").fill("17,5");
+  await difal.getByLabel("Alíquota interestadual").fill("12");
+  await page.locator("summary", { hasText: "Pagamento em atraso" }).click();
+  await page.getByLabel("Data do pagamento").fill("2026-07-15");
+  await calcular(page);
+
+  await expect(das(page, "R\\$ 2\\.505,28")).toBeVisible();
+  const fora = page.locator(".fora-lista");
+  await expect(fora.getByRole("listitem").filter({ hasText: "ICMS-ST" })).toContainText("R$ 13,20");
+  await expect(fora.getByRole("listitem").filter({ hasText: "DIFAL" })).toContainText("R$ 5,50");
+  await expect(page.locator(".atraso")).toContainText("Pago em 15/07/2026");
+  await expect(page.locator(".atraso-total")).toContainText("R$ 3.086,26");
+  expect(Object.fromEntries(chamadas[0])).toEqual({
+    periodo: "2026-03",
+    atividades: "industria_iss:30000.00:reducao_iss=40;revenda:10000.00:isencao_icms",
+    rbt12: "500000.00",
+    st_valor: "100.00",
+    st_mva: "40",
+    st_aliquota_interna: "18",
+    st_aliquota_propria: "12",
+    difal_valor: "100.00",
+    difal_aliquota_interna: "17.5",
+    difal_aliquota_interestadual: "12",
+    pagamento: "2026-07-15",
+  });
+});
+
+test("pede o percentual da redução e os valores fixos em reais", async ({ page }) => {
+  const chamadas = await simularApi(page);
+  await page.goto("/");
+  await preencher(page, { rbt12: "200.000" });
+  await page.locator("summary", { hasText: "Situações especiais" }).click();
+  await page.getByLabel("Redução do ISS dada pelo município").check();
+  await page.locator("summary", { hasText: "ICMS ou ISS em valor fixo" }).click();
+  await page.getByLabel("ISS por mês").fill("abc");
+  await calcular(page);
+
+  // O valor fixo vem antes das receitas: o foco vai para ele primeiro.
+  await expect(page.getByLabel("ISS por mês")).toBeFocused();
+  await expect(page.getByLabel("ISS por mês")).toHaveAccessibleDescription(/Use só números/);
+  const campo = page.getByLabel("Redução do ISS", { exact: true });
+  await expect(campo).toHaveAccessibleDescription(/Informe a redução em %, como 40\./);
+  expect(chamadas).toHaveLength(0);
+
+  await campo.fill("40");
+  await page.getByLabel("ISS por mês").fill("400");
+  await calcular(page);
+  await expect(das(page)).toBeVisible();
+  expect(chamadas[0].get("atividades")).toBe("servicos_3:40000.00:reducao_iss=40");
+  expect(chamadas[0].get("iss_fixo")).toBe("400.00");
+});
+
 test("troca o tema pelo botão e lembra a escolha", async ({ page }) => {
   await page.goto("/");
   // Escuro por padrão, como no portfólio.
@@ -607,7 +774,7 @@ for (const tema of ["light", "dark"]) {
     expect(await problemasGraves(page)).toEqual([]);
 
     // Com o resultado (várias receitas) e o passo a passo abertos, e desatualizado.
-    await page.getByLabel("Somas dos 12 meses", { exact: true }).check();
+    await page.getByLabel("Somados", { exact: true }).check();
     await page.getByLabel(/^Receita bruta dos 12/).fill("500.000");
     await page.getByLabel("Receita de exportação nos mesmos meses").fill("0");
     await page.getByLabel(/^Folha de salários/).fill("140.000");
@@ -620,15 +787,24 @@ for (const tema of ["light", "dark"]) {
 
     // Com o "fora do DAS" no resultado.
     await page.getByRole("button", { name: "Usar um exemplo" }).click();
-    await page.getByLabel("Mês de apuração").selectOption("2027-03");
+    await escolherMes(page, "2027-03");
     await page.getByLabel("Receita bruta de fevereiro de 2027").fill("40.000");
     await calcular(page);
     await expect(page.locator(".fora")).toBeVisible();
     expect(await problemasGraves(page)).toEqual([]);
 
-    // E com a consulta de CNPJ aberta e respondida.
+    // Com a consulta de CNPJ aberta e respondida.
     await consultarCnpj(page, "11.222.333/0001-81");
     await expect(page.getByText("EMPRESA FICTICIA LTDA")).toBeVisible();
+    expect(await problemasGraves(page)).toEqual([]);
+
+    // E com o MEI: o formulário, o atraso aberto e o resultado.
+    await page.getByLabel("MEI", { exact: true }).check();
+    await page.getByLabel("Atividade do MEI").selectOption("comercio");
+    await page.locator("summary", { hasText: "Pagamento em atraso" }).click();
+    await page.getByLabel("Data do pagamento").fill("2026-05-04");
+    await calcular(page);
+    await expect(page.getByRole("heading", { name: /DAS do MEI/ })).toBeVisible();
     expect(await problemasGraves(page)).toEqual([]);
   });
 }
@@ -679,6 +855,67 @@ test.describe("num celular de 320 px", () => {
     await page.getByLabel("Tipo da receita", { exact: true }).selectOption("servicos_4");
     await calcular(page);
     await expect(page.locator(".fora")).toBeVisible();
+    await semRolagemLateral(page);
+  });
+
+  test("os campos de fora do DAS ficam alinhados, com o % dentro da caixa", async ({ page }) => {
+    await page.goto("/");
+    await preencher(page, { periodo: "2027-03", tipo: "servicos_4" });
+    await page.getByLabel("A empresa optou por pagar o IBS e a CBS fora do DAS").check();
+    await page.getByText("Tributos pagos fora do DAS").click();
+    await semRolagemLateral(page);
+    // Em cada grupo, as caixas da mesma linha começam na mesma altura, e o "%" fica dentro
+    // da borda da caixa.
+    const problemas = await page.locator(".grupo-fora .grade").evaluateAll((grades) =>
+      grades.flatMap((grade) => {
+        const caixas = [
+          ...grade.querySelectorAll(":scope > .campo > .reais, :scope > .campo > select"),
+        ];
+        const linhas = new Map();
+        const erros = [];
+        for (const caixa of caixas) {
+          const { top, left } = caixa.getBoundingClientRect();
+          const linha = [...linhas.keys()].find((chave) => Math.abs(chave - top) < 40) ?? top;
+          linhas.set(linha, [...(linhas.get(linha) ?? []), Math.round(top)]);
+          const sufixo = caixa.querySelector("span:last-child");
+          if (sufixo && caixa.classList.contains("percentual")) {
+            // A posição do texto "%" (e não da caixa do span, que inclui o espaço interno).
+            const texto = document.createRange();
+            texto.selectNodeContents(sufixo);
+            const fora =
+              texto.getBoundingClientRect().right > caixa.getBoundingClientRect().right - 8;
+            if (fora) erros.push(`% colado na borda em x=${Math.round(left)}`);
+          }
+        }
+        for (const tops of linhas.values())
+          if (new Set(tops).size > 1) erros.push(`desalinhado: ${tops.join(", ")}`);
+        return erros;
+      }),
+    );
+    expect(problemas).toEqual([]);
+  });
+
+  test("não tem rolagem lateral no MEI e nas situações com atraso", async ({ page }) => {
+    await simularApi(page);
+    await page.goto("/");
+    await page.getByLabel("MEI", { exact: true }).check();
+    await escolherMes(page, "2026-03");
+    await page.getByLabel("Atividade do MEI").selectOption("comercio_servicos");
+    await page.getByLabel("Transportador autônomo de cargas").check();
+    await calcular(page);
+    await expect(page.locator(".atraso")).toBeVisible();
+    await page.getByText("Ver a conta passo a passo").click();
+    await semRolagemLateral(page);
+
+    await page.getByLabel("Simples Nacional", { exact: true }).check();
+    await page.getByLabel("Tipo da receita", { exact: true }).selectOption("industria_iss");
+    await page.getByLabel("Valor no mês", { exact: true }).fill("30.000");
+    await page.getByLabel(/^Receita bruta dos 12/).fill("500.000");
+    await page.locator("summary", { hasText: "Situações especiais" }).click();
+    await page.getByLabel("Redução do ISS dada pelo município").check();
+    await page.getByLabel("Redução do ISS", { exact: true }).fill("40");
+    await calcular(page);
+    await expect(page.locator(".receitas-resultado")).toBeVisible();
     await semRolagemLateral(page);
   });
 });

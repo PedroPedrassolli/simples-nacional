@@ -6,7 +6,8 @@ module SimplesNacional
   # já entregues:
   #   - RBT12: os 12 meses antes do mês de apuração (2026) ou os 12 meses antes do mês
   #     anterior (2027 e 2028), contando só desde o início das atividades;
-  #   - receita do ano: de janeiro (ou do início) até o mês anterior, para o sublimite;
+  #   - receita do ano: de janeiro (ou do início) até o mês anterior, para o sublimite e o
+  #     limite (a de exportação também, para o limite extra dela);
   #   - folha: a mesma janela da RBT12, para o Fator R.
   # LC 123/2006, art. 18, § 1º; Res. CGSN 140/2018, arts. 21, II, a, e 26 (e a redação da Res. CGSN 190/2026).
   module Historico
@@ -15,7 +16,8 @@ module SimplesNacional
 
     # Somas para a conta, nos mesmos campos que a pessoa informaria à mão.
     # meses: a janela da RBT12 (lista de Date), para o passo a passo.
-    Totais = Data.define(:rbt12, :rbt12_exportacao, :folha12, :receita_ano, :receita_mes_anterior, :meses)
+    Totais = Data.define(:rbt12, :rbt12_exportacao, :folha12, :receita_ano, :receita_mes_anterior,
+                         :receita_ano_exportacao, :meses)
 
     # O mês a mês substitui os totais: informar os dois deixaria a dúvida de qual vale.
     # Devolve [os totais no formato dos campos à mão, a janela da RBT12].
@@ -35,7 +37,8 @@ module SimplesNacional
       conferir_meses(historico, janela + do_ano)
       rbt12, exportacao, folha = %i[receita exportacao folha].map { |campo| soma(historico, janela, campo) }
       Totais.new(rbt12:, rbt12_exportacao: exportacao, folha12: folha, receita_ano: soma(historico, do_ano, :receita),
-                 receita_mes_anterior: historico[periodo.prev_month]&.receita, meses: janela)
+                 receita_mes_anterior: historico[periodo.prev_month]&.receita,
+                 receita_ano_exportacao: soma(historico, do_ano, :exportacao), meses: janela)
     end
 
     # { "2025-03" => { receita: 1_000, exportacao: 0, folha: 500 } } → { Date => Mes }

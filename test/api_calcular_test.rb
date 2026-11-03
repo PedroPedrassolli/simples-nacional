@@ -151,6 +151,99 @@ describe "api/calcular.rb" do
     end
   end
 
+  describe "com pagamento em atraso" do
+    # R$ 3.988,80 vencido em 20/04/2026 e pago em 15/07/2026: multa de 20% (R$ 797,76) e juros de
+    # 3,19% (Selic de maio e junho e 1% de julho: R$ 127,24).
+    before { query["pagamento"] = "2026-07-15" }
+
+    it "devolve a multa, os juros e o total" do
+      atraso = subject["atraso"]
+      assert_equal ["20/04/2026", 86, "20,00%", "R$ 797,76"],
+                   atraso.values_at("vencimento", "dias", "multa_percentual", "multa")
+      assert_equal ["3,19%", "R$ 127,24", 491_380], atraso.values_at("juros_percentual", "juros", "total_centavos")
+    end
+
+    it "não devolve atraso sem a data" do
+      query.delete("pagamento")
+      assert_nil subject["atraso"]
+    end
+
+    it "recusa data em outro formato" do
+      query["pagamento"] = "15/07/2026"
+      assert_match(/AAAA-MM-DD/, subject["erro"])
+    end
+  end
+
+  describe "com valores fixos, isenção e redução" do
+    before do
+      query.merge!("rbt12" => "200000.00", "receita_ano_anterior" => "150000.00", "iss_fixo" => "400.00",
+                   "atividades" => "servicos_3:20000.00;industria_iss:40000.00:reducao_iss=40")
+    end
+
+    it "soma o valor fixo e mostra a redução com o percentual" do
+      assert_includes subject["tributos"].map { |tributo| tributo["nome"] }, "ISS (valor fixo)"
+      assert_equal ["Redução do ISS dada pelo município (40,00%)"], subject["atividades"].last["opcoes"]
+    end
+
+    it "recusa valor fixo em formato errado" do
+      query["icms_fixo"] = "abc"
+      assert_match(/como número/, subject["erro"])
+    end
+  end
+
+  describe "com ICMS-ST e DIFAL" do
+    before do
+      query.merge!("st_valor" => "100.00", "st_mva" => "40", "st_aliquota_interna" => "18",
+                   "st_aliquota_propria" => "12", "difal_valor" => "100.00", "difal_aliquota_interna" => "17.5",
+                   "difal_aliquota_interestadual" => "12")
+    end
+
+    it "estima os dois fora do DAS" do
+      valores = subject["fora_do_das"].to_h { |estimativa| [estimativa["tributo"], estimativa["valor"]] }
+      assert_equal({ "ICMS-ST" => "R$ 13,20", "DIFAL" => "R$ 5,50" }, valores.slice("ICMS-ST", "DIFAL"))
+    end
+  end
+
+  describe "com exportação acima do limite extra" do
+    before do
+      query.merge!("periodo" => "2026-10", "rbt12" => "1000000.00", "rbt12_exportacao" => "4700000.00",
+                   "receita_ano_exportacao" => "4700000.00", "atividades" => "revenda:200000.00:exportacao")
+    end
+
+    it "cobra a parte acima do limite e avisa da exclusão" do
+      assert_equal 1_448_609, subject["das_centavos"]
+      assert(subject["avisos"].any? { |aviso| aviso.include?("limite extra de R$ 4.800.000,00") })
+    end
+  end
+
+  describe "com o MEI" do
+    let(:query) { { "regime" => "mei", "periodo" => "2026-03", "mei_atividade" => "comercio" } }
+
+    it "devolve o DAS fixo e os tributos" do
+      assert_equal ["mei", "R$ 82,05", 8_205], subject.values_at("regime", "das", "das_centavos")
+      assert_equal([["INSS", "R$ 81,05"], ["ICMS", "R$ 1,00"]],
+                   subject["tributos"].map { |tributo| tributo.values_at("nome", "valor") })
+    end
+
+    it "devolve o limite com a diferença do excesso" do
+      query["receita_ano"] = "90000.00"
+      limite = subject["limite"]
+      assert_equal ["R$ 81.000,00", "R$ 9.000,00", "R$ 360,00", "ate_vinte_por_cento"],
+                   limite.values_at("limite", "excesso", "diferenca", "situacao")
+    end
+
+    it "devolve o atraso e os passos" do
+      query.merge!("pagamento" => "2026-04-21", "transportador" => "1")
+      assert_equal [1, "0,33%"], subject["atraso"].values_at("dias", "multa_percentual")
+      assert(subject["passos"].any? { |passo| passo["titulo"] == "Multa e juros" })
+    end
+
+    it "pede a atividade" do
+      query["mei_atividade"] = "outra"
+      assert_equal "Escolha a atividade do MEI.", subject["erro"]
+    end
+  end
+
   describe "com parâmetros inválidos" do
     def erro(mudancas)
       query.merge!(mudancas)

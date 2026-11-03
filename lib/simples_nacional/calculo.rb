@@ -6,8 +6,10 @@ module SimplesNacional
   #   2. alíquota efetiva = (RBT12 × alíquota nominal − parcela a deduzir) ÷ RBT12 (§ 1º-A);
   #   3. a alíquota efetiva é dividida entre os tributos (ver Reparticao);
   #   4. cada receita do mês paga a soma dos percentuais dos tributos que ela deve no DAS
-  #      (ver ApuracaoDaAtividade); o DAS é a soma das receitas (§ 3º).
-  # O que fica fora do DAS é estimado à parte (ver ForaDoDas).
+  #      (ver ApuracaoDaAtividade); o DAS é a soma das receitas (§ 3º), mais o ICMS ou o ISS em
+  #      valor fixo, quando há (ver ValoresFixos).
+  # O que fica fora do DAS é estimado à parte (ver ForaDoDas), e a multa e os juros do DAS
+  # pago em atraso também (ver Atraso).
   #
   # Dinheiro entra e sai em centavos (Integer) e percentual é fração exata (Rational):
   # nenhuma conta passa por Float.
@@ -26,7 +28,8 @@ module SimplesNacional
     # dados: as entradas conferidas (Entrada::Dados). fator: o Fator R (FatorR::Resultado) ou nil.
     # atividades: a conta de cada receita (ApuracaoDaAtividade::Apurada). tributos: a soma dos
     # tributos de todas as receitas. fora_do_das: as estimativas (ForaDoDas::Estimativa).
-    Resultado = Data.define(:dados, :fator, :atividades, :das, :tributos, :fora_do_das, :passos) do
+    # atraso: a multa e os juros (Atraso::Resultado), ou nil sem data de pagamento.
+    Resultado = Data.define(:dados, :fator, :atividades, :das, :tributos, :fora_do_das, :atraso, :passos) do
       def periodo = dados.periodo
       def situacao = dados.situacao
       # A primeira receita, para quem usa uma atividade só (o jeito antigo).
@@ -35,8 +38,14 @@ module SimplesNacional
       def rbt12 = atividades.first.rbt12
       def fator_r = fator&.fator
       def receita = atividades.sum { |apurada| apurada.atividade.receita }
-      # Percentual médio do DAS sobre a receita do mês (com uma receita só, a soma dos percentuais dela).
-      def aliquota_efetiva = Rational(atividades.sum { |apurada| apurada.atividade.receita * apurada.total }, receita)
+
+      # Percentual médio do DAS sobre a receita do mês (com uma receita só, a soma dos percentuais
+      # dela), com o valor fixo de ICMS ou ISS, quando há.
+      def aliquota_efetiva
+        exatos = atividades.sum { |apurada| apurada.atividade.receita * apurada.total }
+        Rational(exatos + dados.valores_fixos.values.sum, receita)
+      end
+
       # DAS mais o que a calculadora conseguiu estimar fora dele.
       def total_estimado = das + fora_do_das.sum { |estimativa| estimativa.valor.to_i }
     end
@@ -48,13 +57,22 @@ module SimplesNacional
     def self.calcular(**)
       dados = Entrada.conferir(**)
       fator = FatorR.calcular(dados)
-      apuradas = dados.atividades.each_with_index.map do |atividade, indice|
-        ApuracaoDaAtividade.calcular(dados, atividade, indice + 1, fator)
-      end
-      resultado = Resultado.new(dados:, fator:, atividades: apuradas, das: apuradas.sum(&:valor),
-                                tributos: somar(apuradas), fora_do_das: ForaDoDas.estimar(dados, apuradas), passos: [])
+      apuradas = apurar(dados, fator)
+      das = das(apuradas, dados)
+      resultado = Resultado.new(dados:, fator:, atividades: apuradas, das:, tributos: somar(apuradas, dados),
+                                fora_do_das: ForaDoDas.estimar(dados, apuradas),
+                                atraso: Atraso.calcular(das, dados.periodo, dados.pagamento), passos: [])
       resultado.with(passos: Passos.montar(resultado))
     end
+
+    def self.apurar(dados, fator)
+      dados.atividades.each_with_index.map do |atividade, indice|
+        ApuracaoDaAtividade.calcular(dados, atividade, indice + 1, fator)
+      end
+    end
+
+    # A soma das receitas mais o ICMS ou o ISS em valor fixo, que não depende da receita.
+    def self.das(apuradas, dados) = apuradas.sum(&:valor) + dados.valores_fixos.values.sum
 
     # Cada tributo de cada receita, arredondado sozinho. Por isso a soma deles pode diferir
     # do valor da receita em alguns centavos.
@@ -65,10 +83,14 @@ module SimplesNacional
     end
 
     # Os tributos de todas as receitas juntos: valor somado e percentual sobre a receita total.
-    def self.somar(apuradas)
+    # O valor fixo de ICMS ou ISS entra no fim, com o nome "ISS (valor fixo)".
+    def self.somar(apuradas, dados)
       receita = apuradas.sum { |apurada| apurada.atividade.receita }
       nomes = apuradas.flat_map { |apurada| apurada.percentuais.keys }.uniq
-      nomes.map { |nome| somar_um(nome, apuradas, receita) }
+      fixos = dados.valores_fixos.map do |nome, valor|
+        Tributo.new(nome: "#{nome} (valor fixo)", percentual: Rational(valor, receita), valor:)
+      end
+      nomes.map { |nome| somar_um(nome, apuradas, receita) } + fixos
     end
 
     def self.somar_um(nome, apuradas, receita)
@@ -98,6 +120,6 @@ module SimplesNacional
     # Reais (Rational, como vêm das tabelas) → centavos (Integer).
     def self.centavos(reais) = (reais * 100).round
 
-    private_class_method :somar, :somar_um
+    private_class_method :apurar, :das, :somar, :somar_um
   end
 end

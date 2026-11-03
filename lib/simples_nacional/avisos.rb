@@ -35,9 +35,28 @@ module SimplesNacional
     def self.montar(resultado)
       dados = resultado.dados
       locais = PassoDoSublimite.locais(resultado)
-      lista = locais.any? ? dos_locais(dados, locais) : []
-      lista << limite(dados) if dados.situacao.exclusao
-      lista
+      [*(locais.any? ? dos_locais(dados, locais) : []), *limites(dados), LimiteDaExportacao.aviso(dados),
+       *ValoresFixos.avisos(dados), *atraso(resultado.atraso)].compact
+    end
+
+    # Passou do limite do mercado interno ou do limite extra da exportação (nil quando não passou).
+    def self.limites(dados)
+      [(limite(dados) if dados.situacao.exclusao), (limite_da_exportacao(dados) if dados.situacao_exportacao.exclusao)]
+    end
+
+    def self.limite_da_exportacao(dados)
+      "A receita de exportação do ano passou do limite extra de #{Formato.reais(dados.situacao_exportacao.limite)}: " \
+        "a empresa sai do Simples #{PassoDoLimite.saida(dados.situacao_exportacao.exclusao, dados.periodo.year)}. " \
+        "Veja o passo a passo."
+    end
+
+    # A Selic de algum mês de juros ainda não saiu: os juros ficam sem esses meses.
+    def self.atraso(atraso)
+      return [] if atraso.nil? || atraso.sem_selic.empty?
+
+      meses = atraso.sem_selic.map { |mes| Formato.mes(Entrada.mes(mes)) }
+      ["A Selic de #{Formato.juntar(meses)} ainda não foi publicada: os juros de mora estão sem " \
+       "#{meses.size == 1 ? 'esse mês' : 'esses meses'} e vão ficar um pouco maiores."]
     end
 
     def self.dos_locais(dados, locais)
@@ -79,6 +98,7 @@ module SimplesNacional
         "#{PassoDoLimite.saida(dados.situacao.exclusao, dados.periodo.year)}. Veja o passo a passo."
     end
 
-    private_class_method :dos_locais, :fora, :majorado, :impedimento?, :impedimento, :limite
+    private_class_method :dos_locais, :fora, :majorado, :impedimento?, :impedimento, :limite, :limite_da_exportacao,
+                         :atraso, :limites
   end
 end

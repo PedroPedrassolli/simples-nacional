@@ -1,4 +1,4 @@
-import { CampoReais, Revelar } from "./campos.jsx";
+import { Alternar, CampoReais, Revelar } from "./campos.jsx";
 import { mesesDoHistorico, mesAntes, regrasDoAno, textosDosCampos } from "./periodos.js";
 import { mesCurto, nomeDoMes, paraApi, reais } from "./valores.js";
 
@@ -15,23 +15,16 @@ export default function Anteriores(props) {
 
   return (
     <>
-      <div className="alternar" role="radiogroup" aria-label="Como informar os meses anteriores">
-        {[
-          ["totais", "Somas dos 12 meses"],
+      <Alternar
+        nome="modo"
+        titulo="Como informar os meses anteriores"
+        opcoes={[
+          ["totais", "Somados"],
           ["meses", "Mês a mês"],
-        ].map(([modo, rotulo]) => (
-          <label key={modo} className={valores.modo === modo ? "escolhido" : undefined}>
-            <input
-              type="radio"
-              name="modo"
-              value={modo}
-              checked={valores.modo === modo}
-              onChange={() => aoMudar({ modo })}
-            />
-            {rotulo}
-          </label>
-        ))}
-      </div>
+        ]}
+        valor={valores.modo}
+        aoMudar={(modo) => aoMudar({ modo })}
+      />
       {meses ? <MesAMes {...props} /> : <Totais {...props} textos={textos} />}
 
       {(textos.receitaAno || textos.receitaAnoAnterior) && (
@@ -55,6 +48,16 @@ export default function Anteriores(props) {
               valor={valores.receita_ano}
               erro={props.erros.receita_ano}
               aoMudar={(valor, como) => aoMudar({ receita_ano: valor }, como)}
+            />
+          )}
+          {textos.receitaAno && !meses && props.resumo.exportacao && (
+            <CampoReais
+              nome="receita_ano_exportacao"
+              rotulo={`Receita de exportação de ${valores.periodo.slice(0, 4)} até o mês anterior`}
+              dica="A exportação tem um limite extra, de mais R$ 4.800.000,00 no ano (LC 123/2006, art. 3º, § 14). Em branco, a conta não confere esse limite."
+              valor={valores.receita_ano_exportacao}
+              erro={props.erros.receita_ano_exportacao}
+              aoMudar={(valor, como) => aoMudar({ receita_ano_exportacao: valor }, como)}
             />
           )}
           {textos.receitaAnoAnterior && (

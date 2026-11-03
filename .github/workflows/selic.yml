@@ -1,0 +1,75 @@
+# Atualiza a Selic dos juros de mora (data/selic.yml) uma vez por mês.
+#
+# O Banco Central publica a Selic acumulada de cada mês (série 4390) no começo do mês
+# seguinte. Este workflow baixa a série de 2026 em diante, regrava o data/selic.yml
+# (SimplesNacional::Atraso.yaml_da_serie confere o formato de cada linha), roda os testes e,
+# se algo mudou, faz o commit direto na main. O commit novo publica a API na Vercel (o
+# data/ vai para o ar); são 12 deploys por ano.
+#
+# Custo: repositório público, minutos sem limite; mesmo assim, cerca de 2 min por mês.
+# Se o Banco Central ainda não publicou o mês, nada muda e o próximo mês recupera.
+name: Selic
+
+on:
+  schedule:
+    # Dia 3 de cada mês, 07:23 em Brasília (10:23 UTC). Os agendamentos do GitHub podem
+    # atrasar algumas horas; não faz diferença aqui.
+    - cron: "23 10 3 * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: selic
+  cancel-in-progress: false
+
+jobs:
+  atualizar:
+    name: Atualizar a Selic
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      # Com as credenciais do GITHUB_TOKEN, para o push no fim.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: ruby/setup-ruby@de492cf36cbab201753d720ce4f4e336cd688c94 # v1.336.0
+        with:
+          bundler-cache: true
+
+      # A API do Banco Central pede o intervalo de datas (dd/mm/aaaa). --fail faz o job parar
+      # se ela responder com erro, em vez de gravar a página de erro.
+      - name: Baixar a série 4390 do Banco Central
+        run: |
+          hoje=$(date -u +%d/%m/%Y)
+          curl -sSfL --retry 3 --max-time 60 -o "$RUNNER_TEMP/selic.json" \
+            "https://api.bcb.gov.br/dados/serie/bcdata.sgs.4390/dados?formato=json&dataInicial=01/01/2026&dataFinal=$hoje"
+
+      - name: Regravar o data/selic.yml
+        run: |
+          bundle exec ruby -Ilib -rsimples_nacional -e '
+            json = File.read(File.join(ENV.fetch("RUNNER_TEMP"), "selic.json"))
+            File.write("data/selic.yml", SimplesNacional::Atraso.yaml_da_serie(json, Date.today.iso8601))
+          '
+          git diff --stat data/selic.yml
+
+      # Os testes conferem as contas de multa e juros com as taxas novas antes do commit.
+      - name: Testes
+        run: bundle exec rake test
+
+      # Só faz o commit quando algum mês mudou ou entrou (a data da conferência sozinha não
+      # justifica um deploy). O commit do GITHUB_TOKEN não dispara a CI de novo: os testes
+      # acima já rodaram com o arquivo novo.
+      - name: Commit na main
+        run: |
+          if git diff --quiet -I '^conferido_em:' data/selic.yml; then
+            echo "::notice title=Selic::Nenhum mês novo publicado; nada a fazer."
+            exit 0
+          fi
+          ultimo=$(grep -oE '^  "[0-9]{4}-[0-9]{2}"' data/selic.yml | tail -1 | tr -d ' "')
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/selic.yml
+          git commit -m "Atualiza a Selic até $ultimo"
+          git push origin HEAD:main
+          echo "::notice title=Selic::data/selic.yml atualizado até $ultimo"

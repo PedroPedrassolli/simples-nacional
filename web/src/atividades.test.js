@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
-import { dicaDoTipo, opcao, opcoesDoTipo, TIPOS } from "./atividades.js";
+import { dicaDoTipo, marcarOpcao, opcao, opcoesDoTipo, REDUCOES, TIPOS } from "./atividades.js";
 
 // Os códigos do formulário precisam ser os mesmos da API (lib/simples_nacional/atividades.rb).
 const RUBY = fs.readFileSync(
@@ -30,7 +30,13 @@ test("o monofásico muda de nome em 2027", () => {
 });
 
 test("o IPI mantido só aparece a partir de 2027", () => {
-  assert.deepEqual(opcoesDoTipo("industria", 2026), ["st_icms", "monofasico", "exportacao"]);
+  assert.deepEqual(opcoesDoTipo("industria", 2026), [
+    "st_icms",
+    "monofasico",
+    "exportacao",
+    "isencao_icms",
+    "reducao_icms",
+  ]);
   assert.ok(opcoesDoTipo("industria", 2027).includes("ipi_mantido"));
   assert.deepEqual(opcoesDoTipo("locacao", 2027), []);
   assert.deepEqual(opcoesDoTipo("", 2026), []);
@@ -39,4 +45,31 @@ test("o IPI mantido só aparece a partir de 2027", () => {
 test("explica o tipo escolhido, ou o que fazer antes de escolher", () => {
   assert.match(dicaDoTipo("locacao"), /sem o ISS/);
   assert.match(dicaDoTipo(""), /informe cada receita separada/);
+});
+
+test("isenção e redução do mesmo imposto não ficam marcadas juntas", () => {
+  assert.deepEqual(marcarOpcao(["st_icms", "reducao_iss"], "isencao_iss", true), [
+    "st_icms",
+    "isencao_iss",
+  ]);
+  assert.deepEqual(marcarOpcao(["isencao_icms"], "reducao_icms", true), ["reducao_icms"]);
+  assert.deepEqual(marcarOpcao(["isencao_icms", "exportacao"], "isencao_icms", false), [
+    "exportacao",
+  ]);
+  // Imposto diferente: as duas ficam.
+  assert.deepEqual(marcarOpcao(["isencao_icms"], "reducao_iss", true), [
+    "isencao_icms",
+    "reducao_iss",
+  ]);
+});
+
+test("as reduções são as da API", () => {
+  const daApi = Object.fromEntries(
+    [...RUBY.matchAll(/"(reducao_\w+)" => "(\w+)"/g)].map((achado) => [achado[1], achado[2]]),
+  );
+  assert.deepEqual(REDUCOES, daApi);
+});
+
+test("os nomes dos tipos cabem na lista do celular", () => {
+  for (const tipo of TIPOS) assert.ok(tipo.rotulo.length <= 32, tipo.rotulo);
 });
