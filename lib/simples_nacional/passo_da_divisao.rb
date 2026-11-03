@@ -4,18 +4,30 @@ module SimplesNacional
   # O passo "Divisão entre os tributos": como a alíquota efetiva vira o percentual de cada
   # tributo (ver Reparticao), com as exceções da 6ª faixa, do teto do ISS e da CPP no Anexo IV.
   module PassoDaDivisao
-    def self.montar(tabela, faixa, rbt12, efetiva, percentuais)
-      iss = Reparticao.percentual_local(tabela, faixa, rbt12, efetiva)
-      teto = percentuais.key?("ISS") && iss > Reparticao::TETO_ISS
-      textos = [texto_reparticao(tabela, faixa, efetiva, exemplo: !teto),
-                texto_sexta_faixa(tabela, faixa, rbt12, percentuais)]
-      textos << texto_teto_do_iss(iss, percentuais) if teto
-      textos << texto_cpp(tabela)
-      Passos::Passo.new(titulo: "Divisão entre os tributos", texto: textos.compact.join(" "), fonte: fonte(tabela))
+    def self.montar(apurada, dados)
+      Passos::Passo.new(titulo: "Divisão entre os tributos", texto: textos(apurada).compact.join(" "),
+                        fonte: fonte(apurada.tabela, dados.regras))
     end
 
-    def self.fonte(tabela)
-      fonte = "Res. CGSN 140/2018, art. 21, III; LC 123/2006, Anexo #{Passos.romano(tabela.numero)}"
+    def self.textos(apurada)
+      rbt12 = apurada.rbt12.zero? ? 100 : apurada.rbt12
+      iss = iss_acima_do_teto(apurada, rbt12)
+      [texto_reparticao(apurada.tabela, apurada.faixa, apurada.efetiva, exemplo: iss.nil?),
+       texto_sexta_faixa(apurada, rbt12), (if iss
+                                             texto_teto_do_iss(iss, apurada.reparticao)
+                                           end), texto_cpp(apurada.tabela)]
+    end
+
+    # O ISS antes do teto de 5%, quando passa dele e está no DAS; senão nil.
+    def self.iss_acima_do_teto(apurada, rbt12)
+      return unless apurada.reparticao.key?("ISS")
+
+      iss = Reparticao.locais(apurada.tabela, apurada.faixa, rbt12, apurada.efetiva)["ISS"]
+      iss if iss > Reparticao::TETO_ISS
+    end
+
+    def self.fonte(tabela, regras)
+      fonte = "#{regras.res}, art. 21, III; LC 123/2006, Anexo #{Passos.romano(tabela.numero)}"
       tabela.numero == 4 ? "#{fonte} e art. 13, VI" : fonte
     end
 
@@ -38,15 +50,21 @@ module SimplesNacional
         "Anexo #{Passos.romano(tabela.numero)}"
     end
 
-    # Na 6ª faixa, o ICMS ou o ISS vem da alíquota efetiva da 5ª faixa, com a mesma RBT12
-    # (quando ele está no DAS: acima do sublimite, ver o passo do sublimite).
-    def self.texto_sexta_faixa(tabela, faixa, rbt12, percentuais)
-      local = Reparticao.imposto_local(tabela)
-      return unless faixa.numero == 6 && percentuais.key?(local)
+    # Na 6ª faixa, o ICMS, o ISS e o IBS vêm da alíquota efetiva da 5ª faixa, com a mesma RBT12
+    # (quando estão no DAS: acima do sublimite, ver o passo do sublimite).
+    def self.texto_sexta_faixa(apurada, rbt12)
+      locais = Reparticao.locais_do(apurada.tabela) & apurada.reparticao.keys
+      return unless apurada.faixa.numero == 6 && locais.any?
 
-      quinta = tabela.faixas[4]
-      "O #{local} usa a alíquota efetiva da 5ª faixa com a mesma RBT12, #{conta_da_quinta(quinta, rbt12)}, " \
-        "vezes os #{Formato.percentual(quinta.reparticao.fetch(local))} do #{local} na 5ª faixa."
+      quinta = apurada.tabela.faixas[4]
+      "#{Formato.frase(Formato.lista(locais))} #{locais.size == 1 ? 'usa' : 'usam'} a alíquota efetiva da 5ª " \
+        "faixa com a mesma RBT12, #{conta_da_quinta(quinta, rbt12)}, vezes os #{partes_da_quinta(quinta, locais)} " \
+        "na 5ª faixa."
+    end
+
+    # "33,50% do ICMS" ou "33,50% do ISS e 0,17% do IBS".
+    def self.partes_da_quinta(quinta, locais)
+      Formato.juntar(locais.map { |nome| "#{Formato.percentual(quinta.reparticao.fetch(nome))} do #{nome}" })
     end
 
     # "(R$ 4.000.000,00 × 14,30% − R$ 87.300,00) ÷ R$ 4.000.000,00 = 12,1175%"
@@ -56,13 +74,14 @@ module SimplesNacional
         "#{Formato.percentual(Calculo.aliquota_efetiva(quinta, rbt12), 4)}"
     end
 
-    # O ISS fica em 5% e os federais dividem o resto do total, cada um com o seu peso.
+    # O ISS fica em 5% e os outros tributos dividem o resto do total, cada um com o seu peso.
     def self.texto_teto_do_iss(iss, percentuais)
       resto = percentuais.values.sum - Reparticao::TETO_ISS
       nome, percentual = percentuais.first
       conta = "(#{Formato.percentual(resto + Reparticao::TETO_ISS, 4)} − 5%)"
-      "O ISS daria #{Formato.percentual(iss, 4)}, mais que o máximo de 5%: fica em 5% e os tributos " \
-        "federais dividem o resto, na proporção de cada um. Por exemplo, #{nome} = #{conta} × " \
+      quem = percentuais.key?("IBS") ? "os tributos federais e o IBS" : "os tributos federais"
+      "O ISS daria #{Formato.percentual(iss, 4)}, mais que o máximo de 5%: fica em 5% e #{quem} " \
+        "dividem o resto, na proporção de cada um. Por exemplo, #{nome} = #{conta} × " \
         "#{Formato.percentual(percentual / resto)} = #{Formato.percentual(percentual, 4)}."
     end
 
@@ -73,7 +92,7 @@ module SimplesNacional
         "nas outras empresas."
     end
 
-    private_class_method :fonte, :texto_reparticao, :inicio_da_reparticao, :texto_sexta_faixa, :conta_da_quinta,
-                         :texto_teto_do_iss, :texto_cpp
+    private_class_method :textos, :iss_acima_do_teto, :fonte, :texto_reparticao, :inicio_da_reparticao,
+                         :texto_sexta_faixa, :partes_da_quinta, :conta_da_quinta, :texto_teto_do_iss, :texto_cpp
   end
 end

@@ -1,0 +1,5 @@
+/* Só nos testes visuais: o cabeçalho fixo apareceria no meio das imagens de um pedaço da
+   página (ele acompanha a rolagem). */
+.cabecalho {
+  visibility: hidden !important;
+}

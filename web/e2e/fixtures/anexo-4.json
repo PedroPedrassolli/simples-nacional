@@ -1,0 +1,156 @@
+{
+  "periodo": "2026-03",
+  "periodo_nome": "março de 2026",
+  "ano": 2026,
+  "fator_r": null,
+  "anexo": 4,
+  "anexo_nome": "Serviços relacionados no § 5º-C do art. 18",
+  "faixa": 3,
+  "rbt12": "R$ 500.000,00",
+  "aliquota_nominal": "10,20%",
+  "das": "R$ 3.086,40",
+  "das_centavos": 308640,
+  "receita": "R$ 40.000,00",
+  "aliquota_efetiva": "7,7160%",
+  "tributos": [
+    {
+      "nome": "IRPJ",
+      "percentual": "1,6049%",
+      "valor": "R$ 641,97",
+      "valor_centavos": 64197
+    },
+    {
+      "nome": "CSLL",
+      "percentual": "1,1728%",
+      "valor": "R$ 469,13",
+      "valor_centavos": 46913
+    },
+    {
+      "nome": "Cofins",
+      "percentual": "1,5223%",
+      "valor": "R$ 608,95",
+      "valor_centavos": 60895
+    },
+    {
+      "nome": "PIS/Pasep",
+      "percentual": "0,3294%",
+      "valor": "R$ 131,79",
+      "valor_centavos": 13179
+    },
+    {
+      "nome": "ISS",
+      "percentual": "3,0864%",
+      "valor": "R$ 1.234,56",
+      "valor_centavos": 123456
+    }
+  ],
+  "total_estimado": "R$ 10.986,40",
+  "total_estimado_centavos": 1098640,
+  "atividades": [
+    {
+      "numero": 1,
+      "tipo": "servicos_4",
+      "nome": "Serviços do Anexo IV (obras, limpeza, vigilância, advocacia)",
+      "opcoes": [],
+      "exportacao": false,
+      "receita": "R$ 40.000,00",
+      "anexo": 4,
+      "anexo_nome": "Serviços relacionados no § 5º-C do art. 18",
+      "faixa": 3,
+      "rbt12": "R$ 500.000,00",
+      "aliquota_nominal": "10,20%",
+      "aliquota_efetiva": "7,7160%",
+      "percentual": "7,7160%",
+      "valor": "R$ 3.086,40",
+      "valor_centavos": 308640,
+      "tributos": [
+        {
+          "nome": "IRPJ",
+          "percentual": "1,6049%",
+          "valor": "R$ 641,97",
+          "valor_centavos": 64197
+        },
+        {
+          "nome": "CSLL",
+          "percentual": "1,1728%",
+          "valor": "R$ 469,13",
+          "valor_centavos": 46913
+        },
+        {
+          "nome": "Cofins",
+          "percentual": "1,5223%",
+          "valor": "R$ 608,95",
+          "valor_centavos": 60895
+        },
+        {
+          "nome": "PIS/Pasep",
+          "percentual": "0,3294%",
+          "valor": "R$ 131,79",
+          "valor_centavos": 13179
+        },
+        {
+          "nome": "ISS",
+          "percentual": "3,0864%",
+          "valor": "R$ 1.234,56",
+          "valor_centavos": 123456
+        }
+      ]
+    }
+  ],
+  "fora_do_das": [
+    {
+      "tributo": "CPP",
+      "base": null,
+      "valor": "R$ 7.900,00",
+      "valor_centavos": 790000,
+      "texto": "No Anexo IV, a contribuição patronal ao INSS (CPP) não entra no DAS. Estimativa: R$ 30.000,00 × (20% + 2% × FAP 1,5000) + R$ 5.000,00 de pró-labore × 20% = R$ 7.900,00.",
+      "falta": null,
+      "fonte": "LC 123/2006, art. 18, § 5º-C; Lei 8.212/1991, art. 22, I a III; Lei 10.666/2003, art. 10"
+    }
+  ],
+  "passos": [
+    {
+      "titulo": "Anexo",
+      "texto": "Serviços do Anexo IV (obras, limpeza, vigilância, advocacia): Anexo IV (Serviços relacionados no § 5º-C do art. 18).",
+      "fonte": "LC 123/2006, art. 18, § 4º, IV, e § 5º-C, e Anexo IV",
+      "grupo": "Receita do mês"
+    },
+    {
+      "titulo": "Faixa",
+      "texto": "A RBT12 é de R$ 500.000,00 e fica na 3ª faixa do Anexo IV, de R$ 360.000,01 a R$ 720.000,00: alíquota nominal de 10,20% e parcela a deduzir de R$ 12.420,00.",
+      "fonte": "LC 123/2006, art. 18, § 1º, e Anexo IV",
+      "grupo": "Receita do mês"
+    },
+    {
+      "titulo": "Alíquota efetiva",
+      "texto": "(RBT12 × alíquota nominal − parcela a deduzir) ÷ RBT12 = (R$ 500.000,00 × 10,20% − R$ 12.420,00) ÷ R$ 500.000,00 = 7,7160%.",
+      "fonte": "LC 123/2006, art. 18, § 1º-A",
+      "grupo": "Receita do mês"
+    },
+    {
+      "titulo": "Divisão entre os tributos",
+      "texto": "A alíquota efetiva é dividida entre os tributos pelos percentuais da 3ª faixa do Anexo IV: IRPJ 20,80%, CSLL 15,20%, Cofins 19,73%, PIS/Pasep 4,27% e ISS 40,00%. Por exemplo, IRPJ = 7,7160% × 20,80% = 1,6049%. No Anexo IV, a contribuição patronal ao INSS (CPP) não entra no DAS: é paga à parte, como nas outras empresas.",
+      "fonte": "Res. CGSN 140/2018, art. 21, III; LC 123/2006, Anexo IV e art. 13, VI",
+      "grupo": "Receita do mês"
+    },
+    {
+      "titulo": "CPP fora do DAS",
+      "texto": "No Anexo IV, a contribuição patronal ao INSS (CPP) não entra no DAS. Estimativa: R$ 30.000,00 × (20% + 2% × FAP 1,5000) + R$ 5.000,00 de pró-labore × 20% = R$ 7.900,00.",
+      "fonte": "LC 123/2006, art. 18, § 5º-C; Lei 8.212/1991, art. 22, I a III; Lei 10.666/2003, art. 10",
+      "grupo": "Fora do DAS"
+    },
+    {
+      "titulo": "DAS estimado",
+      "texto": "Receita do mês × alíquota efetiva = R$ 40.000,00 × 7,7160% = R$ 3.086,40. A conta usa os percentuais exatos, sem cortar casas decimais, e arredonda o resultado para o centavo.",
+      "fonte": "LC 123/2006, art. 18, § 3º",
+      "grupo": "Total do mês"
+    }
+  ],
+  "aviso": null,
+  "avisos": [],
+  "tabela": {
+    "fonte": "https://www.planalto.gov.br/ccivil_03/leis/lcp/lcp123.htm",
+    "redacao": "Lei Complementar nº 155/2016",
+    "vigencia": "2018-01-01"
+  }
+}

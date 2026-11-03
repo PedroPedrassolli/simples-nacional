@@ -1,0 +1,243 @@
+{
+  "periodo": "2026-03",
+  "periodo_nome": "março de 2026",
+  "ano": 2026,
+  "fator_r": null,
+  "anexo": 1,
+  "anexo_nome": "Comércio",
+  "faixa": 3,
+  "rbt12": "R$ 500.000,00",
+  "aliquota_nominal": "9,50%",
+  "das": "R$ 2.339,44",
+  "das_centavos": 233944,
+  "receita": "R$ 40.000,00",
+  "aliquota_efetiva": "5,8485%",
+  "tributos": [
+    {
+      "nome": "IRPJ",
+      "percentual": "0,3772%",
+      "valor": "R$ 150,90",
+      "valor_centavos": 15090
+    },
+    {
+      "nome": "CSLL",
+      "percentual": "0,2638%",
+      "valor": "R$ 105,54",
+      "valor_centavos": 10554
+    },
+    {
+      "nome": "Cofins",
+      "percentual": "0,9829%",
+      "valor": "R$ 393,16",
+      "valor_centavos": 39316
+    },
+    {
+      "nome": "PIS/Pasep",
+      "percentual": "0,2130%",
+      "valor": "R$ 85,23",
+      "valor_centavos": 8523
+    },
+    {
+      "nome": "CPP",
+      "percentual": "3,2012%",
+      "valor": "R$ 1.280,51",
+      "valor_centavos": 128051
+    },
+    {
+      "nome": "ISS",
+      "percentual": "0,8102%",
+      "valor": "R$ 324,09",
+      "valor_centavos": 32409
+    }
+  ],
+  "total_estimado": "R$ 2.339,44",
+  "total_estimado_centavos": 233944,
+  "atividades": [
+    {
+      "numero": 1,
+      "tipo": "revenda",
+      "nome": "Revenda de mercadorias",
+      "opcoes": ["ICMS já pago por substituição tributária ou antecipação"],
+      "exportacao": false,
+      "receita": "R$ 30.000,00",
+      "anexo": 1,
+      "anexo_nome": "Comércio",
+      "faixa": 3,
+      "rbt12": "R$ 500.000,00",
+      "aliquota_nominal": "9,50%",
+      "aliquota_efetiva": "6,7280%",
+      "percentual": "4,4741%",
+      "valor": "R$ 1.342,24",
+      "valor_centavos": 134224,
+      "tributos": [
+        {
+          "nome": "IRPJ",
+          "percentual": "0,3700%",
+          "valor": "R$ 111,01",
+          "valor_centavos": 11101
+        },
+        {
+          "nome": "CSLL",
+          "percentual": "0,2354%",
+          "valor": "R$ 70,64",
+          "valor_centavos": 7064
+        },
+        {
+          "nome": "Cofins",
+          "percentual": "0,8571%",
+          "valor": "R$ 257,14",
+          "valor_centavos": 25714
+        },
+        {
+          "nome": "PIS/Pasep",
+          "percentual": "0,1856%",
+          "valor": "R$ 55,71",
+          "valor_centavos": 5571
+        },
+        {
+          "nome": "CPP",
+          "percentual": "2,8257%",
+          "valor": "R$ 847,73",
+          "valor_centavos": 84773
+        }
+      ]
+    },
+    {
+      "numero": 2,
+      "tipo": "servicos_3",
+      "nome": "Serviços do Anexo III",
+      "opcoes": [],
+      "exportacao": false,
+      "receita": "R$ 10.000,00",
+      "anexo": 3,
+      "anexo_nome": "Locação de bens móveis e serviços não relacionados no § 5º-C do art. 18",
+      "faixa": 3,
+      "rbt12": "R$ 500.000,00",
+      "aliquota_nominal": "13,50%",
+      "aliquota_efetiva": "9,9720%",
+      "percentual": "9,9720%",
+      "valor": "R$ 997,20",
+      "valor_centavos": 99720,
+      "tributos": [
+        {
+          "nome": "IRPJ",
+          "percentual": "0,3988%",
+          "valor": "R$ 39,89",
+          "valor_centavos": 3989
+        },
+        {
+          "nome": "CSLL",
+          "percentual": "0,3490%",
+          "valor": "R$ 34,90",
+          "valor_centavos": 3490
+        },
+        {
+          "nome": "Cofins",
+          "percentual": "1,3601%",
+          "valor": "R$ 136,02",
+          "valor_centavos": 13602
+        },
+        {
+          "nome": "PIS/Pasep",
+          "percentual": "0,2951%",
+          "valor": "R$ 29,52",
+          "valor_centavos": 2952
+        },
+        {
+          "nome": "CPP",
+          "percentual": "4,3278%",
+          "valor": "R$ 432,78",
+          "valor_centavos": 43278
+        },
+        {
+          "nome": "ISS",
+          "percentual": "3,2409%",
+          "valor": "R$ 324,09",
+          "valor_centavos": 32409
+        }
+      ]
+    }
+  ],
+  "fora_do_das": [],
+  "passos": [
+    {
+      "titulo": "Anexo",
+      "texto": "Revenda de mercadorias: Anexo I (Comércio).",
+      "fonte": "LC 123/2006, art. 18, § 4º, I, e Anexo I",
+      "grupo": "Receita 1: Revenda de mercadorias"
+    },
+    {
+      "titulo": "Faixa",
+      "texto": "A RBT12 é de R$ 500.000,00 e fica na 3ª faixa do Anexo I, de R$ 360.000,01 a R$ 720.000,00: alíquota nominal de 9,50% e parcela a deduzir de R$ 13.860,00.",
+      "fonte": "LC 123/2006, art. 18, § 1º, e Anexo I",
+      "grupo": "Receita 1: Revenda de mercadorias"
+    },
+    {
+      "titulo": "Alíquota efetiva",
+      "texto": "(RBT12 × alíquota nominal − parcela a deduzir) ÷ RBT12 = (R$ 500.000,00 × 9,50% − R$ 13.860,00) ÷ R$ 500.000,00 = 6,7280%.",
+      "fonte": "LC 123/2006, art. 18, § 1º-A",
+      "grupo": "Receita 1: Revenda de mercadorias"
+    },
+    {
+      "titulo": "Divisão entre os tributos",
+      "texto": "A alíquota efetiva é dividida entre os tributos pelos percentuais da 3ª faixa do Anexo I: IRPJ 5,50%, CSLL 3,50%, Cofins 12,74%, PIS/Pasep 2,76%, CPP 42,00% e ICMS 33,50%. Por exemplo, IRPJ = 6,7280% × 5,50% = 0,3700%.",
+      "fonte": "Res. CGSN 140/2018, art. 21, III; LC 123/2006, Anexo I",
+      "grupo": "Receita 1: Revenda de mercadorias"
+    },
+    {
+      "titulo": "O que esta receita não paga no DAS",
+      "texto": "Saem da conta: o ICMS (já pago por substituição tributária ou antecipação). Soma dos percentuais desta receita: 4,4741%.",
+      "fonte": "LC 123/2006, art. 18, § 4º-A, I; Res. CGSN 140/2018, art. 25, § 8º",
+      "grupo": "Receita 1: Revenda de mercadorias"
+    },
+    {
+      "titulo": "Valor desta receita",
+      "texto": "Receita × soma dos percentuais = R$ 30.000,00 × 4,4741% = R$ 1.342,24.",
+      "fonte": "LC 123/2006, art. 18, § 3º",
+      "grupo": "Receita 1: Revenda de mercadorias"
+    },
+    {
+      "titulo": "Anexo",
+      "texto": "Serviços do Anexo III: Anexo III (Locação de bens móveis e serviços não relacionados no § 5º-C do art. 18).",
+      "fonte": "LC 123/2006, art. 18, § 4º, III, e § 5º-B, e Anexo III",
+      "grupo": "Receita 2: Serviços do Anexo III"
+    },
+    {
+      "titulo": "Faixa",
+      "texto": "A RBT12 é de R$ 500.000,00 e fica na 3ª faixa do Anexo III, de R$ 360.000,01 a R$ 720.000,00: alíquota nominal de 13,50% e parcela a deduzir de R$ 17.640,00.",
+      "fonte": "LC 123/2006, art. 18, § 1º, e Anexo III",
+      "grupo": "Receita 2: Serviços do Anexo III"
+    },
+    {
+      "titulo": "Alíquota efetiva",
+      "texto": "(RBT12 × alíquota nominal − parcela a deduzir) ÷ RBT12 = (R$ 500.000,00 × 13,50% − R$ 17.640,00) ÷ R$ 500.000,00 = 9,9720%.",
+      "fonte": "LC 123/2006, art. 18, § 1º-A",
+      "grupo": "Receita 2: Serviços do Anexo III"
+    },
+    {
+      "titulo": "Divisão entre os tributos",
+      "texto": "A alíquota efetiva é dividida entre os tributos pelos percentuais da 3ª faixa do Anexo III: IRPJ 4,00%, CSLL 3,50%, Cofins 13,64%, PIS/Pasep 2,96%, CPP 43,40% e ISS 32,50%. Por exemplo, IRPJ = 9,9720% × 4,00% = 0,3988%.",
+      "fonte": "Res. CGSN 140/2018, art. 21, III; LC 123/2006, Anexo III",
+      "grupo": "Receita 2: Serviços do Anexo III"
+    },
+    {
+      "titulo": "Valor desta receita",
+      "texto": "Receita × soma dos percentuais = R$ 10.000,00 × 9,9720% = R$ 997,20.",
+      "fonte": "LC 123/2006, art. 18, § 3º",
+      "grupo": "Receita 2: Serviços do Anexo III"
+    },
+    {
+      "titulo": "DAS estimado",
+      "texto": "Soma das receitas: R$ 1.342,24 + R$ 997,20 = R$ 2.339,44.",
+      "fonte": "LC 123/2006, art. 18, § 3º",
+      "grupo": "Total do mês"
+    }
+  ],
+  "aviso": null,
+  "avisos": [],
+  "tabela": {
+    "fonte": "https://www.planalto.gov.br/ccivil_03/leis/lcp/lcp123.htm",
+    "redacao": "Lei Complementar nº 155/2016",
+    "vigencia": "2018-01-01"
+  }
+}

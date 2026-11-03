@@ -39,58 +39,74 @@ describe SimplesNacional::Tabelas do
   # Alíquota efetiva (art. 18, § 1º-A): (RBT12 × alíquota nominal − parcela a deduzir) ÷ RBT12.
   def efetiva(faixa, rbt12) = ((rbt12 * faixa.aliquota) - faixa.deduzir) / rbt12
 
-  describe ".todas, com as tabelas do repositório" do
-    let(:anexos) { subject.todas }
+  # 2026: LC 123/2006 na redação da LC 155/2016. 2027 e 2028: Anexos XVIII a XXII da LC 214/2025.
+  {
+    "2026" => ["https://www.planalto.gov.br/ccivil_03/leis/lcp/lcp123.htm", Date.new(2018, 1, 1), %w[Cofins PIS/Pasep]],
+    "2027-2028" => ["https://www.planalto.gov.br/ccivil_03/leis/lcp/lcp214.htm", Date.new(2027, 1, 1), %w[CBS IBS]]
+  }.each do |pasta, (fonte, vigencia, novos)|
+    describe ".todas, com as tabelas de #{pasta}" do
+      let(:anexos) { subject.todas(File.join(subject::PASTA, pasta)) }
 
-    it "tem os Anexos I a V" do
-      assert_equal [1, 2, 3, 4, 5], anexos.keys
-    end
-
-    it "traz a fonte oficial e a vigência em todos os anexos" do
-      anexos.each_value do |anexo|
-        assert_equal "https://www.planalto.gov.br/ccivil_03/leis/lcp/lcp123.htm", anexo.fonte
-        assert_equal Date.new(2018, 1, 1), anexo.vigencia
+      it "tem os Anexos I a V" do
+        assert_equal [1, 2, 3, 4, 5], anexos.keys
       end
-    end
 
-    it "termina a última faixa no limite da empresa de pequeno porte (art. 3º, II)" do
-      anexos.each_value { |anexo| assert_equal 4_800_000, anexo.faixas.last.ate }
-    end
-
-    it "começa a primeira faixa sem parcela a deduzir" do
-      anexos.each_value { |anexo| assert_equal 0, anexo.faixas.first.deduzir }
-    end
-
-    # Conferência da digitação que não depende de copiar a tabela de novo: nas bordas
-    # entre as faixas 1 a 5, a parcela a deduzir faz a alíquota efetiva ser a mesma dos
-    # dois lados. Da 5ª para a 6ª faixa a própria lei não segue essa regra.
-    it "não deixa a alíquota efetiva saltar nas bordas entre as faixas 1 a 5" do
-      anexos.each_value do |anexo|
-        anexo.faixas.first(5).each_cons(2) do |faixa, proxima|
-          assert_equal efetiva(faixa, faixa.ate), efetiva(proxima, faixa.ate),
-                       "Anexo #{anexo.numero}, borda da faixa #{faixa.numero} para a #{proxima.numero}"
+      it "traz a fonte oficial e a vigência em todos os anexos" do
+        anexos.each_value do |anexo|
+          assert_equal fonte, anexo.fonte
+          assert_equal vigencia, anexo.vigencia
         end
       end
-    end
 
-    it "guarda a alíquota como fração exata, já dividida por 100" do
-      # Anexo I, 2ª faixa: 7,30%.
-      assert_equal Rational(73, 1000), anexos[1].faixas[1].aliquota
-    end
+      it "tem os tributos do ano (#{novos.join(' e ')})" do
+        anexos.each_value { |anexo| assert_empty novos - anexo.faixas.first.reparticao.keys, "Anexo #{anexo.numero}" }
+      end
 
-    it "guarda a repartição dos tributos de cada faixa, somando 100%" do
-      # Anexo I, 1ª faixa: ICMS de 34,00%.
-      assert_equal Rational(34, 100), anexos[1].faixas.first.reparticao["ICMS"]
-      anexos.each_value do |anexo|
-        anexo.faixas.each { |faixa| assert_equal 1, faixa.reparticao.values.sum, "Anexo #{anexo.numero}" }
+      it "termina a última faixa no limite da empresa de pequeno porte (art. 3º, II)" do
+        anexos.each_value { |anexo| assert_equal 4_800_000, anexo.faixas.last.ate }
+      end
+
+      it "começa a primeira faixa sem parcela a deduzir" do
+        anexos.each_value { |anexo| assert_equal 0, anexo.faixas.first.deduzir }
+      end
+
+      # Conferência da digitação que não depende de copiar a tabela de novo: nas bordas
+      # entre as faixas 1 a 5, a parcela a deduzir faz a alíquota efetiva ser a mesma dos
+      # dois lados. Da 5ª para a 6ª faixa a própria lei não segue essa regra.
+      it "não deixa a alíquota efetiva saltar nas bordas entre as faixas 1 a 5" do
+        anexos.each_value do |anexo|
+          anexo.faixas.first(5).each_cons(2) do |faixa, proxima|
+            assert_equal efetiva(faixa, faixa.ate), efetiva(proxima, faixa.ate),
+                         "Anexo #{anexo.numero}, borda da faixa #{faixa.numero} para a #{proxima.numero}"
+          end
+        end
+      end
+
+      it "guarda a alíquota como fração exata, já dividida por 100" do
+        # Anexo I, 2ª faixa: 7,30%.
+        assert_equal Rational(73, 1000), anexos[1].faixas[1].aliquota
+      end
+
+      it "guarda a repartição dos tributos de cada faixa, somando 100%" do
+        # Anexo I, 1ª faixa: ICMS de 34,00%.
+        assert_equal Rational(34, 100), anexos[1].faixas.first.reparticao["ICMS"]
+        anexos.each_value do |anexo|
+          anexo.faixas.each { |faixa| assert_equal 1, faixa.reparticao.values.sum, "Anexo #{anexo.numero}" }
+        end
+      end
+
+      it "tem a repartição da nota do ISS só na 5ª faixa dos Anexos III e IV" do
+        com_nota = anexos.values.flat_map { |anexo| anexo.faixas.select(&:teto_iss).map { [anexo.numero, _1.numero] } }
+        assert_equal [[3, 5], [4, 5]], com_nota
+        assert_equal Rational(602, 10_000), anexos[3].faixas[4].teto_iss["IRPJ"]
       end
     end
+  end
 
-    it "tem a repartição da nota do ISS só na 5ª faixa dos Anexos III e IV" do
-      com_nota = anexos.values.flat_map { |anexo| anexo.faixas.select(&:teto_iss).map { [anexo.numero, _1.numero] } }
-      assert_equal [[3, 5], [4, 5]], com_nota
-      assert_equal Rational(602, 10_000), anexos[3].faixas[4].teto_iss["IRPJ"]
-    end
+  it "usa a correção da LC 227/2026 na CBS do Anexo III de 2027 (3ª e 4ª faixas)" do
+    anexo = subject.todas(File.join(subject::PASTA, "2027-2028"))[3]
+    assert_equal([Rational(1641, 10_000)] * 2, anexo.faixas[2..3].map { |faixa| faixa.reparticao["CBS"] })
+    assert_equal Rational(1890, 10_000), subject.todas(File.join(subject::PASTA, "2027-2028"))[1].faixas.last.aliquota
   end
 
   describe ".ler, com um arquivo de teste" do
@@ -147,7 +163,7 @@ describe SimplesNacional::Tabelas do
 
     it "recusa ICMS ou ISS na 6ª faixa" do
       faixas[5]["reparticao"] = reparticao.dup
-      assert_match(/6ª faixa não pode ter ICMS nem ISS/, erro(dados))
+      assert_match(/6ª faixa não pode ter ICMS, ISS nem IBS/, erro(dados))
     end
 
     it "recusa faixa sem repartição" do

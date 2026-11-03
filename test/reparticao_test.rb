@@ -70,8 +70,12 @@ describe SimplesNacional::Reparticao do
     end
   end
 
-  it "descobre o imposto local de cada anexo" do
-    locais = (1..5).map { |numero| SimplesNacional::Reparticao.imposto_local(tabelas[numero]) }
-    assert_equal %w[ICMS ICMS ISS ISS ISS], locais
+  it "descobre os impostos locais de cada anexo (o IBS entra em 2027)" do
+    locais = (1..5).map { |numero| SimplesNacional::Reparticao.locais_do(tabelas[numero]) }
+    assert_equal [%w[ICMS], %w[ICMS], %w[ISS], %w[ISS], %w[ISS]], locais
+    de2027 = SimplesNacional::Regras.tabelas(SimplesNacional::Regras::DE_2027)
+    assert_equal([%w[ICMS IBS], %w[ISS IBS]], [1, 3].map do |numero|
+      SimplesNacional::Reparticao.locais_do(de2027[numero])
+    end)
   end
 end

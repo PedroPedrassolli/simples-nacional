@@ -67,6 +67,20 @@ describe SimplesNacional::InicioDeAtividade do
     end
   end
 
+  describe "com exportação" do
+    # A exportação também é anualizada, separada (Res. CGSN 140/2018, art. 23): 40.000 ÷ 4 × 12 = 120.000.
+    let(:entrada) do
+      { periodo: "2026-03", inicio: "2025-11", rbt12: 10_000_000, rbt12_exportacao: 4_000_000,
+        atividades: [{ tipo: "revenda", receita: 1_000_000, opcoes: ["exportacao"] }] }
+    end
+
+    it "anualiza a RBT12 da exportação e explica" do
+      assert_equal 12_000_000, subject.atividades.first.rbt12
+      assert_includes subject.passos.first.texto, "A RBT12 da exportação é a média dos meses anteriores × 12: " \
+                                                  "R$ 40.000,00 ÷ 4 × 12 = R$ 120.000,00."
+    end
+  end
+
   describe "com 1 mês de atividade antes" do
     let(:entrada) { { periodo: "2026-03", anexo: 1, inicio: "2026-02", rbt12: 1_000_000, receita_mes: 1_000_000 } }
 

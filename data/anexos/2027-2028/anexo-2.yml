@@ -1,0 +1,43 @@
+# Anexo II da Lei Complementar nº 123/2006, para os anos-calendário 2027 e 2028.
+# Título na lei: Alíquotas e Partilha do Simples Nacional - Indústria.
+#
+# Redação do Anexo XIX da LC 214/2025, que o art. 519 dela põe no lugar do Anexo II da
+# LC 123/2006 a partir de 1º/1/2027 (tabela "Para os anos-calendário 2027 e 2028").
+# Copiado do texto compilado no Planalto (link em "fonte"), sem os trechos riscados.
+# Em 2029 vem outra tabela (a calculadora ainda não aceita 2029).
+#
+# Mudanças em relação a 2026: a CBS entra no lugar da Cofins e do PIS/Pasep, entra o
+# IBS, e a alíquota nominal da 6ª faixa é um pouco menor. O formato é o mesmo dos arquivos
+# de 2026 (ver data/anexos/2026). Na 6ª faixa não há ICMS, ISS nem IBS: eles são
+# calculados com a 5ª faixa (Res. CGSN 140/2018, art. 21, IV, na redação da Res. CGSN 190/2026).
+anexo: 2
+nome: Indústria
+fonte: https://www.planalto.gov.br/ccivil_03/leis/lcp/lcp214.htm
+redacao: Lei Complementar nº 214/2025 (Anexo XIX)
+vigencia: "2027-01-01"
+conferido_em: "2026-11-02"
+faixas:
+  - ate: "180000.00"
+    aliquota: "4.50"
+    deduzir: "0.00"
+    reparticao: { IRPJ: "5.50", CSLL: "3.50", CBS: "13.85", CPP: "37.50", IPI: "7.50", ICMS: "32.00", IBS: "0.15" }
+  - ate: "360000.00"
+    aliquota: "7.80"
+    deduzir: "5940.00"
+    reparticao: { IRPJ: "5.50", CSLL: "3.50", CBS: "13.85", CPP: "37.50", IPI: "7.50", ICMS: "32.00", IBS: "0.15" }
+  - ate: "720000.00"
+    aliquota: "10.00"
+    deduzir: "13860.00"
+    reparticao: { IRPJ: "5.50", CSLL: "3.50", CBS: "13.85", CPP: "37.50", IPI: "7.50", ICMS: "32.00", IBS: "0.15" }
+  - ate: "1800000.00"
+    aliquota: "11.20"
+    deduzir: "22500.00"
+    reparticao: { IRPJ: "5.50", CSLL: "3.50", CBS: "13.85", CPP: "37.50", IPI: "7.50", ICMS: "32.00", IBS: "0.15" }
+  - ate: "3600000.00"
+    aliquota: "14.70"
+    deduzir: "85500.00"
+    reparticao: { IRPJ: "5.50", CSLL: "3.50", CBS: "13.85", CPP: "37.50", IPI: "7.50", ICMS: "32.00", IBS: "0.15" }
+  - ate: "4800000.00"
+    aliquota: "29.90"
+    deduzir: "720000.00"
+    reparticao: { IRPJ: "8.53", CSLL: "7.53", CBS: "25.22", CPP: "23.59", IPI: "35.13" }

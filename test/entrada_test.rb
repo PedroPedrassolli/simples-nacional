@@ -21,9 +21,9 @@ describe SimplesNacional::Entrada do
     assert_match(/formato AAAA-MM/, erro(periodo: "2026-13"))
   end
 
-  it "recusa mês fora de 2026, porque as tabelas mudam em 2027" do
-    assert_match(%r{só as regras de 2026.*LC 214/2025, art\. 519}, erro(periodo: "2027-01"))
-    assert_match(/só as regras de 2026/, erro(periodo: "2025-12"))
+  it "recusa mês fora de 2026 a 2028, porque as tabelas mudam de novo em 2029" do
+    assert_match(%r{regras de 2026 a 2028.*LC 214/2025, art\. 519}, erro(periodo: "2029-01"))
+    assert_match(/regras de 2026 a 2028/, erro(periodo: "2025-12"))
   end
 
   it "recusa início em formato errado" do

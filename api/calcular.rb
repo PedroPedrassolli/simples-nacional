@@ -6,43 +6,129 @@ require_relative "../lib/simples_nacional"
 # Função da Vercel que a página chama. Toda a regra fica na biblioteca (lib/); aqui só
 # se lê a URL, confere o formato dos números e monta o JSON.
 #
+# Uma receita só (o jeito de antes, que continua valendo):
 #   GET /api/calcular?periodo=2026-03&rbt12=500000.00&receita_mes=40000.00&anexo=3
 #   GET /api/calcular?periodo=2026-03&rbt12=500000.00&receita_mes=40000.00&anexo=fator_r&folha12=150000.00
 #   GET /api/calcular?periodo=2026-03&inicio=2025-11&rbt12=100000.00&receita_mes=30000.00&anexo=1
 #   GET /api/calcular?periodo=2026-10&rbt12=3900000.00&receita_mes=400000.00&anexo=1&receita_ano=3300000.00
 #
+# Várias receitas (segregação), com os qualificadores depois do valor, separados por "+":
+#   GET /api/calcular?periodo=2026-03&rbt12=500000.00&atividades=revenda:30000.00:st_icms;servicos_3:10000.00
+#
+# Mês a mês, no lugar de rbt12, folha12 e receita_ano: um parâmetro por mês, com a receita,
+# a exportação e a folha (as duas últimas podem faltar):
+#   GET /api/calcular?periodo=2026-03&anexo=3&receita_mes=40000.00&mes_2026-02=42000.00&mes_2026-01=38000:0:9000...
+#
 # Os valores vão em reais, com ponto e até duas casas ("500000.00"); a página converte o
-# que a pessoa digitou ("500.000,00") antes de chamar. anexo: 1 a 5 ou fator_r.
-# periodo: mês de apuração (AAAA-MM). inicio: mês de início das atividades, só para empresa
-# com menos de 12 meses; aí rbt12 é a receita desde o início (no 1º mês, não vai).
-# receita_ano (receita do ano até o mês anterior) e receita_ano_anterior: para o sublimite
-# do ICMS e do ISS; a biblioteca diz quando a receita do ano é necessária.
+# que a pessoa digitou ("500.000,00") antes de chamar. Percentuais em % ("3.5" = 3,5%).
+# Os demais parâmetros estão em PARAMETROS e no README.
 module CalcularApi
   # Até R$ 9.999.999,99: cobre o limite do Simples e recusa textos enormes logo de cara.
   VALOR = /\A(\d{1,7})(?:\.(\d{1,2}))?\z/
+  PERCENTUAL = /\A\d{1,3}(?:\.\d{1,4})?\z/
+  MES = /\Ames_(\d{4}-\d{2})\z/
 
   ANEXOS = { "1" => 1, "2" => 2, "3" => 3, "4" => 4, "5" => 5, "fator_r" => :fator_r }.freeze
 
   NOMES = {
-    "rbt12" => "a receita bruta dos meses anteriores (RBT12)",
-    "receita_mes" => "a receita do mês",
-    "folha12" => "a folha de salários",
-    "receita_ano" => "a receita do ano até o mês anterior",
-    "receita_ano_anterior" => "a receita do ano anterior"
+    "rbt12" => "a receita bruta dos meses anteriores (RBT12)", "receita_mes" => "a receita do mês",
+    "folha12" => "a folha de salários", "receita_ano" => "a receita do ano até o mês anterior",
+    "receita_ano_anterior" => "a receita do ano anterior", "rbt12_exportacao" => "a RBT12 da exportação",
+    "receita_mes_anterior" => "a receita do mês anterior", "creditos_icms" => "os créditos de ICMS",
+    "creditos_ibs" => "os créditos de IBS", "creditos_cbs" => "os créditos de CBS",
+    "folha_empregados" => "a folha dos empregados", "pro_labore" => "o pró-labore"
   }.freeze
+
+  ALIQUOTAS = %w[aliquota_iss aliquota_icms aliquota_ibs aliquota_cbs].freeze
 
   # Parâmetro com problema: vira resposta 400 com a mensagem.
   class ParametroInvalido < StandardError; end
 
   # Devolve [status HTTP, corpo da resposta].
   def self.responder(parametros)
-    anexo = ANEXOS[parametros["anexo"].to_s] || raise(ParametroInvalido, "Escolha o anexo: 1, 2, 3, 4, 5 ou fator_r.")
     resultado = SimplesNacional.calcular(periodo: texto(parametros, "periodo"), inicio: texto(parametros, "inicio"),
-                                         anexo:, receita_mes: centavos(parametros, "receita_mes"),
-                                         **opcionais(parametros, anexo))
-    [200, corpo(resultado)]
+                                         **receitas_do_mes(parametros), **acumulados(parametros),
+                                         ibs_cbs_fora: texto(parametros, "ibs_cbs_fora") == "1",
+                                         fora_do_das: fora_do_das(parametros))
+    [200, Corpo.montar(resultado)]
   rescue ParametroInvalido, SimplesNacional::Calculo::EntradaInvalida => e
     [400, { erro: e.message }]
+  end
+
+  # atividades=... (várias receitas) ou anexo + receita_mes (uma só).
+  def self.receitas_do_mes(parametros)
+    lista = texto(parametros, "atividades")
+    return { atividades: atividades(lista) } if lista
+
+    anexo = ANEXOS[parametros["anexo"].to_s] || raise(ParametroInvalido, "Escolha o anexo: 1, 2, 3, 4, 5 ou fator_r.")
+    { anexo:, receita_mes: centavos(parametros, "receita_mes") }
+  end
+
+  # "revenda:30000.00:st_icms+monofasico;servicos_3:10000.00" → lista de hashes.
+  def self.atividades(texto)
+    texto.split(";").first(SimplesNacional::Atividades::MAXIMO + 1).map do |parte|
+      tipo, valor, opcoes = parte.split(":", 3)
+      { tipo:, receita: centavos({ "receita_mes" => valor }, "receita_mes"), opcoes: opcoes.to_s.split("+") }
+    end
+  end
+
+  # Totais (rbt12, folha12...) ou mês a mês (mes_AAAA-MM). A folha só vale no Fator R.
+  def self.acumulados(parametros)
+    valores = %w[rbt12 rbt12_exportacao folha12 receita_ano receita_ano_anterior receita_mes_anterior].to_h do |nome|
+      [nome.to_sym, opcional(parametros, nome)]
+    end
+    unless parametros["anexo"].to_s == "fator_r" || parametros["atividades"].to_s.include?("fator_r")
+      valores[:folha12] =
+        nil
+    end
+    historico = historico(parametros)
+    historico.empty? ? valores : valores.merge(historico:)
+  end
+
+  # { "2026-02" => { receita:, exportacao:, folha: } } a partir de mes_2026-02=42000.00:0:9000.00
+  def self.historico(parametros)
+    parametros.filter_map do |nome, valor|
+      mes = MES.match(nome.to_s.scrub)&.captures&.first
+      [mes, mes_do_historico(valor, mes)] if mes
+    end.first(25).to_h
+  end
+
+  # "42000.00:0:9000.00" → { receita:, exportacao:, folha: } (as duas últimas valem 0 se faltarem).
+  def self.mes_do_historico(valor, mes)
+    receita, exportacao, folha = valor.to_s.split(":", 3).map { |parte| centavos({ "x" => parte }, "x", mes) }
+    { receita:, exportacao: exportacao || 0, folha: folha || 0 }
+  end
+
+  def self.fora_do_das(parametros)
+    valores = ALIQUOTAS.to_h { |nome| [nome.to_sym, percentual(parametros, nome)] }
+    %w[creditos_icms creditos_ibs creditos_cbs folha_empregados pro_labore].each do |nome|
+      valores[nome.to_sym] = opcional(parametros, nome)
+    end
+    valores.merge(rat: texto(parametros, "rat")&.then { |rat| inteiro_do_rat(rat) }, fap: fap(parametros))
+  end
+
+  def self.inteiro_do_rat(texto)
+    /\A[123]\z/.match?(texto) ? texto.to_i : raise(ParametroInvalido, "O RAT precisa ser 1, 2 ou 3.")
+  end
+
+  # "3.5" → 3,5% (Rational(35, 1000)). Vazio vira nil.
+  def self.percentual(parametros, nome)
+    valor = texto(parametros, nome)
+    return if valor.nil?
+    raise ParametroInvalido, "Informe #{nome.tr('_', ' ')} em %, como 3.5." unless PERCENTUAL.match?(valor)
+
+    Rational(valor) / 100
+  end
+
+  def self.fap(parametros)
+    valor = texto(parametros, "fap")
+    return if valor.nil?
+    unless /\A\d(?:\.\d{1,4})?\z/.match?(valor)
+      raise ParametroInvalido,
+            "Informe o FAP como número, por exemplo 1.0000."
+    end
+
+    Rational(valor)
   end
 
   # Parâmetro de texto (os meses "AAAA-MM"); vazio vira nil. A biblioteca confere o formato.
@@ -54,58 +140,90 @@ module CalcularApi
   # Valor que pode faltar (a biblioteca diz quando ele é necessário): vazio vira nil.
   def self.opcional(parametros, nome) = texto(parametros, nome) && centavos(parametros, nome)
 
-  # A folha só vale no Fator R.
-  def self.opcionais(parametros, anexo)
-    { rbt12: opcional(parametros, "rbt12"), folha12: (opcional(parametros, "folha12") if anexo == :fator_r),
-      receita_ano: opcional(parametros, "receita_ano"),
-      receita_ano_anterior: opcional(parametros, "receita_ano_anterior") }
-  end
-
-  # "500000.5" → 50_000_050 centavos.
-  def self.centavos(parametros, nome)
+  # "500000.5" → 50_000_050 centavos. mes: para a mensagem do mês a mês.
+  def self.centavos(parametros, nome, mes = nil)
     # scrub troca bytes que não são UTF-8 válido por "�". Sem ele, um texto quebrado
     # (ex.: %FF na URL) levanta ArgumentError no match e vira erro 500 em vez de 400.
     reais, decimais = VALOR.match(parametros[nome].to_s.scrub)&.captures
-    raise ParametroInvalido, "Informe #{NOMES[nome]} como número, por exemplo 500000.00." unless reais
+    return (reais.to_i * 100) + decimais.to_s.ljust(2, "0").to_i if reais
+    raise ParametroInvalido, "No mês a mês, informe #{mes} como número, por exemplo 40000.00." if mes
 
-    (reais.to_i * 100) + decimais.to_s.ljust(2, "0").to_i
+    raise ParametroInvalido, "Informe #{NOMES.fetch(nome, 'a receita')} como número, por exemplo 500000.00."
   end
 
-  def self.corpo(resultado)
-    cabecalho(resultado)
-      .merge(valores(resultado))
-      .merge(tributos: tributos(resultado.tributos), passos: resultado.passos.map(&:to_h),
-             aviso: SimplesNacional::PassoDoSublimite.aviso(resultado.anexo, resultado.situacao),
-             tabela: tabela(resultado.anexo))
-  end
+  private_class_method :receitas_do_mes, :atividades, :acumulados, :historico, :mes_do_historico, :fora_do_das,
+                       :inteiro_do_rat, :percentual, :fap, :opcional
 
-  # O mês de apuração, o anexo e a faixa.
-  def self.cabecalho(resultado)
-    { periodo: resultado.periodo.strftime("%Y-%m"), periodo_nome: SimplesNacional::Formato.mes(resultado.periodo),
-      anexo: resultado.anexo.numero, anexo_nome: resultado.anexo.nome, faixa: resultado.faixa.numero }
-  end
-
-  def self.tabela(anexo) = { fonte: anexo.fonte, redacao: anexo.redacao, vigencia: anexo.vigencia.iso8601 }
-
-  # A divisão do DAS: percentual sobre a receita do mês e valor de cada tributo.
-  def self.tributos(lista)
-    lista.map do |tributo|
-      { nome: tributo.nome, percentual: SimplesNacional::Formato.percentual(tributo.percentual, 4),
-        valor: SimplesNacional::Formato.reais(tributo.valor), valor_centavos: tributo.valor }
-    end
-  end
-
-  # Percentuais e dinheiro já no formato brasileiro, para a página só mostrar.
+  # O JSON da resposta: percentuais e dinheiro já no formato brasileiro, para a página só mostrar.
+  # Os campos do topo (anexo, faixa, rbt12...) são da primeira receita, como antes da segregação;
   # das_centavos vai junto para quem quiser o número (testes, monitor de disponibilidade).
-  def self.valores(resultado)
-    {
-      fator_r: resultado.fator_r && SimplesNacional::Formato.percentual(resultado.fator_r),
-      rbt12: SimplesNacional::Formato.reais(resultado.rbt12),
-      aliquota_nominal: SimplesNacional::Formato.percentual(resultado.faixa.aliquota),
-      aliquota_efetiva: SimplesNacional::Formato.percentual(resultado.aliquota_efetiva, 4),
-      das: SimplesNacional::Formato.reais(resultado.das),
-      das_centavos: resultado.das
-    }
+  module Corpo
+    F = SimplesNacional::Formato
+
+    def self.montar(resultado)
+      avisos = SimplesNacional::Avisos.montar(resultado)
+      cabecalho(resultado).merge(totais(resultado), atividades: atividades(resultado),
+                                                    fora_do_das: resultado.fora_do_das.map do |estimativa|
+                                                      estimativa(estimativa)
+                                                    end,
+                                                    passos: resultado.passos.map(&:to_h), aviso: avisos.first, avisos:,
+                                                    tabela: tabela(resultado.anexo))
+    end
+
+    # O mês e a primeira receita (os campos de antes da segregação).
+    def self.cabecalho(resultado)
+      periodo = resultado.periodo
+      { periodo: periodo.strftime("%Y-%m"), periodo_nome: F.mes(periodo), ano: periodo.year,
+        fator_r: resultado.fator_r && F.percentual(resultado.fator_r) }.merge(da_tabela(resultado.atividades.first))
+    end
+
+    def self.da_tabela(apurada)
+      { anexo: apurada.tabela.numero, anexo_nome: apurada.tabela.nome, faixa: apurada.faixa.numero,
+        rbt12: F.reais(apurada.rbt12), aliquota_nominal: F.percentual(apurada.faixa.aliquota) }
+    end
+
+    def self.totais(resultado)
+      { das: F.reais(resultado.das), das_centavos: resultado.das, receita: F.reais(resultado.receita),
+        aliquota_efetiva: F.percentual(resultado.aliquota_efetiva, 4), tributos: tributos(resultado.tributos),
+        total_estimado: F.reais(resultado.total_estimado), total_estimado_centavos: resultado.total_estimado }
+    end
+
+    def self.atividades(resultado)
+      regras = resultado.dados.regras
+      resultado.atividades.map { |apurada| identificacao(apurada, regras).merge(conta(apurada)) }
+    end
+
+    def self.identificacao(apurada, regras)
+      atividade = apurada.atividade
+      { numero: apurada.numero, tipo: atividade.tipo.codigo, nome: atividade.tipo.nome,
+        opcoes: atividade.opcoes.map { |codigo| SimplesNacional::Atividades.opcao(codigo, regras).nome },
+        exportacao: atividade.exportacao?, receita: F.reais(atividade.receita) }
+    end
+
+    def self.conta(apurada)
+      da_tabela(apurada).merge(aliquota_efetiva: F.percentual(apurada.efetiva, 4),
+                               percentual: F.percentual(apurada.total, 4), valor: F.reais(apurada.valor),
+                               valor_centavos: apurada.valor, tributos: tributos(apurada.tributos))
+    end
+
+    def self.estimativa(estimativa)
+      { tributo: estimativa.tributo, base: estimativa.base && F.reais(estimativa.base),
+        valor: estimativa.valor && F.reais(estimativa.valor), valor_centavos: estimativa.valor,
+        texto: estimativa.texto, falta: estimativa.falta, fonte: estimativa.fonte }
+    end
+
+    def self.tabela(anexo) = { fonte: anexo.fonte, redacao: anexo.redacao, vigencia: anexo.vigencia.iso8601 }
+
+    # A divisão do DAS: percentual sobre a receita e valor de cada tributo.
+    def self.tributos(lista)
+      lista.map do |tributo|
+        { nome: tributo.nome, percentual: F.percentual(tributo.percentual, 4), valor: F.reais(tributo.valor),
+          valor_centavos: tributo.valor }
+      end
+    end
+
+    private_class_method :cabecalho, :da_tabela, :totais, :atividades, :identificacao, :conta, :estimativa, :tabela,
+                         :tributos
   end
 end
 

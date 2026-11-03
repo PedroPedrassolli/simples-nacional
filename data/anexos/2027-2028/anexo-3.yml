@@ -1,0 +1,50 @@
+# Anexo III da Lei Complementar nº 123/2006, para os anos-calendário 2027 e 2028.
+# Título na lei: Receitas de locação de bens móveis e de prestação de serviços não relacionados no § 5º-C do art. 18.
+#
+# Redação do Anexo XX da LC 214/2025, que o art. 519 dela põe no lugar do Anexo III da
+# LC 123/2006 a partir de 1º/1/2027 (tabela "Para os anos-calendário 2027 e 2028").
+# Copiado do texto compilado no Planalto (link em "fonte"), sem os trechos riscados.
+# Em 2029 vem outra tabela (a calculadora ainda não aceita 2029).
+#
+# Mudanças em relação a 2026: a CBS entra no lugar da Cofins e do PIS/Pasep, entra o
+# IBS, e a alíquota nominal da 6ª faixa é um pouco menor. O formato é o mesmo dos arquivos
+# de 2026 (ver data/anexos/2026). Na 6ª faixa não há ICMS, ISS nem IBS: eles são
+# calculados com a 5ª faixa (Res. CGSN 140/2018, art. 21, IV, na redação da Res. CGSN 190/2026).
+#
+# A LC 227/2026 corrigiu a CBS da 3ª e da 4ª faixa (de 16,42% para 16,41%: com 16,42% a
+# repartição somava 100,01%). Vale a redação dela.
+#   teto_iss: nota (*) do anexo. Na 5ª faixa, com alíquota efetiva acima de 14,92537%, cada
+#             tributo (inclusive o IBS) fica com (alíquota efetiva − 5%) × este percentual,
+#             e o ISS com 5%.
+anexo: 3
+nome: Locação de bens móveis e serviços não relacionados no § 5º-C do art. 18
+fonte: https://www.planalto.gov.br/ccivil_03/leis/lcp/lcp214.htm
+redacao: Lei Complementar nº 214/2025 (Anexo XX), com a redação da Lei Complementar nº 227/2026
+vigencia: "2027-01-01"
+conferido_em: "2026-11-02"
+faixas:
+  - ate: "180000.00"
+    aliquota: "6.00"
+    deduzir: "0.00"
+    reparticao: { IRPJ: "4.00", CSLL: "3.50", CBS: "15.43", CPP: "43.40", ISS: "33.50", IBS: "0.17" }
+  - ate: "360000.00"
+    aliquota: "11.20"
+    deduzir: "9360.00"
+    reparticao: { IRPJ: "4.00", CSLL: "3.50", CBS: "16.91", CPP: "43.40", ISS: "32.00", IBS: "0.19" }
+  - ate: "720000.00"
+    aliquota: "13.50"
+    deduzir: "17640.00"
+    reparticao: { IRPJ: "4.00", CSLL: "3.50", CBS: "16.41", CPP: "43.40", ISS: "32.50", IBS: "0.19" }
+  - ate: "1800000.00"
+    aliquota: "16.00"
+    deduzir: "35640.00"
+    reparticao: { IRPJ: "4.00", CSLL: "3.50", CBS: "16.41", CPP: "43.40", ISS: "32.50", IBS: "0.19" }
+  - ate: "3600000.00"
+    aliquota: "21.00"
+    deduzir: "125640.00"
+    reparticao: { IRPJ: "4.00", CSLL: "3.50", CBS: "15.43", CPP: "43.40", ISS: "33.50", IBS: "0.17" }
+    teto_iss: { IRPJ: "6.02", CSLL: "5.26", CBS: "23.20", CPP: "65.26", IBS: "0.26" }
+  - ate: "4800000.00"
+    aliquota: "32.90"
+    deduzir: "648000.00"
+    reparticao: { IRPJ: "35.09", CSLL: "15.04", CBS: "19.29", CPP: "30.58" }

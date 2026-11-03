@@ -1,0 +1,164 @@
+{
+  "periodo": "2026-10",
+  "periodo_nome": "outubro de 2026",
+  "ano": 2026,
+  "fator_r": null,
+  "anexo": 1,
+  "anexo_nome": "Comércio",
+  "faixa": 6,
+  "rbt12": "R$ 3.900.000,00",
+  "aliquota_nominal": "19,00%",
+  "das": "R$ 37.230,77",
+  "das_centavos": 3723077,
+  "receita": "R$ 400.000,00",
+  "aliquota_efetiva": "9,3076%",
+  "tributos": [
+    {
+      "nome": "IRPJ",
+      "percentual": "1,2565%",
+      "valor": "R$ 5.026,15",
+      "valor_centavos": 502615
+    },
+    {
+      "nome": "CSLL",
+      "percentual": "0,9307%",
+      "valor": "R$ 3.723,08",
+      "valor_centavos": 372308
+    },
+    {
+      "nome": "Cofins",
+      "percentual": "2,6312%",
+      "valor": "R$ 10.525,14",
+      "valor_centavos": 1052514
+    },
+    {
+      "nome": "PIS/Pasep",
+      "percentual": "0,5705%",
+      "valor": "R$ 2.282,25",
+      "valor_centavos": 228225
+    },
+    {
+      "nome": "CPP",
+      "percentual": "3,9185%",
+      "valor": "R$ 15.674,15",
+      "valor_centavos": 1567415
+    }
+  ],
+  "total_estimado": "R$ 89.230,77",
+  "total_estimado_centavos": 8923077,
+  "atividades": [
+    {
+      "numero": 1,
+      "tipo": "revenda",
+      "nome": "Revenda de mercadorias",
+      "opcoes": [],
+      "exportacao": false,
+      "receita": "R$ 400.000,00",
+      "anexo": 1,
+      "anexo_nome": "Comércio",
+      "faixa": 6,
+      "rbt12": "R$ 3.900.000,00",
+      "aliquota_nominal": "19,00%",
+      "aliquota_efetiva": "9,3076%",
+      "percentual": "9,3076%",
+      "valor": "R$ 37.230,77",
+      "valor_centavos": 3723077,
+      "tributos": [
+        {
+          "nome": "IRPJ",
+          "percentual": "1,2565%",
+          "valor": "R$ 5.026,15",
+          "valor_centavos": 502615
+        },
+        {
+          "nome": "CSLL",
+          "percentual": "0,9307%",
+          "valor": "R$ 3.723,08",
+          "valor_centavos": 372308
+        },
+        {
+          "nome": "Cofins",
+          "percentual": "2,6312%",
+          "valor": "R$ 10.525,14",
+          "valor_centavos": 1052514
+        },
+        {
+          "nome": "PIS/Pasep",
+          "percentual": "0,5705%",
+          "valor": "R$ 2.282,25",
+          "valor_centavos": 228225
+        },
+        {
+          "nome": "CPP",
+          "percentual": "3,9185%",
+          "valor": "R$ 15.674,15",
+          "valor_centavos": 1567415
+        }
+      ]
+    }
+  ],
+  "fora_do_das": [
+    {
+      "tributo": "ICMS",
+      "base": "R$ 400.000,00",
+      "valor": "R$ 52.000,00",
+      "valor_centavos": 5200000,
+      "texto": "O ICMS de R$ 400.000,00 de receita não entra no DAS. Estimativa: R$ 400.000,00 × 18,00% − R$ 20.000,00 de créditos = R$ 52.000,00.",
+      "falta": null,
+      "fonte": "LC 123/2006, art. 20, §§ 1º e 1º-A; legislação do estado"
+    }
+  ],
+  "passos": [
+    {
+      "titulo": "Anexo",
+      "texto": "Revenda de mercadorias: Anexo I (Comércio).",
+      "fonte": "LC 123/2006, art. 18, § 4º, I, e Anexo I",
+      "grupo": "Receita do mês"
+    },
+    {
+      "titulo": "Faixa",
+      "texto": "A RBT12 é de R$ 3.900.000,00 e fica na 6ª faixa do Anexo I, de R$ 3.600.000,01 a R$ 4.800.000,00: alíquota nominal de 19,00% e parcela a deduzir de R$ 378.000,00.",
+      "fonte": "LC 123/2006, art. 18, § 1º, e Anexo I",
+      "grupo": "Receita do mês"
+    },
+    {
+      "titulo": "Alíquota efetiva",
+      "texto": "(RBT12 × alíquota nominal − parcela a deduzir) ÷ RBT12 = (R$ 3.900.000,00 × 19,00% − R$ 378.000,00) ÷ R$ 3.900.000,00 = 9,3076%.",
+      "fonte": "LC 123/2006, art. 18, § 1º-A",
+      "grupo": "Receita do mês"
+    },
+    {
+      "titulo": "Divisão entre os tributos",
+      "texto": "Na 6ª faixa, a alíquota efetiva cobre só os tributos federais, divididos assim: IRPJ 13,50%, CSLL 10,00%, Cofins 28,27%, PIS/Pasep 6,13% e CPP 42,10%. Por exemplo, IRPJ = 9,3076% × 13,50% = 1,2565%.",
+      "fonte": "Res. CGSN 140/2018, art. 21, III; LC 123/2006, Anexo I",
+      "grupo": "Receita do mês"
+    },
+    {
+      "titulo": "Sublimite do ICMS",
+      "texto": "A receita de 2025, R$ 3.700.000,00, passou do sublimite. Por isso, em 2026 o ICMS não entra no DAS: é pago à parte, pelas regras normais.",
+      "fonte": "LC 123/2006, art. 20, §§ 1º e 1º-A; Res. CGSN 140/2018, art. 12",
+      "grupo": "Sublimite e limite"
+    },
+    {
+      "titulo": "ICMS fora do DAS",
+      "texto": "O ICMS de R$ 400.000,00 de receita não entra no DAS. Estimativa: R$ 400.000,00 × 18,00% − R$ 20.000,00 de créditos = R$ 52.000,00.",
+      "fonte": "LC 123/2006, art. 20, §§ 1º e 1º-A; legislação do estado",
+      "grupo": "Fora do DAS"
+    },
+    {
+      "titulo": "DAS estimado",
+      "texto": "Receita do mês × alíquota efetiva = R$ 400.000,00 × 9,3076% = R$ 37.230,77. A conta usa os percentuais exatos, sem cortar casas decimais, e arredonda o resultado para o centavo.",
+      "fonte": "LC 123/2006, art. 18, § 3º",
+      "grupo": "Total do mês"
+    }
+  ],
+  "aviso": "O ICMS deste mês não entra no DAS: é pago à parte, pelas regras normais do estado. A estimativa está em \"Fora do DAS\".",
+  "avisos": [
+    "O ICMS deste mês não entra no DAS: é pago à parte, pelas regras normais do estado. A estimativa está em \"Fora do DAS\"."
+  ],
+  "tabela": {
+    "fonte": "https://www.planalto.gov.br/ccivil_03/leis/lcp/lcp123.htm",
+    "redacao": "Lei Complementar nº 155/2016",
+    "vigencia": "2018-01-01"
+  }
+}

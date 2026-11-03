@@ -22,13 +22,14 @@ export default function App() {
         <section className="hero" aria-labelledby="titulo">
           <p className="hero-selo">
             <span className="hero-ponto" aria-hidden="true" />
-            Regras de 2026, com a base legal
+            Regras de 2026 a 2028, com a base legal
           </p>
           <h1 id="titulo">Calculadora do Simples Nacional</h1>
           <p className="hero-subtitulo">Estimativa educativa do DAS</p>
           <p className="hero-texto">
-            Informe a receita e o anexo da atividade e veja a alíquota efetiva, quanto vai para cada
-            tributo e a conta explicada passo a passo.
+            Informe as receitas do mês como no PGDAS-D, uma por atividade, e veja o DAS de cada uma,
+            quanto vai para cada tributo, o que é pago fora do DAS e a conta explicada passo a
+            passo, com a memória de cálculo para imprimir.
           </p>
           <div className="hero-acoes">
             <a className="botao primario" href="#calculadora">
@@ -43,7 +44,7 @@ export default function App() {
         <Secao
           id="calculadora"
           titulo="Calcule o DAS"
-          descricao="Valores em reais, com ou sem pontos. A conta é feita pelas tabelas da Lei Complementar 123/2006."
+          descricao="Valores em reais, com ou sem pontos. A conta usa as tabelas da Lei Complementar 123/2006 (2026) e as da LC 214/2025 (2027 e 2028)."
         >
           <Calculadora consulta={<ConsultaCnpj />} />
         </Secao>
@@ -141,30 +142,47 @@ function Secao({ id, titulo, descricao, children }) {
   );
 }
 
+// O que a calculadora faz e o que ela não faz. Ela faz a mesma apuração do PGDAS-D para os
+// casos mais comuns, mas quem gera a guia é o PGDAS-D, e os casos da lista de baixo pedem um
+// contador.
 function Aviso() {
   return (
     <div className="aviso">
+      <h3>O que ela faz</h3>
       <ul>
         <li>
-          É uma <strong>estimativa educativa</strong>: não substitui o PGDAS-D nem um contador.
+          Apura o DAS de meses de <strong>2026 a 2028</strong>, com as regras de cada ano (a partir
+          de 2027, a RBT12 pula o mês anterior e entram o IBS e a CBS).
         </li>
         <li>
-          Calcula só meses de 2026. Em 2027 as tabelas mudam (LC 214/2025), e a empresa pode optar
-          por recolher o IBS e a CBS fora do DAS.
+          Separa as receitas por atividade (até 10), com substituição tributária, monofásico, ISS
+          retido, exportação e locação de bens móveis.
         </li>
         <li>
-          Considera uma atividade só. Se a empresa tem receitas de anexos diferentes, cada uma é
-          tributada pelo seu anexo (LC 123/2006, art. 18, § 4º), e a calculadora não junta as
-          partes.
+          Aceita os meses anteriores somados ou mês a mês, início de atividade, Fator R, sublimite e
+          receita acima de R$&nbsp;4.800.000,00 (até a exclusão).
         </li>
         <li>
-          Não cobre receita acima de R$&nbsp;4.800.000,00 no ano (a empresa sai do Simples) nem tira
-          a parcela do ISS da locação de bens móveis.
+          Estima o que é pago fora do DAS (ISS, ICMS, IBS, CBS e a CPP do Anexo IV) com as alíquotas
+          que você informar, e gera a memória de cálculo para imprimir ou salvar em PDF.
+        </li>
+      </ul>
+      <h3>O que ela não faz</h3>
+      <ul>
+        <li>
+          É uma <strong>estimativa educativa</strong>: a guia oficial sai do PGDAS-D, e a
+          responsabilidade pelos dados continua sendo da empresa e do contador.
         </li>
         <li>
-          Quando o ICMS ou o ISS sai do DAS pelo sublimite, a calculadora avisa, mas não estima o
-          valor pago à parte.
+          Não cobre ISS em valor fixo, isenção ou redução de ICMS e ISS dada pelo estado ou
+          município, receita com IPI e ISS ao mesmo tempo, nem o limite extra das receitas de
+          exportação.
         </li>
+        <li>
+          Não calcula multa e juros de atraso, substituição tributária ou diferencial de alíquota do
+          ICMS, nem o MEI (que tem regras próprias).
+        </li>
+        <li>Não calcula meses de 2029 em diante: as tabelas mudam de novo (LC 214/2025).</li>
       </ul>
     </div>
   );
