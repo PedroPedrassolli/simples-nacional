@@ -130,6 +130,9 @@ opcionais na hora certa; um teste confere que ele bate com o YAML.
   existe, o Jira não responde ou os secrets faltam, ele só avisa.
 - O `rodape-pr.yml` tira sozinho do corpo de PRs e comentários o rodapé que ferramentas
   acrescentam ao criar o texto pela API. Não precisa editar à mão.
+- `overrides.minimatch` no `web/package.json`: o ESLint 10 ainda pede o minimatch 10, que tem um
+  alerta moderado do Dependabot ([GHSA-g3hv-75wg-m249](https://github.com/advisories/GHSA-g3hv-75wg-m249)),
+  só na ferramenta de lint (não vai para o site). Quando o ESLint passar a pedir o 11, tire o override.
 - Arquivos com acento (fixtures, YAML) são lidos com `encoding: "UTF-8"`: sem isso, numa
   máquina sem locale UTF-8 o Ruby lê em US-ASCII e o teste quebra no primeiro "ç".
 - Nunca escreva o marcador que pula a CI (colchetes com "skip ci") numa mensagem de
