@@ -1,4 +1,4 @@
-// Funções puras do formulário (sem React), testadas com node --test.
+// Funções puras de texto e número (sem React), testadas com node --test.
 
 // Converte o valor digitado para o formato que a API espera ("500000.00").
 // Aceita "R$ 500.000,00", "500000,5", "500.000" e "1234.56". Devolve null quando o
@@ -37,16 +37,18 @@ export function formatarReais(texto) {
   return `${comPontos},${centavos}`;
 }
 
-// Sublimite do ICMS e do ISS em 2025 e 2026, igual ao data/sublimite.yml (um teste confere).
-// Aqui ele só serve para abrir os campos opcionais na hora certa: a regra fica na API.
-export const SUBLIMITE = 3_600_000;
+// Centavos (número) → "R$ 1.234,56", para os totais que a página soma sozinha. O espaço
+// depois do "R$" não quebra (\u00a0), como em semQuebra.
+export function reais(centavos) {
+  const texto = (centavos / 100).toFixed(2).replace(".", ",");
+  return `R$\u00a0${formatarReais(texto)}`;
+}
 
-// A RBT12 inclui os meses do ano antes do mês de apuração, então RBT12 + receita do mês é
-// o máximo que a receita do ano pode ter. Acima do sublimite, a API pede a receita do ano.
-export function podePassarDoSublimite({ periodo, inicio, rbt12, receita_mes }) {
-  if (!textosDoSublimite(periodo, inicio).receitaAno) return false;
-  const soma = Number(paraApi(rbt12 ?? "") ?? 0) + Number(paraApi(receita_mes ?? "") ?? 0);
-  return soma > SUBLIMITE;
+// Percentual digitado ("3,5", "3.5%", "18") → "3.5", como a API espera. null se não for um
+// percentual com até 3 dígitos e 4 casas.
+export function paraPercentual(texto) {
+  const limpo = String(texto).replace(/%/g, "").replace(/\s/g, "").replace(",", ".");
+  return /^\d{1,3}(\.\d{1,4})?$/.test(limpo) ? limpo.replace(/^0+(?=\d)/, "") : null;
 }
 
 const NOMES_DOS_MESES = [
@@ -70,113 +72,16 @@ export function nomeDoMes(mes) {
   return `${NOMES_DOS_MESES[Number(numero) - 1]} de ${ano}`;
 }
 
-// A calculadora aceita só os meses de 2026: as tabelas mudam em 2027 (a API confere).
-export const MESES_DE_APURACAO = NOMES_DOS_MESES.map(
-  (_, indice) => `2026-${String(indice + 1).padStart(2, "0")}`,
-);
-
-// "2026-03" → 2026 × 12 + 3, para contar meses com uma subtração.
-const contar = (mes) => {
-  const [ano, numero] = mes.split("-").map(Number);
-  return ano * 12 + numero;
-};
-
-// Meses possíveis de início para quem tem menos de 12 meses de atividade: do mês de
-// apuração para trás, até 11 meses antes.
-export function mesesDeInicio(periodo) {
-  if (!periodo) return [];
-  const total = contar(periodo);
-  return Array.from({ length: 12 }, (_, atras) => {
-    const mes = total - atras - 1;
-    return `${Math.floor(mes / 12)}-${String((mes % 12) + 1).padStart(2, "0")}`;
-  });
-}
-
-// Meses de atividade antes do mês de apuração (0 = começou no próprio mês), ou null
-// quando a empresa tem 12 meses ou mais.
-export function mesesDeAtividade(periodo, inicio) {
-  if (!periodo || !inicio) return null;
-  return contar(periodo) - contar(inicio);
-}
-
-// Rótulos dos campos que mudam conforme o mês e o início de atividade. receita: null
-// quando a receita anterior não é pedida (1º mês: a conta usa a receita do mês × 12).
-// receitaAno e receitaAnoAnterior: null quando o campo do sublimite não faz sentido
-// (em janeiro não há meses antes no ano; quem começou no ano não tem ano anterior).
-export function textosDosCampos(periodo, inicio) {
-  return { ...textosDaReceita(periodo, inicio), ...textosDoSublimite(periodo, inicio) };
-}
-
-function textosDaReceita(periodo, inicio) {
-  const meses = mesesDeAtividade(periodo, inicio);
-  if (meses === null) {
-    return {
-      receita: "Receita bruta dos 12 meses anteriores (RBT12)",
-      dicaReceita: "A soma do faturamento dos 12 meses antes do mês de apuração.",
-      folha: "Folha de salários dos 12 meses anteriores",
-    };
-  }
-  if (meses === 0) return { receita: null, dicaReceita: null, folha: "Folha de salários do mês" };
-
-  const quantos = meses === 1 ? "do mês" : `dos ${meses} meses`;
-  return {
-    receita: "Receita bruta desde o início das atividades",
-    dicaReceita: `A soma ${quantos} antes de ${nomeDoMes(periodo)}. A conta tira a média e multiplica por 12.`,
-    folha: "Folha de salários desde o início das atividades",
-  };
-}
-
-function textosDoSublimite(periodo, inicio) {
-  if (!periodo) return { receitaAno: null, receitaAnoAnterior: null };
-  const [ano, mes] = periodo.split("-").map(Number);
-  const comecouNoAno = Boolean(inicio) && Number(inicio.slice(0, 4)) === ano;
-  return {
-    receitaAno: mes > 1 && !comecouNoAno ? `Receita bruta de ${ano} até o mês anterior` : null,
-    receitaAnoAnterior: comecouNoAno ? null : `Receita bruta de ${ano - 1}`,
-  };
-}
-
-// Confere o formulário antes de chamar a API. Devolve os parâmetros da URL e os erros
-// por campo (vazio quando está tudo certo). A folha só é pedida no Fator R, e a receita
-// anterior não é pedida no 1º mês de atividade.
-export function conferir(valores) {
-  const { periodo, inicio, rbt12, receita_mes, anexo, folha12 } = valores;
-  const erros = {};
-  const parametros = { periodo, anexo, ...(inicio ? { inicio } : {}) };
-  const primeiroMes = mesesDeAtividade(periodo, inicio) === 0;
-  const campos = {
-    ...(primeiroMes ? {} : { rbt12 }),
-    receita_mes,
-    ...(anexo === "fator_r" ? { folha12 } : {}),
-  };
-  // Os campos do sublimite são opcionais: em branco, não vão para a API.
-  const textos = textosDoSublimite(periodo, inicio);
-  for (const [nome, rotulo] of [
-    ["receita_ano", textos.receitaAno],
-    ["receita_ano_anterior", textos.receitaAnoAnterior],
-  ]) {
-    if (rotulo && String(valores[nome] ?? "").trim() !== "") campos[nome] = valores[nome];
-  }
-
-  for (const [nome, texto] of Object.entries(campos)) {
-    const valor = paraApi(texto);
-    if (valor !== null) {
-      parametros[nome] = valor;
-    } else {
-      erros[nome] =
-        String(texto).trim() === "" ? "Preencha este campo." : "Use só números, como 500.000,00.";
-    }
-  }
-  if (!periodo) erros.periodo = "Escolha o mês de apuração.";
-  if (!anexo) erros.anexo = "Escolha o anexo.";
-
-  return { parametros, erros };
+// "2026-03" → "mar/2026", para as linhas da tabela do mês a mês.
+export function mesCurto(mes) {
+  const [ano, numero] = mes.split("-");
+  return `${NOMES_DOS_MESES[Number(numero) - 1].slice(0, 3)}/${ano}`;
 }
 
 // Troca o espaço depois de "R$", "§" e "nº" por um espaço que não quebra: no celular, o
 // texto da conta não fica com "R$" no fim de uma linha e o número na outra.
 export function semQuebra(texto) {
-  return texto.replace(/(R\$|§§?|nº) /g, "$1\u00a0");
+  return texto.replace(/(R\$|§§?|nº) /g, "$1 ");
 }
 
 // "2018-01-01" → "01/01/2018".

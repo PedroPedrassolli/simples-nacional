@@ -1,0 +1,49 @@
+# Anexo IV da Lei Complementar nº 123/2006, para os anos-calendário 2027 e 2028.
+# Título na lei: Receitas decorrentes da prestação de serviços relacionados no § 5º-C do art. 18.
+#
+# Redação do Anexo XXI da LC 214/2025, que o art. 519 dela põe no lugar do Anexo IV da
+# LC 123/2006 a partir de 1º/1/2027 (tabela "Para os anos-calendário 2027 e 2028").
+# Copiado do texto compilado no Planalto (link em "fonte"), sem os trechos riscados.
+# Em 2029 vem outra tabela (a calculadora ainda não aceita 2029).
+#
+# Mudanças em relação a 2026: a CBS entra no lugar da Cofins e do PIS/Pasep, entra o
+# IBS, e a alíquota nominal da 6ª faixa é um pouco menor. O formato é o mesmo dos arquivos
+# de 2026 (ver data/anexos/2026). Na 6ª faixa não há ICMS, ISS nem IBS: eles são
+# calculados com a 5ª faixa (Res. CGSN 140/2018, art. 21, IV, na redação da Res. CGSN 190/2026).
+#
+#   teto_iss: nota (*) do anexo. Na 5ª faixa, com alíquota efetiva acima de 12,5%, cada
+#             tributo (inclusive o IBS) fica com (alíquota efetiva − 5%) × este percentual,
+#             e o ISS com 5%.
+# A CPP continua fora do DAS no Anexo IV (LC 123/2006, art. 18, § 5º-C).
+anexo: 4
+nome: Serviços relacionados no § 5º-C do art. 18
+fonte: https://www.planalto.gov.br/ccivil_03/leis/lcp/lcp214.htm
+redacao: Lei Complementar nº 214/2025 (Anexo XXI)
+vigencia: "2027-01-01"
+conferido_em: "2026-11-02"
+faixas:
+  - ate: "180000.00"
+    aliquota: "4.50"
+    deduzir: "0.00"
+    reparticao: { IRPJ: "18.80", CSLL: "15.20", CBS: "21.26", ISS: "44.50", IBS: "0.24" }
+  - ate: "360000.00"
+    aliquota: "9.00"
+    deduzir: "8100.00"
+    reparticao: { IRPJ: "19.80", CSLL: "15.20", CBS: "24.73", ISS: "40.00", IBS: "0.27" }
+  - ate: "720000.00"
+    aliquota: "10.20"
+    deduzir: "12420.00"
+    reparticao: { IRPJ: "20.80", CSLL: "15.20", CBS: "23.74", ISS: "40.00", IBS: "0.26" }
+  - ate: "1800000.00"
+    aliquota: "14.00"
+    deduzir: "39780.00"
+    reparticao: { IRPJ: "17.80", CSLL: "19.20", CBS: "22.75", ISS: "40.00", IBS: "0.25" }
+  - ate: "3600000.00"
+    aliquota: "22.00"
+    deduzir: "183780.00"
+    reparticao: { IRPJ: "18.80", CSLL: "19.20", CBS: "21.76", ISS: "40.00", IBS: "0.24" }
+    teto_iss: { IRPJ: "31.33", CSLL: "32.00", CBS: "36.27", IBS: "0.40" }
+  - ate: "4800000.00"
+    aliquota: "32.90"
+    deduzir: "828000.00"
+    reparticao: { IRPJ: "53.71", CSLL: "21.59", CBS: "24.70" }

@@ -4,12 +4,13 @@ require "date"
 require "yaml"
 
 module SimplesNacional
-  # Lê as tabelas dos Anexos I a V da Lei Complementar nº 123/2006 (data/anexos/*.yml).
+  # Lê as tabelas dos Anexos I a V da Lei Complementar nº 123/2006. Cada ano tem a sua
+  # pasta (data/anexos/2026, data/anexos/2027-2028), e Regras diz qual pasta vale para cada ano.
   #
   # Cada arquivo precisa dizer de onde veio (fonte oficial) e desde quando vale
   # (vigência). Arquivo sem isso é recusado: número sem fonte não entra na conta.
   #
-  #   SimplesNacional::Tabelas.todas[1].faixas.first
+  #   SimplesNacional::Tabelas.todas("data/anexos/2026")[1].faixas.first
   #   # => #<data SimplesNacional::Tabelas::Faixa numero=1, ate=(180000/1), aliquota=(1/25), deduzir=(0/1)>
   #
   # Os valores viram Rational (frações exatas), nunca Float: 7,30% é 73/1000, e não
@@ -28,8 +29,9 @@ module SimplesNacional
     # Dinheiro e percentual sempre como texto, com ponto e duas casas: "5940.00", "7.30".
     NUMERO = /\A\d+\.\d{2}\z/
 
-    # Impostos de estados e municípios: na 6ª faixa eles saem da 5ª.
-    LOCAIS = %w[ICMS ISS].freeze
+    # Impostos de estados e municípios (o IBS existe a partir de 2027): na 6ª faixa eles saem
+    # da 5ª, e acima do sublimite ficam fora do DAS.
+    LOCAIS = %w[ICMS ISS IBS].freeze
 
     # Arquivo de tabela mal preenchido. A mensagem diz o arquivo e o problema.
     class TabelaInvalida < StandardError; end
@@ -38,7 +40,7 @@ module SimplesNacional
     Anexo = Data.define(:numero, :nome, :fonte, :redacao, :vigencia, :conferido_em, :faixas)
 
     # Todas as tabelas da pasta, pelo número do anexo: { 1 => Anexo, 2 => Anexo, ... }
-    def self.todas(pasta = PASTA)
+    def self.todas(pasta)
       # O Dir[] já devolve os arquivos em ordem alfabética (anexo-1, anexo-2...).
       Dir[File.join(pasta, "*.yml")].to_h do |arquivo|
         anexo = ler(arquivo)
@@ -86,8 +88,8 @@ module SimplesNacional
     def self.conferir_reparticoes(faixas)
       return "a reparticao de cada faixa precisa somar 100.00" unless faixas.all? { |faixa| soma_cem?(faixa) }
 
-      # Na 6ª faixa o ICMS e o ISS saem da 5ª (Res. CGSN 140/2018, art. 21, III, b).
-      "a 6ª faixa não pode ter ICMS nem ISS na reparticao" if faixas.last["reparticao"].keys.intersect?(LOCAIS)
+      # Na 6ª faixa o ICMS, o ISS e o IBS saem da 5ª (Res. CGSN 140/2018, art. 21, III, b, e IV).
+      "a 6ª faixa não pode ter ICMS, ISS nem IBS na reparticao" if faixas.last["reparticao"].keys.intersect?(LOCAIS)
     end
 
     def self.soma_cem?(faixa)

@@ -168,8 +168,9 @@ describe SimplesNacional::Calculo do
       assert_match(/número inteiro de centavos/, erro(receita_mes: 40_000.5))
     end
 
-    it "recusa receita do mês acima do limite do Simples" do
-      assert_match(/A receita do mês passa de/, erro(receita_mes: SimplesNacional::Calculo::TETO + 1))
+    it "pede a receita do ano quando a receita do mês sozinha já passa do sublimite" do
+      assert_match(/Informe a receita bruta de 2026 até o mês anterior/,
+                   erro(receita_mes: SimplesNacional::Calculo::TETO + 1))
     end
 
     it "recusa anexo que não existe" do
@@ -183,7 +184,9 @@ describe SimplesNacional::Calculo do
 
   describe "o limite do Simples" do
     it "é o mesmo da última faixa de todas as tabelas" do
-      limites = SimplesNacional::Calculo.tabelas.values.map { |tabela| tabela.faixas.last.ate * 100 }
+      limites = SimplesNacional::Regras::ANOS.values.flat_map do |regras|
+        SimplesNacional::Regras.tabelas(regras).values.map { |tabela| tabela.faixas.last.ate * 100 }
+      end
       assert_equal [SimplesNacional::Calculo::TETO], limites.uniq
     end
   end

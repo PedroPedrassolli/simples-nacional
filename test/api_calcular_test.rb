@@ -67,6 +67,81 @@ describe "api/calcular.rb" do
     end
   end
 
+  describe "com várias receitas" do
+    before do
+      query.delete("anexo")
+      query.delete("receita_mes")
+      query["atividades"] = "revenda:30000.00:st_icms;servicos_3:10000.00"
+    end
+
+    # Ver test/segregacao_test.rb: 1.342,24 + 997,20 = 2.339,44.
+    it "calcula cada receita e devolve a lista" do
+      assert_equal [233_944, 2], [subject["das_centavos"], subject["atividades"].size]
+      primeira = subject["atividades"].first
+      assert_equal ["revenda", ["ICMS já pago por substituição tributária ou antecipação"], 1, "4,4741%"],
+                   primeira.values_at("tipo", "opcoes", "anexo", "percentual")
+    end
+
+    it "recusa valor em formato errado numa das receitas" do
+      query["atividades"] = "revenda:30.000,00"
+      assert_match(/como número, por exemplo 500000.00/, subject["erro"])
+    end
+  end
+
+  describe "com o mês a mês" do
+    before do
+      query.delete("rbt12")
+      (1..12).each { |n| query[Date.new(2025, 2, 1).next_month(n).strftime("mes_%Y-%m")] = "41666.66:0:5000" }
+    end
+
+    it "soma os meses" do
+      assert_equal "R$ 499.999,92", subject["rbt12"]
+    end
+
+    it "recusa mês em formato errado" do
+      query["mes_2026-02"] = "abc"
+      assert_match(/No mês a mês, informe 2026-02 como número/, subject["erro"])
+    end
+  end
+
+  describe "com o que fica fora do DAS" do
+    before do
+      query.merge!("anexo" => "4", "folha_empregados" => "30000.00", "pro_labore" => "5000", "rat" => "2",
+                   "fap" => "1.5", "aliquota_iss" => "3.5")
+    end
+
+    it "devolve a estimativa da CPP e o total estimado" do
+      cpp = subject["fora_do_das"].first
+      assert_equal ["CPP", "R$ 7.900,00"], cpp.values_at("tributo", "valor")
+      assert_equal subject["das_centavos"] + 790_000, subject["total_estimado_centavos"]
+    end
+
+    it "recusa RAT fora de 1 a 3" do
+      query["rat"] = "4"
+      assert_match(/O RAT precisa ser 1, 2 ou 3/, subject["erro"])
+    end
+
+    it "recusa FAP em formato errado" do
+      query["fap"] = "1,5"
+      assert_match(/FAP como número/, subject["erro"])
+    end
+
+    it "recusa alíquota em formato errado" do
+      query["aliquota_iss"] = "3,5%"
+      assert_match(/aliquota iss em %/, subject["erro"])
+    end
+  end
+
+  describe "com o IBS e a CBS fora do DAS em 2027" do
+    before { query.merge!("periodo" => "2027-01", "ibs_cbs_fora" => "1", "aliquota_cbs" => "8.8") }
+
+    it "tira a CBS e o IBS e estima a CBS" do
+      assert_equal(%w[IRPJ CSLL CPP ISS], subject["tributos"].map { |tributo| tributo["nome"] })
+      cbs = subject["fora_do_das"].find { |estimativa| estimativa["tributo"] == "CBS" }
+      assert_equal "R$ 3.520,00", cbs["valor"]
+    end
+  end
+
   describe "com centavos de uma casa" do
     # 40.000,50 × 9,972% = 3.988,84986... → R$ 3.988,85.
     before { query["receita_mes"] = "40000.5" }
@@ -118,12 +193,12 @@ describe "api/calcular.rb" do
       assert_match(/mês de apuração no formato AAAA-MM/, erro("periodo" => " "))
     end
 
-    it "recusa mês de 2027" do
-      assert_match(/só as regras de 2026/, erro("periodo" => "2027-01"))
+    it "recusa mês de 2029" do
+      assert_match(/regras de 2026 a 2028/, erro("periodo" => "2029-01"))
     end
 
-    it "repassa a mensagem da biblioteca para valor acima do limite" do
-      assert_match(/A receita do mês passa de R\$ 4\.800\.000,00/, erro("receita_mes" => "4800000.01"))
+    it "repassa a mensagem da biblioteca quando a receita do mês pode passar do sublimite" do
+      assert_match(/Informe a receita bruta de 2026 até o mês anterior/, erro("receita_mes" => "4800000.01"))
     end
 
     it "pede a folha no Fator R" do

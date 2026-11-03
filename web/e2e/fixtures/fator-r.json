@@ -1,15 +1,17 @@
 {
   "periodo": "2026-03",
   "periodo_nome": "março de 2026",
+  "ano": 2026,
+  "fator_r": "27,99%",
   "anexo": 5,
   "anexo_nome": "Serviços relacionados no § 5º-I do art. 18",
   "faixa": 3,
-  "fator_r": "27,99%",
   "rbt12": "R$ 500.000,00",
   "aliquota_nominal": "19,50%",
-  "aliquota_efetiva": "17,5200%",
   "das": "R$ 7.008,00",
   "das_centavos": 700800,
+  "receita": "R$ 40.000,00",
+  "aliquota_efetiva": "17,5200%",
   "tributos": [
     {
       "nome": "IRPJ",
@@ -48,34 +50,106 @@
       "valor_centavos": 133152
     }
   ],
+  "total_estimado": "R$ 7.008,00",
+  "total_estimado_centavos": 700800,
+  "atividades": [
+    {
+      "numero": 1,
+      "tipo": "fator_r",
+      "nome": "Serviços do Anexo III ou V, pelo Fator R",
+      "opcoes": [],
+      "exportacao": false,
+      "receita": "R$ 40.000,00",
+      "anexo": 5,
+      "anexo_nome": "Serviços relacionados no § 5º-I do art. 18",
+      "faixa": 3,
+      "rbt12": "R$ 500.000,00",
+      "aliquota_nominal": "19,50%",
+      "aliquota_efetiva": "17,5200%",
+      "percentual": "17,5200%",
+      "valor": "R$ 7.008,00",
+      "valor_centavos": 700800,
+      "tributos": [
+        {
+          "nome": "IRPJ",
+          "percentual": "4,2048%",
+          "valor": "R$ 1.681,92",
+          "valor_centavos": 168192
+        },
+        {
+          "nome": "CSLL",
+          "percentual": "2,6280%",
+          "valor": "R$ 1.051,20",
+          "valor_centavos": 105120
+        },
+        {
+          "nome": "Cofins",
+          "percentual": "2,6139%",
+          "valor": "R$ 1.045,59",
+          "valor_centavos": 104559
+        },
+        {
+          "nome": "PIS/Pasep",
+          "percentual": "0,5658%",
+          "valor": "R$ 226,36",
+          "valor_centavos": 22636
+        },
+        {
+          "nome": "CPP",
+          "percentual": "4,1785%",
+          "valor": "R$ 1.671,41",
+          "valor_centavos": 167141
+        },
+        {
+          "nome": "ISS",
+          "percentual": "3,3288%",
+          "valor": "R$ 1.331,52",
+          "valor_centavos": 133152
+        }
+      ]
+    }
+  ],
+  "fora_do_das": [],
   "passos": [
     {
       "titulo": "Fator R",
       "texto": "Folha de salários ÷ RBT12 = R$ 139.999,99 ÷ R$ 500.000,00 = 27,99%. Como é menor que 28%, a atividade vai para o Anexo V.",
-      "fonte": "LC 123/2006, art. 18, §§ 5º-J, 5º-K, 5º-M e 24"
+      "fonte": "LC 123/2006, art. 18, §§ 5º-J, 5º-K, 5º-M e 24",
+      "grupo": "Receitas dos meses anteriores"
+    },
+    {
+      "titulo": "Anexo",
+      "texto": "Serviços do Anexo III ou V, pelo Fator R: Anexo V (Serviços relacionados no § 5º-I do art. 18), pelo Fator R.",
+      "fonte": "LC 123/2006, art. 18, §§ 5º-J, 5º-K e 5º-M, e Anexo V",
+      "grupo": "Receita do mês"
     },
     {
       "titulo": "Faixa",
       "texto": "A RBT12 é de R$ 500.000,00 e fica na 3ª faixa do Anexo V, de R$ 360.000,01 a R$ 720.000,00: alíquota nominal de 19,50% e parcela a deduzir de R$ 9.900,00.",
-      "fonte": "LC 123/2006, art. 18, § 1º, e Anexo V"
+      "fonte": "LC 123/2006, art. 18, § 1º, e Anexo V",
+      "grupo": "Receita do mês"
     },
     {
       "titulo": "Alíquota efetiva",
       "texto": "(RBT12 × alíquota nominal − parcela a deduzir) ÷ RBT12 = (R$ 500.000,00 × 19,50% − R$ 9.900,00) ÷ R$ 500.000,00 = 17,5200%.",
-      "fonte": "LC 123/2006, art. 18, § 1º-A"
+      "fonte": "LC 123/2006, art. 18, § 1º-A",
+      "grupo": "Receita do mês"
     },
     {
       "titulo": "Divisão entre os tributos",
       "texto": "A alíquota efetiva é dividida entre os tributos pelos percentuais da 3ª faixa do Anexo V: IRPJ 24,00%, CSLL 15,00%, Cofins 14,92%, PIS/Pasep 3,23%, CPP 23,85% e ISS 19,00%. Por exemplo, IRPJ = 17,5200% × 24,00% = 4,2048%.",
-      "fonte": "Res. CGSN 140/2018, art. 21, III; LC 123/2006, Anexo V"
+      "fonte": "Res. CGSN 140/2018, art. 21, III; LC 123/2006, Anexo V",
+      "grupo": "Receita do mês"
     },
     {
       "titulo": "DAS estimado",
       "texto": "Receita do mês × alíquota efetiva = R$ 40.000,00 × 17,5200% = R$ 7.008,00. A conta usa os percentuais exatos, sem cortar casas decimais, e arredonda o resultado para o centavo.",
-      "fonte": "LC 123/2006, art. 18, § 3º"
+      "fonte": "LC 123/2006, art. 18, § 3º",
+      "grupo": "Total do mês"
     }
   ],
   "aviso": null,
+  "avisos": [],
   "tabela": {
     "fonte": "https://www.planalto.gov.br/ccivil_03/leis/lcp/lcp123.htm",
     "redacao": "Lei Complementar nº 155/2016",

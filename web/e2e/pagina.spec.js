@@ -7,18 +7,34 @@ import fs from "node:fs";
 const fixture = (nome) => JSON.parse(fs.readFileSync(new URL(`fixtures/${nome}`, import.meta.url)));
 const ANEXO_3 = fixture("anexo-3.json");
 const FATOR_R = fixture("fator-r.json");
+const VARIAS = fixture("varias-receitas.json");
+const ANEXO_4 = fixture("anexo-4.json");
+const ANO_2027 = fixture("ano-2027.json");
+const SUBLIMITE = fixture("sublimite.json");
 // Empresa fictícia; test/api_cnpj_test.rb confere que é a resposta atual de api/cnpj.rb.
 const CNPJ = fixture("cnpj.json");
 
-// Guarda as URLs chamadas, para conferir os parâmetros que a página mandou.
+// A resposta guardada que combina com o que a página pediu.
+function respostaPara(parametros) {
+  const atividades = parametros.get("atividades") ?? "";
+  if (atividades.includes(";")) return VARIAS;
+  if (atividades.startsWith("fator_r")) return FATOR_R;
+  if (atividades.startsWith("servicos_4")) return ANEXO_4;
+  if (parametros.get("periodo")?.startsWith("2027")) return ANO_2027;
+  if (parametros.has("receita_ano_anterior")) return SUBLIMITE;
+  return ANEXO_3;
+}
+
+// Guarda os parâmetros de cada chamada, para conferir o que a página mandou.
 async function simularApi(page, resposta = { status: 200 }) {
   const chamadas = [];
   await page.route("**/api/calcular?*", (route) => {
-    const url = new URL(route.request().url());
-    chamadas.push(url.searchParams);
-    const corpo =
-      resposta.corpo ?? (url.searchParams.get("anexo") === "fator_r" ? FATOR_R : ANEXO_3);
-    return route.fulfill({ status: resposta.status, json: corpo });
+    const parametros = new URL(route.request().url()).searchParams;
+    chamadas.push(parametros);
+    return route.fulfill({
+      status: resposta.status,
+      json: resposta.corpo ?? respostaPara(parametros),
+    });
   });
   return chamadas;
 }
@@ -38,15 +54,22 @@ async function consultarCnpj(page, cnpj) {
   await page.getByRole("button", { name: "Consultar", exact: true }).click();
 }
 
-async function preencher(page, { periodo = "2026-03", inicio, rbt12, receita, anexo, folha }) {
+// Uma receita só: o caso mais comum.
+async function preencher(
+  page,
+  { periodo = "2026-03", inicio, tipo = "servicos_3", valor = "40.000", rbt12, folha },
+) {
   await page.getByLabel("Mês de apuração").selectOption(periodo);
   if (inicio) await page.getByLabel("Início das atividades").selectOption(inicio);
+  await page.getByLabel("Tipo da receita", { exact: true }).selectOption(tipo);
+  await page.getByLabel("Valor no mês", { exact: true }).fill(valor);
   if (rbt12 !== undefined) await page.getByLabel(/^Receita bruta (dos 12|desde)/).fill(rbt12);
-  await page.getByLabel("Receita bruta do mês").fill(receita);
-  await page.getByLabel("Anexo da atividade").selectOption(anexo);
   if (folha) await page.getByLabel(/^Folha de salários/).fill(folha);
-  await page.getByRole("button", { name: "Calcular" }).click();
 }
+
+const calcular = (page) => page.getByRole("button", { name: "Calcular" }).click();
+const das = (page, valor = "") =>
+  page.getByRole("heading", { name: new RegExp(`DAS estimado\\s*${valor}`) });
 
 // Verificação automática de acessibilidade com o axe (regras WCAG 2.1 A e AA).
 // Falha só com problemas "serious" ou "critical" e lista cada um com o elemento afetado.
@@ -63,15 +86,16 @@ async function problemasGraves(page) {
     });
 }
 
-test("calcula e mostra o DAS, o resumo e o passo a passo", async ({ page }) => {
+test("calcula uma receita e mostra o DAS, a divisão e o passo a passo", async ({ page }) => {
   const chamadas = await simularApi(page);
   await page.goto("/");
-  await preencher(page, { rbt12: "500.000,00", receita: "40.000", anexo: "3" });
+  await preencher(page, { rbt12: "500.000,00" });
+  await calcular(page);
 
-  const resultado = page.getByRole("heading", { name: /DAS estimado\s*R\$ 3\.988,80/ });
-  await expect(resultado).toBeFocused();
+  await expect(das(page, "R\\$ 3\\.988,80")).toBeFocused();
   await expect(page.getByText("Referente a março de 2026")).toBeVisible();
   await expect(page.locator(".resumo").getByText("9,9720%", { exact: true })).toBeVisible();
+  await expect(page.locator(".resumo").getByText(/^III – Locação de bens móveis/)).toBeVisible();
 
   // A divisão entre os tributos, numa tabela com cabeçalho de linha e de coluna.
   const tabela = page.getByRole("table", { name: "Divisão do DAS entre os tributos" });
@@ -85,10 +109,17 @@ test("calcula e mostra o DAS, o resumo e o passo a passo", async ({ page }) => {
     "ISS",
     "DAS",
   ]);
-  await expect(tabela.getByRole("row", { name: "DAS 9,9720% R$ 3.988,80" })).toBeVisible();
+  // Uma receita só: sem a tabela das receitas e sem o "fora do DAS".
+  await expect(page.getByRole("table", { name: "DAS de cada receita" })).toHaveCount(0);
+  await expect(page.getByRole("heading", { name: "Fora do DAS" })).toHaveCount(0);
 
   await page.getByText("Ver a conta passo a passo").click();
-  await expect(page.getByRole("heading", { level: 3 })).toHaveText([
+  const conta = page.locator(".secao-passos");
+  await expect(conta.getByRole("heading", { level: 3 })).toHaveText([
+    "Receita do mês",
+    "Total do mês",
+  ]);
+  await expect(conta.getByRole("heading", { level: 4 })).toHaveText([
     "Anexo",
     "Faixa",
     "Alíquota efetiva",
@@ -99,25 +130,78 @@ test("calcula e mostra o DAS, o resumo e o passo a passo", async ({ page }) => {
   // A página converte o que foi digitado para o formato da API.
   expect(Object.fromEntries(chamadas[0])).toEqual({
     periodo: "2026-03",
-    anexo: "3",
+    atividades: "servicos_3:40000.00",
     rbt12: "500000.00",
-    receita_mes: "40000.00",
   });
 });
 
-test("no 1º mês de atividade, não pede a receita anterior e manda o início", async ({ page }) => {
+test("separa as receitas por atividade, como no PGDAS-D", async ({ page }) => {
+  const chamadas = await simularApi(page);
+  await page.goto("/");
+  await preencher(page, { tipo: "revenda", valor: "30.000", rbt12: "500.000" });
+  await page.getByRole("button", { name: "+ Adicionar outra receita" }).click();
+
+  // Com duas receitas, cada campo ganha o número da linha, e aparece a soma do mês.
+  await page.getByLabel("Tipo da receita 2").selectOption("servicos_3");
+  await page.getByLabel("Valor no mês 2").fill("10.000");
+  await expect(page.getByText("Receita do mês: R$ 40.000,00")).toBeVisible();
+  await page.locator("summary", { hasText: "Situações especiais 1" }).click();
+  await page.getByLabel("ICMS já pago por substituição tributária ou antecipação").check();
+  await expect(page.locator("summary", { hasText: "Situações especiais 1" })).toContainText(
+    "1 marcada",
+  );
+  await calcular(page);
+
+  await expect(das(page, "R\\$ 2\\.339,44")).toBeVisible();
+  const receitas = page.getByRole("table", { name: "DAS de cada receita" });
+  await expect(receitas.getByRole("row")).toHaveCount(3);
+  await expect(receitas.getByRole("row").nth(1)).toContainText("Revenda de mercadorias");
+  await expect(receitas.getByRole("row").nth(1)).toContainText("R$ 1.342,24");
+  await expect(page.locator(".resumo")).toContainText("Alíquota média");
+  expect(chamadas[0].get("atividades")).toBe("revenda:30000.00:st_icms;servicos_3:10000.00");
+
+  // Remover a 2ª volta para uma receita só, sem número nos campos.
+  await page.getByRole("button", { name: "Remover a receita 2" }).click();
+  await expect(page.getByLabel("Valor no mês", { exact: true })).toHaveValue("30.000,00");
+  await expect(page.getByText("Receita do mês: R$")).toHaveCount(0);
+});
+
+test("mostra só as situações especiais que valem para o tipo e o ano", async ({ page }) => {
+  await page.goto("/");
+  await page.getByLabel("Mês de apuração").selectOption("2026-03");
+  const tipo = page.getByLabel("Tipo da receita", { exact: true });
+  await tipo.selectOption("industria");
+  await page.locator("summary", { hasText: "Situações especiais" }).click();
+  await expect(page.getByLabel("PIS/Pasep e Cofins monofásicos")).toBeVisible();
+  await expect(page.getByLabel("Produto com IPI mantido (Zona Franca de Manaus)")).toHaveCount(0);
+
+  // Em 2027 o monofásico muda de nome e aparece o IPI mantido.
+  await page.getByLabel("Mês de apuração").selectOption("2027-03");
+  await expect(page.getByLabel("IBS e CBS com tributação concentrada (monofásica)")).toBeVisible();
+  await expect(page.getByLabel("Produto com IPI mantido (Zona Franca de Manaus)")).toBeVisible();
+
+  // A locação não tem situações especiais; a dica explica o tipo.
+  await tipo.selectOption("locacao");
+  await expect(page.locator("summary", { hasText: "Situações especiais" })).toHaveCount(0);
+  await expect(tipo).toHaveAccessibleDescription(/Anexo III sem o ISS/);
+});
+
+test("no 1º mês de atividade, não pede a RBT12 e manda o início", async ({ page }) => {
   const chamadas = await simularApi(page);
   await page.goto("/");
   await page.getByLabel("Mês de apuração").selectOption("2026-03");
   await page.getByLabel("Início das atividades").selectOption("2026-03");
   await expect(page.getByLabel(/^Receita bruta (dos 12|desde)/)).toHaveCount(0);
+  await expect(
+    page.getByText("a receita dos 12 meses (RBT12) é a receita do mês × 12"),
+  ).toBeVisible();
 
-  await preencher(page, { receita: "20.000", anexo: "1" });
+  await preencher(page, { tipo: "revenda", valor: "20.000" });
+  await calcular(page);
   expect(Object.fromEntries(chamadas[0])).toEqual({
     periodo: "2026-03",
     inicio: "2026-03",
-    anexo: "1",
-    receita_mes: "20000.00",
+    atividades: "revenda:20000.00",
   });
 });
 
@@ -129,7 +213,8 @@ test("com poucos meses de atividade, pede a receita desde o início", async ({ p
 
   const campo = page.getByLabel("Receita bruta desde o início das atividades");
   await expect(campo).toHaveAccessibleDescription(/A soma dos 4 meses antes de março de 2026/);
-  await preencher(page, { rbt12: "100.000", receita: "30.000", anexo: "1" });
+  await preencher(page, { rbt12: "100.000" });
+  await calcular(page);
   expect(chamadas[0].get("inicio")).toBe("2025-11");
   expect(chamadas[0].get("rbt12")).toBe("100000.00");
 
@@ -138,27 +223,160 @@ test("com poucos meses de atividade, pede a receita desde o início", async ({ p
   await expect(page.getByLabel("Início das atividades")).toHaveValue("");
 });
 
-test("pede a folha e mostra o Fator R só quando o anexo depende dele", async ({ page }) => {
+test("em 2027, pede o mês anterior à parte e estima o IBS e a CBS fora do DAS", async ({
+  page,
+}) => {
   const chamadas = await simularApi(page);
   await page.goto("/");
+  await preencher(page, { periodo: "2027-03", rbt12: "500.000" });
+  await expect(
+    page.getByLabel(/^Receita bruta dos 12 meses antes do mês anterior/),
+  ).toHaveAccessibleDescription(/de fevereiro de 2026 a janeiro de 2027/);
+  await page.getByLabel("Receita bruta de fevereiro de 2027").fill("40.000");
+  await page.getByLabel(/optou por pagar o IBS e a CBS fora do DAS/).check();
+  await page.getByText("Tributos pagos fora do DAS").click();
+  await page.getByLabel("Alíquota da CBS").fill("8,8");
+  await page.getByLabel("Créditos de CBS do mês").fill("1.000");
+  await calcular(page);
+
+  await expect(das(page, "R\\$ 3\\.326,66")).toBeVisible();
+  const fora = page.locator(".fora");
+  await expect(fora.getByRole("listitem").filter({ hasText: "CBS" })).toContainText("R$ 2.520,00");
+  await expect(fora.getByRole("listitem").filter({ hasText: "IBS" })).toContainText("a estimar");
+  await expect(fora.getByText("Informe a alíquota do IBS para estimar.")).toBeVisible();
+  await expect(fora.getByText("R$ 5.846,66")).toBeVisible();
+
+  expect(Object.fromEntries(chamadas[0])).toEqual({
+    periodo: "2027-03",
+    atividades: "servicos_3:40000.00",
+    rbt12: "500000.00",
+    receita_mes_anterior: "40000.00",
+    ibs_cbs_fora: "1",
+    aliquota_cbs: "8.8",
+    creditos_cbs: "1000.00",
+  });
+});
+
+test("no 1º e no 2º mês de 2027, usa a 1ª faixa sem pedir a RBT12", async ({ page }) => {
+  await page.goto("/");
+  await page.getByLabel("Mês de apuração").selectOption("2027-03");
+  await page.getByLabel("Início das atividades").selectOption("2027-02");
+  await expect(page.getByLabel(/^Receita bruta (dos 12|desde)/)).toHaveCount(0);
+  await expect(
+    page.getByText("No 1º e no 2º mês de atividade, a conta usa as alíquotas da 1ª faixa"),
+  ).toBeVisible();
+  await expect(page.getByLabel("Receita bruta de fevereiro de 2027")).toBeVisible();
+});
+
+test("aceita os meses anteriores mês a mês e mostra as somas", async ({ page }) => {
+  const chamadas = await simularApi(page);
+  await page.goto("/");
+  await page.getByLabel("Mês de apuração").selectOption("2026-03");
+  await page.getByLabel("Tipo da receita", { exact: true }).selectOption("servicos_3");
+  await page.getByLabel("Valor no mês", { exact: true }).fill("40.000");
+  await page.getByLabel("Mês a mês", { exact: true }).check();
+  await expect(page.getByLabel(/^Receita bruta dos 12/)).toHaveCount(0);
+
+  // Um mês em branco: a página aponta o mês, sem chamar a API.
+  await calcular(page);
+  const marco = page.getByLabel("Receita de março de 2025");
+  await expect(marco).toBeFocused();
+  await expect(marco).toHaveAccessibleDescription("Preencha este campo.");
+  expect(chamadas).toHaveLength(0);
+
+  const meses = page.locator(".mes");
+  await expect(meses).toHaveCount(12);
+  for (let indice = 0; indice < 12; indice++) {
+    await meses
+      .nth(indice)
+      .getByRole("textbox")
+      .fill(indice < 10 ? "40.000" : "50.000");
+  }
+  await expect(page.locator(".meses-somas")).toContainText("RBT12 (soma)R$ 500.000,00");
+  await expect(page.locator(".meses-somas")).toContainText("Receita de 2026 até o mês anterior");
+  await calcular(page);
+  await expect(das(page)).toBeVisible();
+  expect(chamadas[0].get("mes_2025-03")).toBe("40000.00:0:0");
+  expect(chamadas[0].get("mes_2026-02")).toBe("50000.00:0:0");
+  expect(chamadas[0].has("rbt12")).toBe(false);
+});
+
+test("pede a folha e mostra o Fator R só quando a receita depende dele", async ({ page }) => {
+  const chamadas = await simularApi(page);
+  await page.goto("/");
+  await page.getByLabel("Mês de apuração").selectOption("2026-03");
   await expect(page.getByLabel(/^Folha de salários/)).toHaveCount(0);
 
-  await preencher(page, {
-    rbt12: "500000",
-    receita: "40000",
-    anexo: "fator_r",
-    folha: "139.999,99",
-  });
+  await preencher(page, { tipo: "fator_r", valor: "40000", rbt12: "500000", folha: "139.999,99" });
+  await calcular(page);
 
-  await expect(page.getByRole("heading", { name: /DAS estimado\s*R\$ 7\.008,00/ })).toBeVisible();
+  await expect(das(page, "R\\$ 7\\.008,00")).toBeVisible();
   await expect(page.getByText("27,99%", { exact: true })).toBeVisible();
   expect(chamadas[0].get("folha12")).toBe("139999.99");
+});
+
+test("no Anexo IV, estima a CPP paga fora do DAS", async ({ page }) => {
+  const chamadas = await simularApi(page);
+  await page.goto("/");
+  await page.getByText("Tributos pagos fora do DAS").click();
+  // Os campos da CPP só aparecem com uma receita do Anexo IV.
+  await expect(page.getByLabel("Salários dos empregados no mês")).toHaveCount(0);
+  await preencher(page, { tipo: "servicos_4", rbt12: "500.000" });
+  await page.getByLabel("Salários dos empregados no mês").fill("30.000");
+  await page.getByLabel("Pró-labore e autônomos no mês").fill("5.000");
+  await page.getByLabel("RAT", { exact: true }).selectOption("2");
+  await page.getByLabel("FAP", { exact: true }).fill("1,5");
+  await calcular(page);
+
+  await expect(das(page, "R\\$ 3\\.086,40")).toBeVisible();
+  await expect(page.locator(".fora")).toContainText("R$ 7.900,00");
+  await expect(page.locator(".fora-total")).toContainText("R$ 10.986,40");
+  expect([chamadas[0].get("rat"), chamadas[0].get("fap"), chamadas[0].get("pro_labore")]).toEqual([
+    "2",
+    "1.5",
+    "5000.00",
+  ]);
+});
+
+test("abre os campos do sublimite sozinho e mostra o ICMS fora do DAS", async ({ page }) => {
+  const chamadas = await simularApi(page);
+  await page.goto("/");
+  await preencher(page, {
+    periodo: "2026-10",
+    tipo: "revenda",
+    valor: "400.000",
+    rbt12: "3.900.000",
+  });
+  // A receita pode passar do sublimite: os campos opcionais abrem sozinhos.
+  await expect(page.getByLabel("Receita bruta de 2026 até o mês anterior")).toBeVisible();
+  await page.getByLabel("Receita bruta de 2026 até o mês anterior").fill("3.300.000");
+  await page.getByLabel("Receita bruta de 2025").fill("3.700.000");
+  await page.getByText("Tributos pagos fora do DAS").click();
+  await page.getByLabel("Alíquota do ICMS").fill("18");
+  await page.getByLabel("Créditos de ICMS do mês").fill("20.000");
+  await calcular(page);
+
+  expect([chamadas[0].get("receita_ano"), chamadas[0].get("receita_ano_anterior")]).toEqual([
+    "3300000.00",
+    "3700000.00",
+  ]);
+  await expect(page.locator(".guia").getByText("O ICMS deste mês não entra no DAS")).toBeVisible();
+  await expect(page.locator(".fora")).toContainText("R$ 52.000,00");
+});
+
+test("esconde a receita do ano em janeiro", async ({ page }) => {
+  await page.goto("/");
+  await page.getByLabel("Mês de apuração").selectOption("2026-01");
+  await page.getByText("Sublimite e limite do ano").click();
+  await expect(page.getByLabel("Receita bruta de 2026 até o mês anterior")).toHaveCount(0);
+  await expect(page.getByLabel("Receita bruta de 2025")).toBeVisible();
 });
 
 test("aponta o campo com problema sem chamar a API", async ({ page }) => {
   const chamadas = await simularApi(page);
   await page.goto("/");
-  await preencher(page, { rbt12: "abc", receita: "40000", anexo: "1" });
+  await preencher(page, { rbt12: "abc" });
+  await calcular(page);
 
   const campo = page.getByLabel("Receita bruta dos 12 meses anteriores (RBT12)");
   await expect(campo).toHaveAttribute("aria-invalid", "true");
@@ -168,72 +386,56 @@ test("aponta o campo com problema sem chamar a API", async ({ page }) => {
   expect(chamadas).toHaveLength(0);
 });
 
-test("manda a receita do ano para o sublimite e mostra o aviso da API", async ({ page }) => {
-  const aviso =
-    "Parte da receita do mês passou do sublimite: o ICMS dessa parte segue outra regra.";
-  const chamadas = await simularApi(page, { status: 200, corpo: { ...ANEXO_3, aviso } });
+test("aponta o primeiro campo com problema num formulário vazio", async ({ page }) => {
   await page.goto("/");
-  await page.getByLabel("Mês de apuração").selectOption("2026-10");
-  await page.getByLabel(/^Receita bruta dos 12/).fill("3.900.000");
-  await page.getByLabel("Receita bruta do mês").fill("400.000");
-  // A receita pode passar do sublimite: os campos opcionais abrem sozinhos.
-  await expect(page.getByText("a receita do ano pode passar de R$ 3.600.000,00")).toBeVisible();
-  await page.getByLabel("Receita bruta de 2026 até o mês anterior").fill("3.300.000");
-  await page.getByLabel("Receita bruta de 2025").fill("3.500.000");
-  await preencher(page, { periodo: "2026-10", rbt12: "3.900.000", receita: "400.000", anexo: "1" });
-
-  expect(chamadas[0].get("receita_ano")).toBe("3300000.00");
-  expect(chamadas[0].get("receita_ano_anterior")).toBe("3500000.00");
-  await expect(page.getByText(aviso)).toBeVisible();
-});
-
-test("esconde a receita do ano em janeiro", async ({ page }) => {
-  await page.goto("/");
-  await page.getByLabel("Mês de apuração").selectOption("2026-01");
-  await page.getByText("Sublimite do ICMS e do ISS").click();
-  await expect(page.getByLabel("Receita bruta de 2026 até o mês anterior")).toHaveCount(0);
-  await expect(page.getByLabel("Receita bruta de 2025")).toBeVisible();
+  await calcular(page);
+  await expect(page.getByLabel("Mês de apuração")).toBeFocused();
+  await expect(page.getByLabel("Tipo da receita", { exact: true })).toHaveAccessibleDescription(
+    /Escolha o tipo da receita\./,
+  );
 });
 
 test("preenche o exemplo, calcula e limpa", async ({ page }) => {
   const chamadas = await simularApi(page);
   await page.goto("/");
   await page.getByRole("button", { name: "Usar um exemplo" }).click();
-  await expect(page.getByLabel("Receita bruta do mês")).toHaveValue("40.000,00");
-  await page.getByRole("button", { name: "Calcular" }).click();
-  await expect(page.getByRole("heading", { name: /DAS estimado/ })).toBeVisible();
+  await expect(page.getByLabel("Valor no mês", { exact: true })).toHaveValue("40.000,00");
+  await calcular(page);
+  await expect(das(page)).toBeVisible();
   expect(chamadas[0].get("rbt12")).toBe("500000.00");
 
   await page.getByRole("button", { name: "Limpar" }).click();
-  await expect(page.getByLabel("Receita bruta do mês")).toHaveValue("");
-  await expect(page.getByRole("heading", { name: /DAS estimado/ })).toHaveCount(0);
+  await expect(page.getByLabel("Valor no mês", { exact: true })).toHaveValue("");
+  await expect(das(page)).toHaveCount(0);
   await expect(page.getByRole("heading", { name: "Como a conta é feita" })).toBeVisible();
 });
 
 test("formata o valor em reais ao sair do campo", async ({ page }) => {
   await page.goto("/");
-  const campo = page.getByLabel("Receita bruta do mês");
+  const campo = page.getByLabel("Valor no mês", { exact: true });
   await campo.fill("40000,5");
   await campo.press("Tab");
   await expect(campo).toHaveValue("40.000,50");
 });
 
-test("mostra a dica do anexo escolhido", async ({ page }) => {
+test("mostra a dica do tipo escolhido", async ({ page }) => {
   await page.goto("/");
-  const campo = page.getByLabel("Anexo da atividade");
+  const campo = page.getByLabel("Tipo da receita", { exact: true });
   await expect(campo).toHaveAccessibleDescription(/Depende da atividade/);
-  await campo.selectOption("4");
+  await campo.selectOption("servicos_4");
   await expect(campo).toHaveAccessibleDescription(/serviços advocatícios/);
 });
 
 test("avisa quando os dados mudam depois do cálculo", async ({ page }) => {
   await simularApi(page);
   await page.goto("/");
-  await preencher(page, { rbt12: "500000", receita: "40000", anexo: "3" });
-  await expect(page.getByRole("heading", { name: /DAS estimado/ })).toBeVisible();
+  await preencher(page, { rbt12: "500000" });
+  await calcular(page);
+  await expect(das(page)).toBeVisible();
   await expect(page.getByText("Você mudou os dados")).toHaveCount(0);
 
-  await page.getByLabel("Receita bruta do mês").fill("41000");
+  // Só formatar ("41000" → "41.000,00") não conta como mudança; mudar o valor conta.
+  await page.getByLabel("Valor no mês", { exact: true }).fill("41000");
   await expect(page.getByText("Você mudou os dados depois deste cálculo")).toBeVisible();
 });
 
@@ -244,26 +446,26 @@ test("avisa também quando os dados mudam enquanto a conta é feita", async ({ p
     await route.fulfill({ status: 200, json: ANEXO_3 });
   });
   await page.goto("/");
-  await preencher(page, { rbt12: "500000", receita: "40000", anexo: "3" });
-  await page.getByLabel("Receita bruta do mês").fill("41000");
+  await preencher(page, { rbt12: "500000" });
+  await calcular(page);
+  await page.getByLabel("Valor no mês", { exact: true }).fill("41000");
 
-  await expect(page.getByRole("heading", { name: /DAS estimado/ })).toBeVisible();
+  await expect(das(page)).toBeVisible();
   await expect(page.getByText("Você mudou os dados depois deste cálculo")).toBeVisible();
 });
 
 test("ignora a resposta que chega depois de limpar o formulário", async ({ page }) => {
-  // A API demora: a pessoa limpa o formulário antes da resposta chegar.
   await page.route("**/api/calcular?*", async (route) => {
     await new Promise((pronto) => setTimeout(pronto, 500));
     await route.fulfill({ status: 200, json: ANEXO_3 });
   });
   await page.goto("/");
-  await preencher(page, { rbt12: "500000", receita: "40000", anexo: "3" });
+  await preencher(page, { rbt12: "500000" });
+  await calcular(page);
   await page.getByRole("button", { name: "Limpar" }).click();
 
-  const resposta = page.waitForResponse("**/api/calcular?*");
-  await resposta;
-  await expect(page.getByRole("heading", { name: /DAS estimado/ })).toHaveCount(0);
+  await page.waitForResponse("**/api/calcular?*");
+  await expect(das(page)).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Calcular" })).toBeEnabled();
 });
 
@@ -271,7 +473,8 @@ test("mostra a mensagem de erro da API", async ({ page }) => {
   const erro = "A receita bruta dos 12 meses anteriores (RBT12) precisa ser maior que zero.";
   await simularApi(page, { status: 400, corpo: { erro } });
   await page.goto("/");
-  await preencher(page, { rbt12: "0", receita: "1", anexo: "1" });
+  await preencher(page, { rbt12: "0" });
+  await calcular(page);
 
   await expect(page.getByRole("alert")).toHaveText(erro);
 });
@@ -279,12 +482,50 @@ test("mostra a mensagem de erro da API", async ({ page }) => {
 test("mostra uma mensagem quando a rede falha e libera o botão", async ({ page }) => {
   await page.route("**/api/calcular?*", (route) => route.abort("internetdisconnected"));
   await page.goto("/");
-  await preencher(page, { rbt12: "500000", receita: "40000", anexo: "3" });
+  await preencher(page, { rbt12: "500000" });
+  await calcular(page);
 
   await expect(page.getByRole("alert")).toHaveText(
     "Não deu para calcular agora. Tente de novo em instantes.",
   );
   await expect(page.getByRole("button", { name: "Calcular" })).toBeEnabled();
+});
+
+test("imprime a memória de cálculo com os dados, o resultado e a conta", async ({ page }) => {
+  await simularApi(page);
+  // window.print abriria a janela de impressão: aqui só conta as chamadas.
+  await page.addInitScript(() => {
+    window.impressoes = 0;
+    window.print = () => window.impressoes++;
+  });
+  await page.goto("/");
+  await preencher(page, { tipo: "revenda", valor: "30.000", rbt12: "500.000" });
+  await page.getByRole("button", { name: "+ Adicionar outra receita" }).click();
+  await page.getByLabel("Tipo da receita 2").selectOption("servicos_3");
+  await page.getByLabel("Valor no mês 2").fill("10.000");
+  await calcular(page);
+  await page.getByRole("button", { name: "Imprimir ou salvar a memória de cálculo" }).click();
+  expect(await page.evaluate(() => window.impressoes)).toBe(1);
+
+  // Na tela a memória fica escondida; na impressão, só ela aparece.
+  const memoria = page.locator(".memoria");
+  await expect(memoria).toBeHidden();
+  await page.emulateMedia({ media: "print" });
+  await expect(memoria).toBeVisible();
+  await expect(page.locator(".formulario")).toBeHidden();
+  await expect(memoria.getByRole("heading", { level: 2 })).toHaveText(
+    "Memória de cálculo do DAS de março de 2026",
+  );
+  await expect(memoria.getByText("Receita bruta dos 12 meses anteriores (RBT12)")).toBeVisible();
+  await expect(
+    memoria.getByRole("table", { name: "Receitas do mês" }).getByRole("row"),
+  ).toHaveCount(3);
+  await expect(memoria.getByRole("heading", { level: 4 })).toHaveText([
+    "Receita 1: Revenda de mercadorias",
+    "Receita 2: Serviços do Anexo III",
+    "Total do mês",
+  ]);
+  await expect(memoria).toContainText("o valor a pagar é o da guia gerada no PGDAS-D");
 });
 
 test("consulta o CNPJ e mostra a empresa, o CNAE e a situação no Simples", async ({ page }) => {
@@ -293,7 +534,7 @@ test("consulta o CNPJ e mostra a empresa, o CNAE e a situação no Simples", asy
   await consultarCnpj(page, "11.222.333/0001-81");
 
   await expect(page.getByText("EMPRESA FICTICIA LTDA")).toBeVisible();
-  await expect(page.locator("[aria-live=polite]")).toContainText("EMPRESA FICTICIA LTDA");
+  await expect(page.locator(".cnpj [aria-live=polite]")).toContainText("EMPRESA FICTICIA LTDA");
   await expect(
     page.getByText("6201-5/01 – Desenvolvimento de programas de computador sob encomenda"),
   ).toBeVisible();
@@ -331,10 +572,12 @@ test("troca o tema pelo botão e lembra a escolha", async ({ page }) => {
   await expect(page.getByRole("button", { name: "Usar tema escuro" })).toBeVisible();
 });
 
-test("mostra o aviso de estimativa educativa", async ({ page }) => {
+test("diz o que a calculadora faz e o que ela não faz", async ({ page }) => {
   await page.goto("/");
+  const aviso = page.locator(".aviso");
 
-  await expect(page.getByText("não substitui o PGDAS-D nem um contador")).toBeVisible();
+  await expect(aviso.getByRole("heading")).toHaveText(["O que ela faz", "O que ela não faz"]);
+  await expect(aviso.getByText("a guia oficial sai do PGDAS-D")).toBeVisible();
 });
 
 for (const tema of ["light", "dark"]) {
@@ -347,17 +590,40 @@ for (const tema of ["light", "dark"]) {
     await expect(page.locator("html")).toHaveAttribute("data-theme", tema);
     expect(await problemasGraves(page)).toEqual([]);
 
-    // De novo com os erros dos campos e com o resultado e o passo a passo abertos.
-    await page.getByRole("button", { name: "Calcular" }).click();
-    expect(await problemasGraves(page)).toEqual([]);
-    await preencher(page, { rbt12: "500000", receita: "40000", anexo: "3" });
-    await page.getByText("Ver a conta passo a passo").click();
+    // Com os erros dos campos.
+    await calcular(page);
     expect(await problemasGraves(page)).toEqual([]);
 
-    // Com os campos do sublimite abertos e o resultado desatualizado.
-    await page.getByText("Sublimite do ICMS e do ISS").click();
-    await page.getByLabel("Receita bruta do mês").fill("41000");
+    // Com duas receitas, situações marcadas, mês a mês e os opcionais abertos.
+    await preencher(page, { tipo: "revenda", valor: "30.000" });
+    await page.getByRole("button", { name: "+ Adicionar outra receita" }).click();
+    await page.getByLabel("Tipo da receita 2").selectOption("fator_r");
+    await page.getByLabel("Valor no mês 2").fill("10.000");
+    await page.locator("summary", { hasText: "Situações especiais 1" }).click();
+    await page.getByLabel("Exportação", { exact: true }).first().check();
+    await page.getByLabel("Mês a mês", { exact: true }).check();
+    await page.getByText("Sublimite e limite do ano").click();
+    await page.getByText("Tributos pagos fora do DAS").click();
+    expect(await problemasGraves(page)).toEqual([]);
+
+    // Com o resultado (várias receitas) e o passo a passo abertos, e desatualizado.
+    await page.getByLabel("Somas dos 12 meses", { exact: true }).check();
+    await page.getByLabel(/^Receita bruta dos 12/).fill("500.000");
+    await page.getByLabel("Receita de exportação nos mesmos meses").fill("0");
+    await page.getByLabel(/^Folha de salários/).fill("140.000");
+    await calcular(page);
+    await expect(das(page)).toBeVisible();
+    await page.getByText("Ver a conta passo a passo").click();
+    await page.getByLabel("Valor no mês 1").fill("31.000");
     await expect(page.getByText("Você mudou os dados depois deste cálculo")).toBeVisible();
+    expect(await problemasGraves(page)).toEqual([]);
+
+    // Com o "fora do DAS" no resultado.
+    await page.getByRole("button", { name: "Usar um exemplo" }).click();
+    await page.getByLabel("Mês de apuração").selectOption("2027-03");
+    await page.getByLabel("Receita bruta de fevereiro de 2027").fill("40.000");
+    await calcular(page);
+    await expect(page.locator(".fora")).toBeVisible();
     expect(await problemasGraves(page)).toEqual([]);
 
     // E com a consulta de CNPJ aberta e respondida.
@@ -370,20 +636,49 @@ for (const tema of ["light", "dark"]) {
 test.describe("num celular de 320 px", () => {
   test.use({ viewport: { width: 320, height: 640 } });
 
-  test("não tem rolagem lateral, nem com o resultado e o CNPJ abertos", async ({ page }) => {
-    await simularApi(page);
-    await simularCnpj(page);
-    await page.goto("/");
-    await consultarCnpj(page, "11.222.333/0001-81");
-    await expect(page.getByText("EMPRESA FICTICIA LTDA")).toBeVisible();
-    await preencher(page, { rbt12: "500000", receita: "40000", anexo: "3" });
-    await page.getByText("Ver a conta passo a passo").click();
-    await expect(page.getByRole("heading", { level: 3 }).first()).toBeVisible();
-
+  async function semRolagemLateral(page) {
     const larguras = await page.evaluate(() => ({
       conteudo: document.documentElement.scrollWidth,
       tela: document.documentElement.clientWidth,
     }));
     expect(larguras.conteudo).toBeLessThanOrEqual(larguras.tela);
+  }
+
+  test("não tem rolagem lateral com o mês a mês de 3 colunas e os opcionais abertos", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    await preencher(page, { tipo: "fator_r", valor: "40.000" });
+    await page.locator("summary", { hasText: "Situações especiais" }).click();
+    await page.getByLabel("Exportação", { exact: true }).check();
+    await page.getByLabel("Mês a mês", { exact: true }).check();
+    await expect(page.locator(".meses.colunas-3")).toBeVisible();
+    await page.getByLabel("Receita de março de 2025").fill("4.800.000,00");
+    await page.getByText("Sublimite e limite do ano").click();
+    await page.getByText("Tributos pagos fora do DAS").click();
+    await semRolagemLateral(page);
+  });
+
+  test("não tem rolagem lateral com o resultado, a conta e o CNPJ abertos", async ({ page }) => {
+    await simularApi(page);
+    await simularCnpj(page);
+    await page.goto("/");
+    await consultarCnpj(page, "11.222.333/0001-81");
+    await expect(page.getByText("EMPRESA FICTICIA LTDA")).toBeVisible();
+    await preencher(page, { tipo: "revenda", valor: "30.000", rbt12: "500000" });
+    await page.getByRole("button", { name: "+ Adicionar outra receita" }).click();
+    await page.getByLabel("Tipo da receita 2").selectOption("servicos_3");
+    await page.getByLabel("Valor no mês 2").fill("10.000");
+    await calcular(page);
+    await page.getByText("Ver a conta passo a passo").click();
+    await expect(page.locator(".secao-passos h4").first()).toBeVisible();
+    await semRolagemLateral(page);
+
+    // E com o "fora do DAS" (Anexo IV).
+    await page.getByRole("button", { name: "Remover a receita 2" }).click();
+    await page.getByLabel("Tipo da receita", { exact: true }).selectOption("servicos_4");
+    await calcular(page);
+    await expect(page.locator(".fora")).toBeVisible();
+    await semRolagemLateral(page);
   });
 });

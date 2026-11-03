@@ -26,5 +26,30 @@ module SimplesNacional
       inteiro, decimais = (fracao * 100 * escala).floor.divmod(escala)
       "#{inteiro},#{decimais.to_s.rjust(casas, '0')}%"
     end
+
+    # Fração sem o "%": Rational(1, 2) → "0,5000" (o FAP tem quatro casas).
+    def self.decimal(fracao, casas = 4) = percentual(fracao / 100, casas).delete_suffix("%")
+
+    # Tributos de nome feminino ("a CBS", "da Cofins").
+    FEMININOS = %w[CBS Cofins CPP CSLL].freeze
+
+    # Nomes com artigo, para os textos: ["ICMS"] → "o ICMS"; ["ICMS", "CBS"] → "o ICMS e a CBS";
+    # com artigo "do": "do ICMS, do ISS e do IBS".
+    def self.lista(nomes, artigo = "o")
+      juntar(nomes.map do |nome|
+        feminino = { "o" => "a", "do" => "da" }.fetch(artigo)
+        "#{FEMININOS.include?(nome) ? feminino : artigo} #{nome}"
+      end)
+    end
+
+    # Primeira letra maiúscula, para começar frase: "o ICMS" → "O ICMS".
+    def self.frase(texto) = texto.sub(/\A./, &:upcase)
+
+    # ["a"] → "a"; ["a", "b", "c"] → "a, b e c".
+    def self.juntar(partes)
+      return partes.first if partes.size == 1
+
+      "#{partes[0..-2].join(', ')} e #{partes.last}"
+    end
   end
 end

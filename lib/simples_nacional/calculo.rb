@@ -1,76 +1,80 @@
 # frozen_string_literal: true
 
 module SimplesNacional
-  # O cálculo do DAS (LC 123/2006, art. 18):
+  # O cálculo do DAS (LC 123/2006, art. 18), receita por receita, como o PGDAS-D:
   #   1. a faixa vem da receita bruta dos 12 meses anteriores (RBT12);
   #   2. alíquota efetiva = (RBT12 × alíquota nominal − parcela a deduzir) ÷ RBT12 (§ 1º-A);
   #   3. a alíquota efetiva é dividida entre os tributos (ver Reparticao);
-  #   4. DAS = receita do mês × soma dos percentuais dos tributos (§ 3º). Nas faixas 1 a 5 a
-  #      soma é a própria alíquota efetiva; na 6ª, entra também o ICMS ou o ISS.
+  #   4. cada receita do mês paga a soma dos percentuais dos tributos que ela deve no DAS
+  #      (ver ApuracaoDaAtividade); o DAS é a soma das receitas (§ 3º).
+  # O que fica fora do DAS é estimado à parte (ver ForaDoDas).
   #
   # Dinheiro entra e sai em centavos (Integer) e percentual é fração exata (Rational):
   # nenhuma conta passa por Float.
   #
   #   SimplesNacional.calcular(periodo: "2026-03", rbt12: 50_000_000, receita_mes: 4_000_000, anexo: 3).das
   #   # => 398880 (R$ 3.988,80)
+  #
+  #   SimplesNacional.calcular(periodo: "2026-03", rbt12: 50_000_000,
+  #                            atividades: [{ tipo: "revenda", receita: 3_000_000, opcoes: ["st_icms"] },
+  #                                         { tipo: "servicos_3", receita: 1_000_000 }])
   module Calculo
-    # Os nomes antigos continuam valendo: a conferência das entradas mudou para Entrada.
+    # Os nomes antigos continuam valendo: a conferência das entradas fica em Entrada.
     TETO = Entrada::TETO
     EntradaInvalida = Entrada::EntradaInvalida
 
-    # periodo: o mês de apuração (Date). rbt12: a RBT12 que a conta usou (anualizada no
-    # início de atividade). fator_r: o Fator R, ou nil quando o anexo foi informado.
-    # aliquota_efetiva: o percentual que o DAS aplica sobre a receita do mês.
-    # tributos: a divisão do DAS, na ordem do anexo.
-    # situacao: o ICMS/ISS e o sublimite (Sublimite::Situacao).
-    Resultado = Data.define(:periodo, :anexo, :fator_r, :faixa, :rbt12, :situacao, :aliquota_efetiva, :das,
-                            :tributos, :passos)
+    # dados: as entradas conferidas (Entrada::Dados). fator: o Fator R (FatorR::Resultado) ou nil.
+    # atividades: a conta de cada receita (ApuracaoDaAtividade::Apurada). tributos: a soma dos
+    # tributos de todas as receitas. fora_do_das: as estimativas (ForaDoDas::Estimativa).
+    Resultado = Data.define(:dados, :fator, :atividades, :das, :tributos, :fora_do_das, :passos) do
+      def periodo = dados.periodo
+      def situacao = dados.situacao
+      # A primeira receita, para quem usa uma atividade só (o jeito antigo).
+      def anexo = atividades.first.tabela
+      def faixa = atividades.first.faixa
+      def rbt12 = atividades.first.rbt12
+      def fator_r = fator&.fator
+      def receita = atividades.sum { |apurada| apurada.atividade.receita }
+      # Percentual médio do DAS sobre a receita do mês (com uma receita só, a soma dos percentuais dela).
+      def aliquota_efetiva = Rational(atividades.sum { |apurada| apurada.atividade.receita * apurada.total }, receita)
+      # DAS mais o que a calculadora conseguiu estimar fora dele.
+      def total_estimado = das + fora_do_das.sum { |estimativa| estimativa.valor.to_i }
+    end
 
-    # percentual: parte da receita do mês (Rational); valor: em centavos, arredondado.
+    # percentual: parte da receita (Rational); valor: em centavos, arredondado.
     Tributo = Data.define(:nome, :percentual, :valor)
 
-    # Recebe os argumentos de Entrada.conferir: periodo ("2026-03"), anexo (1 a 5, ou
-    # :fator_r para as atividades que ficam no Anexo III ou no V conforme o Fator R),
-    # receita_mes, rbt12, folha12 (só no Fator R), inicio ("2025-11", se a empresa tem
-    # menos de 12 meses de atividade), receita_ano e receita_ano_anterior (sublimite).
+    # Aceita o jeito antigo (anexo e receita_mes) ou a lista de atividades; ver Entrada.conferir.
     def self.calcular(**)
       dados = Entrada.conferir(**)
-      passos = Passos.inicio(dados)
-      return com_fator_r(dados, passos) if dados.anexo == :fator_r
-
-      tabela = tabelas[dados.anexo] || raise(EntradaInvalida, "O anexo precisa ser 1, 2, 3, 4, 5 ou :fator_r.")
-      resultado(tabela, dados, nil, passos + [Passos.anexo(tabela)])
-    end
-
-    def self.com_fator_r(dados, passos)
-      if dados.rbt12.zero?
-        raise EntradaInvalida, "Sem receita antes deste mês, não dá para calcular o Fator R (folha ÷ receita): " \
-                               "escolha o Anexo III ou o V."
+      fator = FatorR.calcular(dados)
+      apuradas = dados.atividades.each_with_index.map do |atividade, indice|
+        ApuracaoDaAtividade.calcular(dados, atividade, indice + 1, fator)
       end
-
-      numero, fator = FatorR.anexo(dados.rbt12, dados.folha12)
-      tabela = tabelas.fetch(numero)
-      resultado(tabela, dados, fator, passos + [Passos.fator_r(tabela, dados.rbt12, dados.folha12, fator)])
+      resultado = Resultado.new(dados:, fator:, atividades: apuradas, das: apuradas.sum(&:valor),
+                                tributos: somar(apuradas), fora_do_das: ForaDoDas.estimar(dados, apuradas), passos: [])
+      resultado.with(passos: Passos.montar(resultado))
     end
 
-    # A conta em si, com as entradas já conferidas. "passos" chega com a explicação de
-    # como o anexo foi escolhido; a faixa, a alíquota e o DAS entram aqui.
-    def self.resultado(tabela, dados, fator_r, passos)
-      rbt12, faixa, efetiva = faixa_e_aliquota(tabela, dados.rbt12)
-      percentuais = Reparticao.percentuais(tabela, faixa, rbt12, efetiva, dados.situacao)
-      passos += [Passos.faixa(tabela, faixa, dados.rbt12), Passos.aliquota_efetiva(faixa, rbt12, efetiva),
-                 PassoDaDivisao.montar(tabela, faixa, rbt12, efetiva, percentuais),
-                 *PassoDoSublimite.montar(tabela, dados)]
-      sem_das = Resultado.new(periodo: dados.periodo, anexo: tabela, fator_r:, faixa:, rbt12: dados.rbt12,
-                              situacao: dados.situacao, aliquota_efetiva: nil, das: nil, tributos: nil, passos:)
-      com_das(sem_das, dados.receita_mes, efetiva, percentuais)
+    # Cada tributo de cada receita, arredondado sozinho. Por isso a soma deles pode diferir
+    # do valor da receita em alguns centavos.
+    def self.tributos(receita, percentuais)
+      percentuais.map do |nome, percentual|
+        Tributo.new(nome:, percentual:, valor: (receita * percentual).round(half: :up))
+      end
     end
 
-    # Completa o resultado com o DAS, o valor de cada tributo e o passo do DAS.
-    def self.com_das(resultado, receita_mes, efetiva, percentuais)
-      total, das, tributos = valores(receita_mes, percentuais)
-      resultado.with(aliquota_efetiva: total, das:, tributos:,
-                     passos: resultado.passos + [Passos.das(receita_mes, efetiva, total, das, tributos)])
+    # Os tributos de todas as receitas juntos: valor somado e percentual sobre a receita total.
+    def self.somar(apuradas)
+      receita = apuradas.sum { |apurada| apurada.atividade.receita }
+      nomes = apuradas.flat_map { |apurada| apurada.percentuais.keys }.uniq
+      nomes.map { |nome| somar_um(nome, apuradas, receita) }
+    end
+
+    def self.somar_um(nome, apuradas, receita)
+      valor = apuradas.sum { |apurada| apurada.tributos.find { |tributo| tributo.nome == nome }&.valor.to_i }
+      ponderado = apuradas.sum { |apurada| apurada.atividade.receita * apurada.percentuais.fetch(nome, 0) }
+      Tributo.new(nome:, percentual: Rational(ponderado, receita), valor:)
     end
 
     # [RBT12 da alíquota, faixa, alíquota efetiva]. RBT12 zero vira R$ 1,00, só para achar a
@@ -82,30 +86,18 @@ module SimplesNacional
     end
 
     # A faixa da RBT12. Acima do limite (o que acontece com a RBT12 anualizada no início de
-    # atividade), vale a última faixa (Res. CGSN 140/2018, art. 22, § 5º).
+    # atividade ou de 12 meses que não são o ano), vale a última faixa (Res. CGSN 140/2018, art. 22, § 5º).
     def self.faixa_da(tabela, rbt12) = tabela.faixas.find { |item| rbt12 <= centavos(item.ate) } || tabela.faixas.last
-
-    # Percentual total do DAS, o DAS em centavos e o valor de cada tributo. Cada tributo é
-    # arredondado sozinho, por isso a soma deles pode diferir do DAS em alguns centavos.
-    def self.valores(receita_mes, percentuais)
-      total = percentuais.values.sum
-      tributos = percentuais.map do |nome, percentual|
-        Tributo.new(nome:, percentual:, valor: (receita_mes * percentual).round(half: :up))
-      end
-      [total, (receita_mes * total).round(half: :up), tributos]
-    end
 
     # (RBT12 × alíquota nominal − parcela a deduzir) ÷ RBT12, com a RBT12 em centavos.
     def self.aliquota_efetiva(faixa, rbt12) = ((rbt12 * faixa.aliquota) - centavos(faixa.deduzir)) / rbt12
 
-    # As tabelas são lidas uma vez só e ficam guardadas.
-    def self.tabelas
-      @tabelas ||= Tabelas.todas
-    end
+    # As tabelas de 2026 (para quem usava antes de existir mais de um ano). Ver Regras.tabelas.
+    def self.tabelas = Regras.tabelas(Regras::DE_2026)
 
     # Reais (Rational, como vêm das tabelas) → centavos (Integer).
     def self.centavos(reais) = (reais * 100).round
 
-    private_class_method :com_fator_r, :resultado, :com_das, :faixa_e_aliquota, :valores
+    private_class_method :somar, :somar_um
   end
 end

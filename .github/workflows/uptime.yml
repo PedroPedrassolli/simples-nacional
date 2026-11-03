@@ -76,6 +76,8 @@ jobs:
           expect /favicon.svg 200
           # Conta conhecida (feita à mão no test/calculo_test.rb): R$ 3.988,80.
           expect "/api/calcular?periodo=2026-03&anexo=3&rbt12=500000.00&receita_mes=40000.00" 200 '"das_centavos":398880'
+          # Duas receitas (test/segregacao_test.rb): R$ 1.342,24 + R$ 997,20 = R$ 2.339,44.
+          expect "/api/calcular?periodo=2026-03&rbt12=500000.00&atividades=revenda:30000.00:st_icms;servicos_3:10000.00" 200 '"das_centavos":233944'
           expect "/api/calcular?periodo=2026-03&anexo=9&rbt12=1.00&receita_mes=1.00" 400 "Escolha o anexo"
           # CNPJ com dígito errado: responde sem chamar a BrasilAPI.
           expect "/api/cnpj?cnpj=11222333000180" 400 "CNPJ inválido"

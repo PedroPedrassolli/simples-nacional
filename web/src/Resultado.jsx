@@ -1,18 +1,14 @@
-import { ANEXOS } from "./anexos.js";
 import { dataBrasileira, semQuebra } from "./valores.js";
 
-// "III – Serviços e locação de bens móveis": o mesmo nome curto da lista de anexos. O
-// título completo da lei ("Locação de bens móveis e serviços não relacionados no § 5º-C")
-// confundia quem presta serviço e caiu no Anexo III pelo Fator R.
-function nomeDoAnexo(numero) {
-  const anexo = ANEXOS.find((opcao) => opcao.valor === String(numero));
-  return anexo.rotulo.replace(/^Anexo /, "");
-}
+const ROMANOS = { 1: "I", 2: "II", 3: "III", 4: "IV", 5: "V" };
 
-// O resultado com cara de guia: o DAS em destaque, um "picote" e, embaixo, o resumo e a
-// divisão entre os tributos. A conta passo a passo fica em ContaPassoAPasso, em largura
-// total, para não esticar só esta coluna quando abre.
+// O resultado com cara de guia: o DAS em destaque, um "picote" e, embaixo, o resumo, as
+// receitas, a divisão entre os tributos e o que fica fora do DAS. A conta passo a passo fica
+// em ContaPassoAPasso, em largura total, para não esticar só esta coluna quando abre.
 export default function Resultado({ resultado, refTitulo, desatualizado }) {
+  const varias = resultado.atividades.length > 1;
+  const primeira = resultado.atividades[0];
+
   return (
     <section
       className={desatualizado ? "cartao guia desatualizado" : "cartao guia"}
@@ -31,81 +27,96 @@ export default function Resultado({ resultado, refTitulo, desatualizado }) {
           Você mudou os dados depois deste cálculo. Clique em Calcular para atualizar.
         </p>
       )}
-      {resultado.aviso && <p className="nota nota-aviso">{semQuebra(resultado.aviso)}</p>}
+      {resultado.avisos.map((aviso) => (
+        <p key={aviso} className="nota nota-aviso">
+          {semQuebra(aviso)}
+        </p>
+      ))}
 
       <div className="picote" aria-hidden="true" />
 
       <dl className="resumo">
-        <Item rotulo="Alíquota efetiva" valor={resultado.aliquota_efetiva} />
+        <Item
+          rotulo={varias ? "Alíquota média" : "Alíquota efetiva"}
+          valor={resultado.aliquota_efetiva}
+        />
         <Item rotulo="RBT12" valor={resultado.rbt12} />
         {resultado.fator_r && <Item rotulo="Fator R" valor={resultado.fator_r} />}
-        <Item
-          rotulo="Faixa"
-          valor={`${resultado.faixa}ª, alíquota nominal de ${resultado.aliquota_nominal}`}
-        />
-        <Item rotulo="Anexo" valor={nomeDoAnexo(resultado.anexo)} largo />
+        {!varias && (
+          <>
+            <Item
+              rotulo="Faixa"
+              valor={`${resultado.faixa}ª, alíquota nominal de ${resultado.aliquota_nominal}`}
+            />
+            <Item
+              rotulo="Anexo"
+              valor={`${ROMANOS[primeira.anexo]} – ${primeira.anexo_nome}`}
+              largo
+            />
+          </>
+        )}
       </dl>
 
-      <Tributos resultado={resultado} />
+      {varias && <Receitas atividades={resultado.atividades} />}
+      <Tributos
+        tributos={resultado.tributos}
+        rodape={["DAS", resultado.aliquota_efetiva, resultado.das]}
+      />
+      {resultado.fora_do_das.length > 0 && <ForaDoDas resultado={resultado} />}
+
+      <div className="acoes-resultado">
+        <button type="button" className="botao secundario pequeno" onClick={() => window.print()}>
+          Imprimir ou salvar a memória de cálculo
+        </button>
+      </div>
     </section>
   );
 }
 
-// A conta explicada, um passo por linha: título e base legal à esquerda, a conta à direita
-// (no celular, um embaixo do outro). Fecha por padrão; aberta, ocupa a largura da página.
-export function ContaPassoAPasso({ resultado }) {
-  const { tabela, passos } = resultado;
-
+// Uma linha por receita: anexo, faixa, percentual e valor. As situações especiais de cada
+// uma ficam na conta passo a passo ("O que esta receita não paga no DAS").
+function Receitas({ atividades }) {
   return (
-    <details className="cartao revelar secao-passos">
-      <summary>
-        <span className="revelar-textos">
-          <span className="revelar-titulo">Ver a conta passo a passo</span>
-          <span className="revelar-dica">{passos.length} passos, com a base legal de cada um</span>
-        </span>
-      </summary>
-      <div className="revelar-corpo">
-        <ol className="linha-do-tempo">
-          {passos.map((passo) => (
-            <li key={passo.titulo}>
-              <div className="passo-cabeca">
-                <h3>{passo.titulo}</h3>
-                <p className="fonte">{semQuebra(passo.fonte)}</p>
-              </div>
-              <p className="passo-texto">{semQuebra(passo.texto)}</p>
-            </li>
-          ))}
-        </ol>
-        <p className="fonte">
-          Tabela na redação da {tabela.redacao}, em vigor desde {dataBrasileira(tabela.vigencia)}.{" "}
-          <a href={tabela.fonte}>Texto da LC 123/2006 no Planalto</a>.
-        </p>
-      </div>
-    </details>
-  );
-}
-
-// Um par rótulo e valor do resumo. largo: ocupa a linha toda (textos longos).
-function Item({ rotulo, valor, largo }) {
-  return (
-    <div className={largo ? "largo" : undefined}>
-      <dt>{rotulo}</dt>
-      <dd>{valor}</dd>
-    </div>
+    <table className="tabela receitas-resultado">
+      <caption>DAS de cada receita</caption>
+      <thead>
+        <tr>
+          <th scope="col">Receita</th>
+          <th scope="col">Anexo, faixa</th>
+          <th scope="col">%</th>
+          <th scope="col">Valor</th>
+        </tr>
+      </thead>
+      <tbody>
+        {atividades.map((atividade) => (
+          <tr key={atividade.numero}>
+            <th scope="row">
+              {atividade.numero}. {atividade.nome}
+              <span className="detalhe">{atividade.receita}</span>
+            </th>
+            <td>
+              {ROMANOS[atividade.anexo]}, {atividade.faixa}ª
+            </td>
+            <td>{atividade.percentual}</td>
+            <td>{atividade.valor}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
   );
 }
 
 // A divisão do DAS: quanto vai para cada tributo. O percentual é sobre a receita do mês.
-function Tributos({ resultado }) {
-  const { tributos, das_centavos: das } = resultado;
-  // Cada tributo é arredondado para o centavo separado, como o DAS: a soma pode diferir
-  // do DAS em alguns centavos.
-  const soma = tributos.reduce((total, tributo) => total + tributo.valor_centavos, 0);
+// rodape: [rótulo, percentual, valor] da última linha.
+export function Tributos({ tributos, rodape, legenda = "Divisão do DAS entre os tributos" }) {
+  const total = tributos.reduce((soma, tributo) => soma + tributo.valor_centavos, 0);
+  const [rotulo, percentual, valor] = rodape;
+  const valorDoRodape = Number(valor.replace(/\D/g, ""));
 
   return (
     <>
-      <table className="tributos">
-        <caption>Divisão do DAS entre os tributos</caption>
+      <table className="tabela tributos">
+        <caption>{legenda}</caption>
         <thead>
           <tr>
             <th scope="col">Tributo</th>
@@ -118,7 +129,7 @@ function Tributos({ resultado }) {
             <tr key={tributo.nome}>
               <th scope="row">
                 {tributo.nome}
-                <Barra parte={tributo.valor_centavos} total={das} />
+                <Barra parte={tributo.valor_centavos} total={total} />
               </th>
               <td>{tributo.percentual}</td>
               <td>{tributo.valor}</td>
@@ -127,19 +138,104 @@ function Tributos({ resultado }) {
         </tbody>
         <tfoot>
           <tr>
-            <th scope="row">DAS</th>
-            <td>{resultado.aliquota_efetiva}</td>
-            <td>{resultado.das}</td>
+            <th scope="row">{rotulo}</th>
+            <td>{percentual}</td>
+            <td>{valor}</td>
           </tr>
         </tfoot>
       </table>
-      {soma !== das && (
+      {/* Cada tributo é arredondado para o centavo separadamente. */}
+      {total !== valorDoRodape && (
         <p className="fonte">
           Cada tributo é arredondado para o centavo separadamente, por isso a soma da tabela pode
-          diferir do DAS em alguns centavos.
+          diferir do total em alguns centavos.
         </p>
       )}
     </>
+  );
+}
+
+// O que é pago à parte, com a estimativa (ou o dado que falta) e o total do mês.
+function ForaDoDas({ resultado }) {
+  return (
+    <div className="fora">
+      <h3>Fora do DAS</h3>
+      <ul className="fora-lista">
+        {resultado.fora_do_das.map((estimativa) => (
+          <li key={estimativa.tributo}>
+            <span className="fora-nome">{estimativa.tributo}</span>
+            <span className="fora-valor">{estimativa.valor ?? "a estimar"}</span>
+            <span className="fora-texto">{semQuebra(estimativa.falta ?? estimativa.texto)}</span>
+          </li>
+        ))}
+      </ul>
+      <p className="fora-total">
+        <span>Total estimado do mês (DAS + fora do DAS)</span>
+        <strong>{resultado.total_estimado}</strong>
+      </p>
+    </div>
+  );
+}
+
+// A conta explicada, agrupada (receitas anteriores, cada receita do mês, sublimite, fora do
+// DAS, total): título e base legal à esquerda, a conta à direita. Fecha por padrão.
+export function ContaPassoAPasso({ resultado }) {
+  const { tabela, passos } = resultado;
+  const grupos = agrupar(passos);
+
+  return (
+    <details className="cartao revelar secao-passos">
+      <summary>
+        <span className="revelar-textos">
+          <span className="revelar-titulo">Ver a conta passo a passo</span>
+          <span className="revelar-dica">{passos.length} passos, com a base legal de cada um</span>
+        </span>
+      </summary>
+      <div className="revelar-corpo">
+        {grupos.map(([grupo, itens]) => (
+          <section key={grupo} className="grupo-de-passos" aria-label={grupo}>
+            <h3>{grupo}</h3>
+            <ol className="linha-do-tempo">
+              {itens.map((passo) => (
+                <li key={`${grupo}-${passo.titulo}`}>
+                  <div className="passo-cabeca">
+                    <h4>{passo.titulo}</h4>
+                    <p className="fonte">{semQuebra(passo.fonte)}</p>
+                  </div>
+                  <p className="passo-texto">{semQuebra(passo.texto)}</p>
+                </li>
+              ))}
+            </ol>
+          </section>
+        ))}
+        <p className="fonte">
+          {resultado.atividades.length === 1
+            ? `Tabela na redação da ${tabela.redacao}, em vigor desde ${dataBrasileira(tabela.vigencia)}. `
+            : `Tabelas em vigor desde ${dataBrasileira(tabela.vigencia)}. `}
+          <a href={tabela.fonte}>Texto da lei no Planalto</a>.
+        </p>
+      </div>
+    </details>
+  );
+}
+
+// [[grupo, [passos]], ...] na ordem em que vieram.
+export function agrupar(passos) {
+  const grupos = new Map();
+  for (const passo of passos) {
+    if (!grupos.has(passo.grupo)) grupos.set(passo.grupo, []);
+    grupos.get(passo.grupo).push(passo);
+  }
+  return [...grupos];
+}
+
+// Um par rótulo e valor do resumo. largo: ocupa a linha toda (textos longos).
+function Item({ rotulo, valor, largo }) {
+  return (
+    <div className={largo ? "largo" : undefined}>
+      <dt>{rotulo}</dt>
+      <dd>{valor}</dd>
+    </div>
   );
 }
 

@@ -10,7 +10,7 @@
 # não recolhe o ICMS nem o ISS pelo Simples em 2026 (LC 123/2006, art. 20, §§ 1º e 1º-A).
 #
 # valor: em R$, como texto com duas casas (o Ruby converte para centavos).
-conferido_em: "2026-10-27"
+conferido_em: "2026-11-02"
 anos:
   2025:
     valor: "3600000.00"
@@ -20,3 +20,14 @@ anos:
     valor: "3600000.00"
     ato: Portaria CGSN nº 54, de 17 de novembro de 2025 (DOU de 19/11/2025)
     fonte: https://www8.receita.fazenda.gov.br/SIMPLESNACIONAL/noticias/NoticiaCompleta.aspx?id=94c10cc2-7eb5-4ef0-bfb2-5479e72caff8
+  # A partir de 2027 o sublimite está na própria Resolução (art. 9º na redação da Res. CGSN
+  # 190/2026): R$ 3.600.000,00 no mercado interno, mais igual valor para a exportação, e
+  # vale também para o IBS. Não depende mais da portaria anual.
+  2027:
+    valor: "3600000.00"
+    ato: Resolução CGSN nº 140/2018, art. 9º, na redação da Resolução CGSN nº 190/2026
+    fonte: https://normasinternet2.receita.fazenda.gov.br/#/consulta/externa/152832
+  2028:
+    valor: "3600000.00"
+    ato: Resolução CGSN nº 140/2018, art. 9º, na redação da Resolução CGSN nº 190/2026
+    fonte: https://normasinternet2.receita.fazenda.gov.br/#/consulta/externa/152832

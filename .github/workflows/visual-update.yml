@@ -1,0 +1,87 @@
+# Gera de novo as imagens dos testes visuais (web/e2e/visual.spec.js-snapshots/) no mesmo
+# Linux e no mesmo Chromium da CI, e faz o commit na branch do PR.
+#
+# Quando usar: o visual mudou de propósito (ou é a primeira vez). Coloque o rótulo
+# "atualizar-imagens" no PR, ou rode à mão em Actions escolhendo a branch. Confira as
+# imagens no PR depois.
+#
+# O commit é feito com o GITHUB_TOKEN, e commit assim não dispara a CI (regra do GitHub
+# contra loops): depois dele, faça mais um push na branch para a CI rodar com as imagens.
+# Custo: ~4 min por execução, só quando alguém pede (o repositório é público).
+name: Imagens dos testes visuais
+
+on:
+  pull_request:
+    types: [labeled]
+  workflow_dispatch:
+
+permissions:
+  contents: write # commit das imagens na branch
+  pull-requests: write # tirar o rótulo do PR
+
+concurrency:
+  group: visual-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  imagens:
+    # Só para PR deste repositório (de um fork, o token não pode escrever na branch).
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.label.name == 'atualizar-imagens' &&
+       github.event.pull_request.head.repo.full_name == github.repository)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      # A branch do PR (e não o merge com a main), com credencial para o push no fim.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.head_ref || github.ref_name }}
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: web/.nvmrc
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Instalar dependências
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Cache do navegador do Playwright
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('web/package-lock.json') }}
+
+      - name: Instalar o Chromium do Playwright
+        run: npx playwright install chromium
+
+      # "all": regrava todas as imagens, mesmo as que mudaram menos que a tolerância.
+      - name: Gerar as imagens
+        run: npx playwright test e2e/visual.spec.js --update-snapshots=all
+
+      - name: Commit das imagens
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add e2e/visual.spec.js-snapshots
+          if git diff --cached --quiet; then
+            echo "::notice title=Imagens::Nenhuma imagem mudou."
+            exit 0
+          fi
+          git commit -m "Atualiza as imagens dos testes visuais"
+          git push
+          echo "::notice title=Imagens::Commit feito. Faça mais um push na branch para a CI rodar."
+
+      - name: Tirar o rótulo
+        if: always() && github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.pull_request.number }}
+        run: gh api -X DELETE "repos/$GITHUB_REPOSITORY/issues/$PR/labels/atualizar-imagens" --silent || true

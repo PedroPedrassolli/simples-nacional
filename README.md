@@ -7,76 +7,84 @@ explicada passo a passo. Regra de negócio confusa em código claro.
 
 ## O que a calculadora faz
 
-A pessoa informa o mês de apuração (por enquanto, meses de 2026), a receita bruta dos
-últimos 12 meses (RBT12), a receita do mês e o anexo da atividade, e vê:
+Faz a mesma apuração do PGDAS-D para os casos mais comuns, mês a mês, de **janeiro de 2026 a
+dezembro de 2028**, e mostra:
 
-- a **alíquota efetiva**: `(RBT12 × alíquota nominal − parcela a deduzir) ÷ RBT12`
-  (art. 18, § 1º-A, da Lei Complementar 123/2006);
-- o **valor estimado do DAS**: receita do mês × alíquota efetiva;
-- a **divisão do DAS entre os tributos** (IRPJ, CSLL, Cofins, PIS/Pasep, CPP, IPI, ICMS ou
-  ISS), pelos percentuais de repartição de cada anexo, com o ISS limitado a 5% e, na 6ª faixa,
-  o ICMS ou o ISS calculado com a 5ª faixa (Resolução CGSN nº 140/2018, art. 21, III);
-- a conta **passo a passo**, com a faixa usada e de onde veio cada número.
+- o **DAS estimado**, com a **alíquota efetiva** de cada receita:
+  `(RBT12 × alíquota nominal − parcela a deduzir) ÷ RBT12` (LC 123/2006, art. 18, § 1º-A);
+- a **divisão do DAS entre os tributos** (IRPJ, CSLL, Cofins, PIS/Pasep, CPP, IPI, ICMS, ISS e,
+  a partir de 2027, CBS e IBS), com o ISS limitado a 5% e, na 6ª faixa, o ICMS/ISS/IBS da 5ª;
+- o que é pago **fora do DAS**, estimado com as alíquotas que a pessoa informar, e o **total
+  do mês** (DAS + fora do DAS);
+- a conta **passo a passo**, com a base legal de cada passo, e a **memória de cálculo** para
+  imprimir ou salvar em PDF.
 
-**Empresa com menos de 12 meses de atividade:** informe o mês de início. No 1º mês, a RBT12
-é a receita do mês × 12; até completar 12 meses, é a média dos meses anteriores × 12 (LC
-123/2006, art. 18, § 2º; Resolução CGSN nº 140/2018, art. 22, §§ 2º a 4º). A folha do Fator R
-segue a mesma regra (art. 26, § 4º). RBT12 zero vale R$ 1,00 só para achar a alíquota
-(art. 21, parágrafo único), e RBT12 acima de R$ 4,8 milhões usa a última faixa (art. 22, § 5º).
+**Receitas separadas por atividade (segregação):** até 10 receitas no mês, cada uma no seu
+anexo: revenda (Anexo I), indústria (Anexo II em 2026; Anexo I a partir de 2027, menos o
+produto com IPI mantido), serviços dos Anexos III, IV e V, serviços pelo Fator R, locação de
+bens móveis (Anexo III sem o ISS) e transporte intermunicipal ou comunicação (Anexo III sem o
+ISS e com o ICMS do Anexo I). Em cada receita dá para marcar ICMS por substituição tributária,
+PIS/Cofins monofásicos (IBS e CBS a partir de 2027), ISS retido e exportação (com RBT12 própria,
+Res. CGSN 140/2018, art. 23). Fonte de cada tipo em `lib/simples_nacional/atividades.rb`.
 
-**Sublimite do ICMS e do ISS:** em 2025 e 2026 é R$ 3.600.000,00 em todos os estados e no DF
-(Portarias CGSN nº 49/2024 e nº 54/2025), por isso a calculadora não pergunta a UF. Com a receita
-do ano até o mês anterior e a do ano passado, ela aplica as regras da LC 123/2006 (arts. 13-A,
-19 e 20) e da Resolução CGSN nº 140/2018 (arts. 12 e 24): na 6ª faixa o ICMS ou o ISS vem da 5ª;
-a parte da receita acima do sublimite usa a alíquota da 5ª faixa no valor do sublimite; com
-excesso de mais de 20%, ou se a receita do ano passado já passou, o ICMS/ISS sai do DAS (a
-calculadora avisa e não estima esse valor). No ano de início, o sublimite é proporcional
-(R$ 300.000,00 por mês). Receita do ano acima de R$ 4.800.000,00 tira a empresa do Simples: a
-calculadora explica e não calcula.
+**Meses anteriores:** a soma (RBT12, folha do Fator R) ou o **mês a mês**, como no PGDAS-D.
+A partir de 2027 a RBT12 é dos 12 meses antes do mês anterior, e o mês anterior entra à parte,
+só na receita do ano (Res. CGSN 140/2018, art. 21, II, a, na redação da Res. CGSN 190/2026).
 
-Quando a atividade pode cair no Anexo III ou no V, a calculadora aplica o **Fator R**:
-folha de salários dos últimos 12 meses ÷ RBT12. Com 28% ou mais, a atividade vai para o
-Anexo III; abaixo disso, para o V (art. 18, §§ 5º-J, 5º-K e 5º-M).
+**Início de atividade:** em 2026, no 1º mês a RBT12 é a receita do mês × 12; depois, a média
+dos meses anteriores × 12 (LC 123/2006, art. 18, § 2º; Res. CGSN 140/2018, art. 22). A partir
+de 2027, o 1º e o 2º mês usam a 1ª faixa, e o Fator R é 28% (arts. 22 e 26, redação da Res.
+190/2026).
+
+**Sublimite e limite:** R$ 3.600.000,00 em todos os estados (Portarias CGSN nº 49/2024 e
+nº 54/2025; a partir de 2027, art. 9º da Res. 140 na redação da Res. 190/2026). Com a receita
+do ano e a do ano anterior, a calculadora aplica os arts. 12 e 24 da Res. CGSN 140/2018: em
+2026, a parte da receita acima do sublimite ou do limite paga pelo percentual maior; acima de
+20%, o ICMS e o ISS (e o IBS, a partir de 2027) saem do DAS. Acima de R$ 4.800.000,00 ela
+calcula o mês até a exclusão e diz quando a empresa sai do Simples. No ano de início, os dois
+são proporcionais aos meses.
+
+**IBS e CBS fora do DAS (2027 em diante):** a empresa que optar pelo regime regular paga o
+IBS e a CBS à parte, com créditos (Res. CGSN 140/2018, arts. 22-A e 40-C, na redação da Res.
+190/2026). A calculadora tira os dois do DAS e estima o valor com as alíquotas informadas.
 
 Opcional: informe um CNPJ para ver a empresa, o CNAE principal e se ela consta como optante
 pelo Simples (dados públicos da Receita Federal, pela BrasilAPI).
 
 **Na página:** o visual segue o do [portfólio](https://pedrassolli.vercel.app) (tema escuro por
-padrão, com botão para o claro). O formulário vem em três etapas (mês e empresa, receitas, atividade). Cada anexo
-mostra exemplos de atividades do art. 18 da LC 123/2006, os valores ficam no formato brasileiro
-ao sair do campo e os campos do sublimite abrem sozinhos quando a receita pode passar dele.
-"Usar um exemplo" preenche números fictícios. No computador, o resultado fica ao lado do
-formulário, com o DAS em destaque e a parte de cada tributo; se um campo muda depois do
-cálculo, a página avisa que o resultado ficou desatualizado.
+padrão, com botão para o claro). O formulário tem uma linha por receita, a chave "Somas dos 12
+meses / Mês a mês" e partes opcionais (sublimite, tributos fora do DAS) que abrem sozinhas
+quando fazem diferença. Os valores ficam no formato brasileiro ao sair do campo, e "Usar um
+exemplo" preenche números fictícios. Se um campo muda depois do cálculo, a página avisa que o
+resultado ficou desatualizado.
 
-As tabelas dos Anexos I a V ficam em `data/anexos/`, cada arquivo com o link da fonte
-oficial, a lei que deu a redação atual e a data de vigência, as alíquotas e os percentuais de
-repartição de cada faixa. Um teste falha se um arquivo não tiver a fonte ou a vigência, ou se a
-repartição de uma faixa não somar 100%.
+As tabelas dos Anexos I a V ficam em `data/anexos/2026/` (LC 155/2016) e
+`data/anexos/2027-2028/` (LC 214/2025), cada arquivo com o link da fonte oficial, a lei que deu
+a redação, a vigência e a data da conferência. Um teste falha se faltar a fonte ou a vigência,
+ou se a repartição de uma faixa não somar 100%.
 
 ### O que ela não faz
 
-- Não substitui o PGDAS-D nem um contador: é uma estimativa para entender a conta.
-- **IBS e CBS:** a partir de janeiro de 2027, a empresa do Simples pode optar por
-  recolher o IBS e a CBS pelo regime regular, fora do DAS (Lei Complementar 214/2025,
-  regulamentada pela Resolução CGSN nº 186/2026; os prazos da opção foram alterados
-  pela Resolução CGSN nº 194/2026). A calculadora mostra o DAS do regime simplificado
-  e não calcula o IBS e a CBS por fora.
-- **Só 2026:** a partir de 1º/1/2027 os Anexos I a V passam a ter a redação da LC 214/2025
-  (art. 519), com a CBS e o IBS na divisão do DAS. A calculadora recusa meses de 2027 até ter
-  essas tabelas.
-- Ainda não trata: empresa que passou de R$ 4,8 milhões no ano (a parte acima do limite tem
-  outra conta até a exclusão), receitas de mais de um anexo no mesmo mês, locação de bens
-  móveis (Anexo III sem o ISS) e comparação entre anexos.
+- **Não gera a guia:** é uma estimativa educativa. O valor a pagar é o do PGDAS-D, e a
+  responsabilidade pelos dados é da empresa e do contador.
+- Não cobre ISS em valor fixo, isenção ou redução de ICMS/ISS dada pelo estado ou município,
+  receita com IPI e ISS ao mesmo tempo, nem o limite extra das receitas de exportação.
+- Não calcula multa e juros de atraso, substituição tributária ou diferencial de alíquota do
+  ICMS, nem o MEI.
+- Os tributos fora do DAS são estimativas simples (base × alíquota − créditos; CPP do Anexo IV
+  com RAT e FAP informados), sem as regras de cada estado ou município.
+- Não aceita meses de 2029 em diante: as tabelas mudam de novo (LC 214/2025).
 
 ## Como funciona
 
 ```
-lib/simples_nacional/   Ruby puro, sem dependências: tabelas, faixa, alíquota efetiva, Fator R, DAS
-data/anexos/*.yml       tabelas dos Anexos I a V, com fonte oficial e vigência
+lib/simples_nacional/   Ruby puro, sem dependências: regras de cada ano, receitas, faixa, Fator R,
+                        sublimite e limite, divisão do DAS, fora do DAS e os passos da conta
+data/anexos/            tabelas dos Anexos I a V de 2026 e de 2027-2028, com fonte oficial e vigência
+data/sublimite.yml      sublimite de cada ano, com o ato e o link
 api/calcular.rb         função Ruby da Vercel: recebe os números e devolve o resultado e os passos (JSON)
 api/cnpj.rb             consulta opcional de CNPJ pela gem br_validators (BrasilAPI)
-web/                    React + Vite, build estático e pré-renderizado (formulário, resultado, passo a passo)
+web/                    React + Vite, build estático e pré-renderizado (formulário, resultado, memória)
 test/                   Minitest, com 100% das linhas cobertas
 ```
 
@@ -87,42 +95,63 @@ test/                   Minitest, com 100% das linhas cobertas
 
 ### A biblioteca
 
-Dinheiro em centavos (Integer), para nenhuma conta passar por Float:
+Dinheiro em centavos (Integer) e percentuais em `Rational`, para nenhuma conta passar por Float:
 
 ```ruby
 require "simples_nacional"
 
-resultado = SimplesNacional.calcular(periodo: "2026-03", rbt12: 50_000_000, receita_mes: 4_000_000, anexo: 3)
-resultado.das                # => 398880 (R$ 3.988,80)
-resultado.tributos.last      # => #<data SimplesNacional::Calculo::Tributo nome="ISS", percentual=(32409/1000000), valor=129636>
-resultado.passos.map(&:texto) # a conta explicada, com a base legal de cada passo
+# Duas receitas no mês: revenda com ICMS por substituição tributária e serviços do Anexo III
+resultado = SimplesNacional.calcular(periodo: "2026-03", rbt12: 50_000_000, atividades: [
+  { tipo: "revenda", receita: 3_000_000, opcoes: ["st_icms"] },
+  { tipo: "servicos_3", receita: 1_000_000 }
+])
+resultado.das                       # => 233944 (R$ 2.339,44)
+resultado.atividades.map(&:valor)   # => [134224, 99720]
+resultado.passos.map(&:texto)       # a conta explicada, com a base legal de cada passo
 
-# Atividade do Anexo III ou V: o Fator R escolhe (folha de salários dos 12 meses anteriores)
-SimplesNacional.calcular(periodo: "2026-03", rbt12: 50_000_000, receita_mes: 4_000_000, anexo: :fator_r,
-                         folha12: 15_000_000)
+# Uma receita só, do jeito antigo (continua valendo)
+SimplesNacional.calcular(periodo: "2026-03", rbt12: 50_000_000, receita_mes: 4_000_000, anexo: 3).das # => 398880
 
-# Empresa que começou em novembro de 2025: rbt12 é a receita desde o início (4 meses)
-SimplesNacional.calcular(periodo: "2026-03", inicio: "2025-11", rbt12: 10_000_000, receita_mes: 3_000_000, anexo: 1)
+# 2027, com o IBS e a CBS fora do DAS e a CBS estimada a 8,8%
+resultado = SimplesNacional.calcular(periodo: "2027-03", rbt12: 50_000_000, receita_mes_anterior: 4_000_000,
+                                     atividades: [{ tipo: "servicos_3", receita: 4_000_000 }], ibs_cbs_fora: true,
+                                     fora_do_das: { aliquota_cbs: Rational(88, 1000) })
+resultado.fora_do_das.map { |estimativa| [estimativa.tributo, estimativa.valor] } # => [["IBS", nil], ["CBS", 352000]]
 ```
 
 ### A API
 
 ```
+GET /api/calcular?periodo=2026-03&rbt12=500000.00&atividades=servicos_3:40000.00
+GET /api/calcular?periodo=2026-03&rbt12=500000.00&atividades=revenda:30000.00:st_icms;servicos_3:10000.00
+GET /api/calcular?periodo=2026-03&rbt12=500000.00&atividades=fator_r:40000.00&folha12=150000.00
+GET /api/calcular?periodo=2026-03&atividades=servicos_4:40000.00&rbt12=500000.00&folha_empregados=30000.00&pro_labore=5000.00&rat=2&fap=1.5
+GET /api/calcular?periodo=2027-03&rbt12=500000.00&receita_mes_anterior=40000.00&atividades=servicos_3:40000.00&ibs_cbs_fora=1&aliquota_cbs=8.8
 GET /api/calcular?periodo=2026-03&rbt12=500000.00&receita_mes=40000.00&anexo=3
-GET /api/calcular?periodo=2026-03&rbt12=500000.00&receita_mes=40000.00&anexo=fator_r&folha12=150000.00
-GET /api/calcular?periodo=2026-03&inicio=2025-11&rbt12=100000.00&receita_mes=30000.00&anexo=1
-GET /api/calcular?periodo=2026-10&rbt12=3900000.00&receita_mes=400000.00&anexo=1&receita_ano=3300000.00&receita_ano_anterior=3500000.00
 ```
 
-Valores em reais, com ponto e até duas casas; meses como `AAAA-MM`. Com `inicio`, `rbt12` é a
-receita desde o início das atividades (no 1º mês, não vai). `receita_ano` (receita do ano até
-o mês anterior) e `receita_ano_anterior` são opcionais: a API pede a primeira quando a RBT12
-mais a receita do mês passa do sublimite. A resposta traz `periodo`,
-`periodo_nome`, `rbt12` (a usada na conta), `anexo`, `faixa`, `fator_r`,
-`aliquota_nominal`, `aliquota_efetiva`, `das` (já formatados), `das_centavos`, os `tributos`
-(nome, percentual sobre a receita e valor de cada um), os `passos` e a `tabela` usada (fonte,
-redação e vigência) e `aviso` (texto quando o ICMS/ISS sai do DAS ou muda de regra, senão
-`null`). Entrada inválida responde 400 com `erro`.
+Valores em reais, com ponto e até duas casas; meses como `AAAA-MM`; alíquotas em % (`3.5`).
+
+| Parâmetro | O que é |
+| --- | --- |
+| `periodo` | Mês de apuração, de `2026-01` a `2028-12` |
+| `atividades` | Receitas do mês: `tipo:valor:opção+opção`, separadas por `;`. Tipos: `revenda`, `industria`, `servicos_3`, `servicos_4`, `servicos_5`, `fator_r`, `locacao`, `transporte`. Opções: `st_icms`, `monofasico`, `iss_retido`, `exportacao`, `ipi_mantido` (2027 em diante) |
+| `anexo` e `receita_mes` | Jeito antigo, com uma receita só (`anexo` de 1 a 5 ou `fator_r`) |
+| `rbt12`, `rbt12_exportacao`, `folha12` | Somas dos meses anteriores (com `inicio`, desde o início das atividades) |
+| `mes_AAAA-MM` | Mês a mês, no lugar das somas: `receita:exportação:folha` (ex.: `mes_2025-03=41666.66:0:5000`) |
+| `inicio` | Mês de início das atividades, para quem ainda não tem 12 meses (13 a partir de 2027) |
+| `receita_mes_anterior` | A partir de 2027: receita do mês anterior (fica fora da RBT12) |
+| `receita_ano`, `receita_ano_anterior` | Opcionais, para o sublimite e o limite (a API pede quando faz diferença) |
+| `ibs_cbs_fora=1` | A partir de 2027: IBS e CBS no regime regular, fora do DAS |
+| `aliquota_iss`, `aliquota_icms`, `creditos_icms`, `aliquota_ibs`, `creditos_ibs`, `aliquota_cbs`, `creditos_cbs` | Opcionais, para estimar o que fica fora do DAS |
+| `folha_empregados`, `pro_labore`, `rat` (1, 2 ou 3), `fap` (0.5 a 2) | Opcionais, para a CPP do Anexo IV |
+
+A resposta traz `das` e `das_centavos`, `aliquota_efetiva` (média ponderada quando há mais de
+uma receita), `rbt12`, `fator_r`, `tributos` (soma de todas as receitas), `atividades` (anexo,
+faixa, percentual, valor e tributos de cada receita), `fora_do_das` (tributo, valor ou o dado
+que `falta`, texto e fonte), `total_estimado`, `avisos`, os `passos` (com o `grupo` de cada um)
+e a `tabela` usada. Os campos de antes (`anexo`, `faixa`, `aliquota_nominal`, `aviso`)
+continuam, com os dados da primeira receita. Entrada inválida responde 400 com `erro`.
 
 ```
 GET /api/cnpj?cnpj=11.222.333/0001-81
@@ -147,7 +176,11 @@ art. 18 da LC 123/2006.
   e [2025 (Portaria CGSN nº 49/2024)](https://www8.receita.fazenda.gov.br/SIMPLESNACIONAL/noticias/NoticiaCompleta.aspx?id=24d7bd11-494d-4ed4-8e28-bb59a8d480e7),
   em `data/sublimite.yml`. Conferido em 27/10/2026.
 - [Lei Complementar nº 214/2025 (Planalto)](https://www.planalto.gov.br/ccivil_03/leis/lcp/lcp214.htm):
-  novos Anexos I a V a partir de 1º/1/2027 (art. 519; art. 544, III). Conferido em 27/10/2026.
+  Anexos I a V para 2027 e 2028 (Anexos XVIII a XXII, art. 519), em `data/anexos/2027-2028/`.
+  Conferido em 02/11/2026.
+- [Resolução CGSN nº 190/2026](https://normasinternet2.receita.fazenda.gov.br/#/consulta/externa/152832):
+  nova redação da Res. CGSN 140/2018 a partir de 2027 (RBT12, início de atividade, sublimite,
+  segregação, IBS e CBS fora do DAS). Conferido em 02/11/2026.
 - [Portal do Simples Nacional: opção pelo regime regular do IBS e da CBS para 2027](https://www8.receita.fazenda.gov.br/simplesnacional/noticias/NoticiaCompleta.aspx?id=c739e03c-8482-473f-8e82-f38ec3b13637).
 
 ## Rodar na sua máquina
@@ -163,7 +196,7 @@ cd web
 npm ci
 npm run dev                  # página em http://localhost:5173 (usa a API publicada)
 npm test                     # funções do formulário e das chamadas à API
-npm run build && npm run test:e2e   # navegador: acessibilidade, 320 px, API simulada
+npm run build && npm run test:e2e   # navegador: fluxos, acessibilidade, 320 px e imagens
 ```
 
 O fluxo de trabalho (cards, branches, PRs, merge automático) está no
@@ -182,7 +215,8 @@ O fluxo de trabalho (cards, branches, PRs, merge automático) está no
 
 ## Planos gratuitos
 
-- **GitHub Actions:** repositório público, minutos sem limite. Todo job tem tempo máximo.
+- **GitHub Actions:** repositório público, minutos sem limite. Todo job tem tempo máximo. As
+  imagens dos testes visuais só são geradas quando alguém pede (`visual-update.yml`).
 - **Vercel Hobby:** só a `main` publica (prévias desligadas) e só quando muda algo que vai
   para o ar (`scripts/vercel-ignorar-build.sh`), porque o espaço de deploys é um só para a
   conta toda.

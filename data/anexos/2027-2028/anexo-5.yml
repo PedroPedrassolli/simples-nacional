@@ -1,0 +1,43 @@
+# Anexo V da Lei Complementar nº 123/2006, para os anos-calendário 2027 e 2028.
+# Título na lei: Receitas decorrentes da prestação de serviços relacionados no § 5º-I do art. 18.
+#
+# Redação do Anexo XXII da LC 214/2025, que o art. 519 dela põe no lugar do Anexo V da
+# LC 123/2006 a partir de 1º/1/2027 (tabela "Para os anos-calendário 2027 e 2028").
+# Copiado do texto compilado no Planalto (link em "fonte"), sem os trechos riscados.
+# Em 2029 vem outra tabela (a calculadora ainda não aceita 2029).
+#
+# Mudanças em relação a 2026: a CBS entra no lugar da Cofins e do PIS/Pasep, entra o
+# IBS, e a alíquota nominal da 6ª faixa é um pouco menor. O formato é o mesmo dos arquivos
+# de 2026 (ver data/anexos/2026). Na 6ª faixa não há ICMS, ISS nem IBS: eles são
+# calculados com a 5ª faixa (Res. CGSN 140/2018, art. 21, IV, na redação da Res. CGSN 190/2026).
+anexo: 5
+nome: Serviços relacionados no § 5º-I do art. 18
+fonte: https://www.planalto.gov.br/ccivil_03/leis/lcp/lcp214.htm
+redacao: Lei Complementar nº 214/2025 (Anexo XXII)
+vigencia: "2027-01-01"
+conferido_em: "2026-11-02"
+faixas:
+  - ate: "180000.00"
+    aliquota: "15.50"
+    deduzir: "0.00"
+    reparticao: { IRPJ: "25.00", CSLL: "15.00", CBS: "16.96", CPP: "28.85", ISS: "14.00", IBS: "0.19" }
+  - ate: "360000.00"
+    aliquota: "18.00"
+    deduzir: "4500.00"
+    reparticao: { IRPJ: "23.00", CSLL: "15.00", CBS: "16.96", CPP: "27.85", ISS: "17.00", IBS: "0.19" }
+  - ate: "720000.00"
+    aliquota: "19.50"
+    deduzir: "9900.00"
+    reparticao: { IRPJ: "24.00", CSLL: "15.00", CBS: "17.95", CPP: "23.85", ISS: "19.00", IBS: "0.20" }
+  - ate: "1800000.00"
+    aliquota: "20.50"
+    deduzir: "17100.00"
+    reparticao: { IRPJ: "21.00", CSLL: "15.00", CBS: "18.94", CPP: "23.85", ISS: "21.00", IBS: "0.21" }
+  - ate: "3600000.00"
+    aliquota: "23.00"
+    deduzir: "62100.00"
+    reparticao: { IRPJ: "23.00", CSLL: "12.50", CBS: "16.96", CPP: "23.85", ISS: "23.50", IBS: "0.19" }
+  - ate: "4800000.00"
+    aliquota: "30.40"
+    deduzir: "540000.00"
+    reparticao: { IRPJ: "35.10", CSLL: "15.54", CBS: "19.78", CPP: "29.58" }

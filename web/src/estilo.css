@@ -1041,7 +1041,7 @@ select {
   text-align: left;
 }
 
-.tributos {
+.tabela {
   width: 100%;
   margin: 0 0 0.5rem;
   border-collapse: collapse;
@@ -1050,14 +1050,14 @@ select {
   font-variant-numeric: tabular-nums;
 }
 
-.tributos caption {
+.tabela caption {
   margin-bottom: 0.5rem;
   font-weight: 600;
   text-align: left;
 }
 
-.tributos th,
-.tributos td {
+.tabela th,
+.tabela td {
   padding: 0.5rem 0.375rem;
   border-bottom: 1px solid var(--color-border);
   text-align: right;
@@ -1065,40 +1065,40 @@ select {
 }
 
 /* Valores em reais não quebram entre o "R$" e o número. */
-.tributos td {
+.tabela td {
   white-space: nowrap;
 }
 
-.tributos th:first-child {
+.tabela th:first-child {
   padding-left: 0;
   text-align: left;
 }
 
-.tributos td:last-child {
+.tabela td:last-child {
   padding-right: 0;
 }
 
 @media (min-width: 30rem) {
-  .tributos th:first-child {
+  .tabela th:first-child {
     width: 40%;
   }
 }
 
 @media (max-width: 30rem) {
-  .tributos {
+  .tabela {
     font-size: 0.875rem;
   }
 }
 
-.tributos thead th {
+.tabela thead th {
   color: var(--color-muted);
   font-family: var(--font-mono);
   font-size: 0.75rem;
   font-weight: 400;
 }
 
-.tributos tfoot th,
-.tributos tfoot td {
+.tabela tfoot th,
+.tabela tfoot td {
   border-top: 1px solid var(--color-border-strong);
   border-bottom: 0;
   font-weight: 700;
@@ -1186,6 +1186,12 @@ select {
   padding-top: 0.375rem;
 }
 
+.passo-cabeca h4 {
+  margin: 0;
+  font-size: 1rem;
+  line-height: 1.3;
+}
+
 .passo-cabeca .fonte {
   margin-top: 0.25rem;
 }
@@ -1217,8 +1223,19 @@ select {
 }
 
 .secao-passos .revelar-corpo {
-  gap: 1.5rem;
+  gap: 2rem;
   padding-top: 1.75rem;
+}
+
+/* Cada parte da conta (meses anteriores, cada receita, sublimite, fora do DAS, total). */
+.grupo-de-passos h3 {
+  margin: 0 0 1rem;
+  color: var(--color-accent);
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 
 /* Consulta de CNPJ (opcional) */
@@ -1262,9 +1279,17 @@ select {
   border-radius: var(--radius);
 }
 
+.aviso h3 {
+  margin: 0 0 0.75rem;
+}
+
 .aviso ul {
   margin: 0;
   padding-left: 1.25rem;
+}
+
+.aviso ul + h3 {
+  margin-top: 1.5rem;
 }
 
 .aviso li {
@@ -1280,6 +1305,500 @@ select {
   .aviso ul {
     columns: 2;
     column-gap: 3rem;
+  }
+}
+
+/* Apoio: texto só para o leitor de tela (o rótulo de cada mês na tabela, "a receita 2" no
+   botão Remover). */
+.so-leitor {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.subtitulo {
+  margin: 0.25rem 0 -0.25rem;
+  font-size: 0.9375rem;
+  font-weight: 600;
+}
+
+.etapa-dica {
+  margin: -0.5rem 0 0;
+}
+
+/* Campos lado a lado quando cabem (alíquotas, créditos, RAT e FAP). */
+.grade {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 13rem), 1fr));
+  gap: 1rem;
+}
+
+.botao.pequeno {
+  padding: 0.5rem 0.875rem;
+  font-size: 0.875rem;
+}
+
+/* Botão com cara de link (Remover), para não competir com o Calcular. */
+.botao-texto {
+  padding: 0.25rem 0;
+  background: none;
+  border: 0;
+  color: var(--color-accent);
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+  cursor: pointer;
+}
+
+.botao-texto:hover {
+  color: var(--color-text);
+}
+
+/* Caixas de marcar (situações especiais, IBS e CBS fora do DAS): a caixa à esquerda, o
+   texto e a dica à direita. O input global tem largura 100%: aqui volta ao tamanho normal. */
+.caixa {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  column-gap: 0.625rem;
+  align-items: start;
+}
+
+.caixa input {
+  width: 1.125rem;
+  height: 1.125rem;
+  margin: 0.25rem 0 0;
+  padding: 0;
+  accent-color: var(--color-accent-strong);
+  cursor: pointer;
+}
+
+.caixa label {
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.caixa .dica {
+  grid-column: 2;
+  margin: 0.125rem 0 0;
+}
+
+/* Receitas do mês: uma linha (cartão) por atividade. Com uma só, sem cartão. */
+.receitas {
+  display: grid;
+  gap: 1rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.receita {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1rem;
+  padding: 1rem;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+}
+
+.receita:only-child {
+  padding: 0;
+  background: none;
+  border: 0;
+}
+
+.receita-cabeca {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.receita-numero {
+  color: var(--color-muted);
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.receitas-rodape {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem 1.5rem;
+}
+
+.receitas-total {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Situações especiais: menor e com borda tracejada, para ler como detalhe da receita. */
+.mini {
+  --respiro: 0.75rem;
+  border: 1px dashed var(--color-border-strong);
+  border-radius: var(--radius-sm);
+}
+
+.mini .revelar-titulo {
+  font-size: 0.9375rem;
+}
+
+/* "Somas dos 12 meses" ou "Mês a mês": botões de rádio com cara de chave de dois lados. O
+   rádio fica por cima do texto, invisível, e continua recebendo o clique e o teclado. */
+.alternar {
+  display: inline-flex;
+  flex-wrap: wrap;
+  justify-self: start;
+  gap: 0.25rem;
+  padding: 0.25rem;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-strong);
+  border-radius: 999px;
+}
+
+.alternar label {
+  position: relative;
+  padding: 0.375rem 0.875rem;
+  border-radius: 999px;
+  color: var(--color-muted);
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.alternar input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.alternar .escolhido {
+  background: var(--button-primary-bg);
+  color: var(--button-primary-text);
+}
+
+.alternar label:has(input:focus-visible) {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+/* Mês a mês: o mês numa coluna estreita e um campo por coluna (receita, exportação, folha).
+   As classes colunas-N dizem quantas colunas (a CSP não deixa usar style inline). */
+.meses {
+  --colunas: 1;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.colunas-2 {
+  --colunas: 2;
+}
+
+.colunas-3 {
+  --colunas: 3;
+}
+
+.meses-cabeca,
+.mes {
+  display: grid;
+  grid-template-columns: 5.5rem repeat(var(--colunas), minmax(0, 1fr));
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.meses-cabeca {
+  color: var(--color-muted);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+}
+
+.mes-nome {
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.mes-marca {
+  display: block;
+  color: var(--color-subtle);
+  font-size: 0.6875rem;
+  line-height: 1.3;
+}
+
+.mes .reais {
+  margin-top: 0;
+}
+
+.mes .reais span {
+  padding-left: 0.5rem;
+  font-size: 0.75rem;
+}
+
+.mes .reais input {
+  padding: 0.5rem 0.5rem 0.5rem 0.375rem;
+}
+
+/* No celular, com mais de uma coluna, o mês vai para uma linha só dele. */
+@media (max-width: 30rem) {
+  .colunas-2 .mes,
+  .colunas-3 .mes,
+  .colunas-2 .meses-cabeca,
+  .colunas-3 .meses-cabeca {
+    grid-template-columns: repeat(var(--colunas), minmax(0, 1fr));
+  }
+
+  .colunas-2 .mes-nome,
+  .colunas-3 .mes-nome {
+    grid-column: 1 / -1;
+  }
+
+  .colunas-2 .meses-cabeca span:first-child,
+  .colunas-3 .meses-cabeca span:first-child {
+    display: none;
+  }
+
+  /* O cabeçalho já diz que são valores: sem o "R$", o número cabe na coluna estreita. */
+  .colunas-2 .reais span,
+  .colunas-3 .reais span {
+    display: none;
+  }
+
+  .colunas-2 .reais input,
+  .colunas-3 .reais input {
+    padding: 0.5rem;
+  }
+}
+
+.meses-somas {
+  display: grid;
+  gap: 0.25rem;
+  margin: 0.5rem 0 0;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--color-border);
+}
+
+.meses-somas div {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.meses-somas dt {
+  color: var(--color-muted);
+}
+
+.meses-somas dd {
+  margin: 0;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* Resultado: as receitas (com o detalhe embaixo do nome) e o que fica fora do DAS. */
+.detalhe {
+  display: block;
+  color: var(--color-muted);
+  font-size: 0.8125rem;
+  font-weight: 400;
+}
+
+.receitas-resultado {
+  margin-bottom: 1.25rem;
+}
+
+.fora {
+  margin-top: 1.5rem;
+  padding-top: 1.25rem;
+  border-top: 1px dashed var(--color-border-strong);
+}
+
+.fora h3 {
+  margin-bottom: 0.75rem;
+}
+
+.fora-lista {
+  display: grid;
+  gap: 0.875rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.fora-lista li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.125rem 1rem;
+}
+
+.fora-nome,
+.fora-valor {
+  font-weight: 600;
+}
+
+.fora-valor {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.fora-texto {
+  grid-column: 1 / -1;
+  color: var(--color-muted);
+  font-size: 0.875rem;
+  overflow-wrap: anywhere;
+}
+
+.fora-total {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.25rem 1rem;
+  margin: 1rem 0 0;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--color-border-strong);
+  font-weight: 600;
+}
+
+.fora-total strong {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.acoes-resultado {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+}
+
+/* A memória de cálculo só existe na impressão (e no PDF que o navegador salva). */
+.memoria {
+  display: none;
+}
+
+@media print {
+  @page {
+    margin: 1.5cm;
+  }
+
+  :root,
+  :root[data-theme="dark"],
+  :root[data-theme="light"] {
+    --color-bg: #fff;
+    --color-bg-elevated: #fff;
+    --color-surface: transparent;
+    --color-text: #000;
+    --color-muted: #333;
+    --color-subtle: #444;
+    --color-border: #bbb;
+    --color-border-strong: #777;
+    --color-accent: #000;
+    color-scheme: light;
+  }
+
+  body {
+    font-size: 10.5pt;
+    line-height: 1.45;
+  }
+
+  body::before,
+  .pular,
+  .cabecalho,
+  .hero,
+  .secao-cabeca,
+  .formulario,
+  .lateral,
+  .secao-passos,
+  .consulta,
+  #antes-de-usar,
+  .rodape {
+    display: none !important;
+  }
+
+  .secao {
+    padding: 0;
+  }
+
+  .layout {
+    display: block;
+  }
+
+  .memoria {
+    display: block;
+  }
+
+  .memoria h2 {
+    margin: 0 0 0.25rem;
+    font-size: 15pt;
+  }
+
+  .memoria h3 {
+    margin: 1.25rem 0 0.5rem;
+    padding-bottom: 0.25rem;
+    border-bottom: 1px solid var(--color-border-strong);
+    font-size: 12pt;
+  }
+
+  .memoria h4 {
+    margin: 0.75rem 0 0.25rem;
+    font-size: 10.5pt;
+  }
+
+  .memoria-dados {
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    gap: 0.125rem 1rem;
+    margin: 0 0 0.75rem;
+  }
+
+  .memoria-dados div {
+    display: contents;
+  }
+
+  .memoria-dados dt {
+    color: var(--color-muted);
+  }
+
+  .memoria-dados dd {
+    margin: 0;
+    font-weight: 600;
+  }
+
+  .memoria .tabela {
+    margin-bottom: 0.75rem;
+  }
+
+  .memoria .barra {
+    display: none;
+  }
+
+  .memoria li,
+  .memoria tr {
+    break-inside: avoid;
+  }
+
+  .memoria ol {
+    margin: 0;
+    padding-left: 1.25rem;
+  }
+
+  .memoria a {
+    color: #000;
   }
 }
 

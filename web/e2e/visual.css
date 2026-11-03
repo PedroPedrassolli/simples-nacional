@@ -1,0 +1,9 @@
+/* Só nos testes visuais. O cabeçalho e o fundo (grade e brilho) são fixos na tela: numa imagem
+   de um pedaço da página, eles apareceriam no meio, em lugares que mudam com a rolagem. */
+.cabecalho {
+  visibility: hidden !important;
+}
+
+body::before {
+  display: none !important;
+}
