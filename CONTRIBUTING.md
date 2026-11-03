@@ -128,6 +128,10 @@ opcionais na hora certa; um teste confere que ele bate com o YAML.
   `font-display: optional` e preload no `index.html`. Com o `swap` do pacote, a troca de fonte
   depois da primeira pintura empurrava a calculadora (CLS 0,103 no Lighthouse da CI, que só
   aparecia lá: o resumo do Lighthouse lista o que se deslocou e por quê).
+- Cache dos arquivos estáticos (`vercel.json`): `/assets/` (nomes com hash, gerados pelo Vite) e
+  `/fontes/` ficam um ano no navegador (`immutable`), então quem volta ao site não baixa nem
+  revalida nada. O nome das fontes não tem hash: trocou uma fonte? Mude o nome do arquivo (e o
+  preload do `index.html`), senão quem já visitou continua com a antiga.
 - A CSP da página não permite `style` inline. Largura que depende de dado (as barras da
   divisão do DAS) vai como atributo de SVG, não como `style={{ width }}`.
 - Os tipos de receita e as situações especiais do formulário (`web/src/atividades.js`) resumem

@@ -102,6 +102,12 @@ describe "api/calcular.rb" do
       query["mes_2026-02"] = "abc"
       assert_match(/No mês a mês, informe 2026-02 como número/, subject["erro"])
     end
+
+    it "recusa mês com bytes inválidos sem quebrar (ex.: %FF%FE na URL)" do
+      query["mes_2026-02"] = "\xFF\xFE"
+      assert_match(/No mês a mês, informe 2026-02 como número/, subject["erro"])
+      assert_equal 400, response.status
+    end
   end
 
   describe "com o que fica fora do DAS" do
