@@ -16,13 +16,18 @@ module SimplesNacional
     def self.romano(numero) = ROMANOS.fetch(numero)
 
     def self.montar(resultado)
-      dados = resultado.dados
-      anteriores = [*inicio(dados), *historico(dados), *fator_r(resultado.fator, dados)]
-      grupos = [["Receitas dos meses anteriores", anteriores],
+      grupos = [["Receitas dos meses anteriores", anteriores(resultado)],
                 *resultado.atividades.map { |apurada| PassosDaAtividade.grupo(apurada, resultado) },
                 ["Sublimite e limite", PassoDoSublimite.montar(resultado)],
-                ["Fora do DAS", fora_do_das(resultado.fora_do_das)], ["Total do mês", [das(resultado)]]]
+                ["Fora do DAS", PassosDoFim.fora_do_das(resultado.fora_do_das)],
+                ["Total do mês", [PassosDoFim.das(resultado)]],
+                ["Pagamento em atraso", [PassosDoAtraso.passo(resultado.atraso)].compact]]
       grupos.flat_map { |grupo, passos| passos.map { |passo| passo.with(grupo:) } }
+    end
+
+    def self.anteriores(resultado)
+      dados = resultado.dados
+      [*inicio(dados), *historico(dados), *fator_r(resultado.fator, dados)]
     end
 
     # Empresa em início de atividade: como a RBT12 (e a folha, no Fator R) foi anualizada.
@@ -112,23 +117,7 @@ module SimplesNacional
       "Como é menor que 28%, a atividade vai para o Anexo V"
     end
 
-    def self.fora_do_das(estimativas)
-      estimativas.map do |estimativa|
-        Passo.new(titulo: "#{estimativa.tributo} fora do DAS", fonte: estimativa.fonte,
-                  texto: [estimativa.texto, estimativa.falta].compact.join(" "))
-      end
-    end
-
-    # O passo final: o DAS do mês.
-    def self.das(resultado)
-      return PassosDaAtividade.das_de_uma(resultado) if resultado.atividades.size == 1
-
-      valores = resultado.atividades.map { |apurada| Formato.reais(apurada.valor) }
-      Passo.new(titulo: "DAS estimado", fonte: "LC 123/2006, art. 18, § 3º",
-                texto: "Soma das receitas: #{valores.join(' + ')} = #{Formato.reais(resultado.das)}.")
-    end
-
     private_class_method :inicio, :texto_do_inicio, :contas_do_inicio, :conta_anualizada, :fonte_do_inicio,
-                         :historico, :fator_r, :texto_do_fator_r, :regra_do_fator_r, :fora_do_das, :das
+                         :historico, :fator_r, :texto_do_fator_r, :regra_do_fator_r, :anteriores
   end
 end

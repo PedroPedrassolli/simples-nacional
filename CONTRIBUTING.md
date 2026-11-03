@@ -47,7 +47,8 @@ exec rake test`, depois `cd web && npx prettier --write e2e/fixtures`, e confira
 ## Testes visuais
 
 `web/e2e/visual.spec.js` compara a página com as imagens de `web/e2e/visual.spec.js-snapshots/`
-(início nos dois temas, resultado com duas receitas, mês a mês e fora do DAS no celular e a
+(início nos dois temas, resultado com duas receitas, mês a mês e fora do DAS no celular, os
+campos de fora do DAS abertos no celular e no computador, o MEI, as situações com atraso e a
 memória de cálculo impressa). As imagens dependem do sistema e do navegador, por isso são
 geradas na CI, nunca na sua máquina:
 
@@ -61,11 +62,14 @@ geradas na CI, nunca na sua máquina:
 | Arquivo em `lib/simples_nacional/` | O que faz |
 | --- | --- |
 | `regras.rb` | O que muda de 2026 para 2027 e 2028 (e de onde vêm as tabelas de cada ano) |
-| `entrada.rb`, `atividades.rb`, `historico.rb` | Confere o que chegou: receitas do mês, somas ou mês a mês |
+| `entrada.rb`, `atividades.rb`, `atividades_informadas.rb`, `historico.rb` | Confere o que chegou: receitas do mês (com isenção e redução), somas ou mês a mês |
 | `inicio_de_atividade.rb`, `acumulados.rb`, `fator_r.rb` | RBT12 e folha anualizadas, e o Fator R |
-| `sublimite.rb`, `limite.rb` | Receita do ano, sublimite, limite e exclusão |
+| `sublimite.rb`, `limite.rb`, `limite_da_exportacao.rb` | Receita do ano, sublimite, limite (e o limite extra da exportação) e exclusão |
+| `valores_fixos.rb` | ICMS e ISS em valor fixo (e os avisos do art. 33 da Res. CGSN 140/2018) |
+| `atraso.rb` | Vencimento, multa e juros do DAS pago em atraso (Selic em `data/selic.yml`) |
+| `mei.rb`, `passos_do_mei.rb` | O DAS do MEI e o limite do ano (valores em `data/mei.yml`) |
 | `apuracao_da_atividade.rb`, `reparticao.rb` | Faixa, alíquota efetiva e divisão de cada receita |
-| `fora_do_das.rb`, `fora_do_das_estimativas.rb` | ISS, ICMS, IBS, CBS e CPP pagos à parte |
+| `fora_do_das.rb`, `fora_do_das_estimativas.rb`, `fora_do_das_do_icms.rb` | ISS, ICMS, ICMS-ST, DIFAL, IBS, CBS e CPP pagos à parte |
 | `calculo.rb` | Junta tudo e soma o DAS |
 | `passos*.rb`, `passo_*.rb`, `avisos.rb` | Os textos da conta passo a passo e os avisos |
 
@@ -87,6 +91,15 @@ link. Se algum estado adotar R$ 1.800.000,00, o arquivo é recusado de propósit
 A partir de 2027 o valor está na própria Res. CGSN 140/2018 (art. 9º, redação da Res. CGSN
 190/2026), sem portaria anual. A página usa o mesmo valor (`SUBLIMITE` em `web/src/periodos.js`) só para abrir os campos
 opcionais na hora certa; um teste confere que ele bate com o YAML.
+
+## Selic e salário mínimo
+
+- **Selic (juros do atraso):** o workflow `selic.yml` roda no dia 3 de cada mês (ou à mão, em
+  Actions → Selic → Run workflow), baixa a série 4390 do Banco Central, regrava o
+  `data/selic.yml`, roda os testes e faz o commit na `main` só se entrou um mês novo. O commit
+  publica a API (o `data/` vai para o ar). Se o mês ainda não saiu, a API calcula sem ele e avisa.
+- **Salário mínimo (MEI):** sai num decreto em dezembro. Acrescente o ano em `data/mei.yml`
+  (valor, ato e link do Planalto). Enquanto o ano não estiver lá, a página pede o valor.
 
 ## Cuidados
 
@@ -125,7 +138,12 @@ opcionais na hora certa; um teste confere que ele bate com o YAML.
   Mudou essa conta ou os parâmetros obrigatórios de propósito? Mude o `uptime.yml` no mesmo PR.
   Atraso de algumas horas nos agendados do GitHub é normal.
 - A calculadora aceita meses de 2026 a 2028 (`Regras::ANOS`). Para 2029 entram outras tabelas
-  da LC 214/2025: não basta acrescentar o ano.
+  da LC 214/2025: não basta acrescentar o ano. O mês e o ano ficam em duas listas na página
+  (`ANOS` em `web/src/periodos.js`).
+- Os campos de fora do DAS ficam numa grade com `subgrid` (`.grade` no `estilo.css`): o rótulo,
+  a caixa e o erro de um campo ficam alinhados com os do vizinho. Cada tributo é um `fieldset`
+  com legenda, então o campo pode ter um nome curto ("MVA", "Alíquota própria"). Um teste de
+  320 px confere o alinhamento e que o "%" fica dentro da caixa.
 - O script `.github/scripts/jira-transition.sh` nunca deixa um job vermelho: se o card não
   existe, o Jira não responde ou os secrets faltam, ele só avisa.
 - O `rodape-pr.yml` tira sozinho do corpo de PRs e comentários o rodapé que ferramentas

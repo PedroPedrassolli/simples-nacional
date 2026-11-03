@@ -110,6 +110,71 @@ describe SimplesNacional::ForaDoDas do
     end
   end
 
+  # Valores fictícios: R$ 100,00 com MVA de 40%, ICMS interno de 18% no destino e 12% na
+  # operação própria. Contas à parte: 140,00 × 18% − 12,00 = 13,20; com R$ 10,00 de IPI,
+  # 154,00 × 18% − 12,00 = 15,72.
+  describe "com ICMS por substituição tributária como substituta" do
+    let(:st) do
+      { st_valor: 10_000, st_mva: Rational(40, 100), st_aliquota_interna: Rational(18, 100),
+        st_aliquota_propria: Rational(12, 100) }
+    end
+    let(:fora) { st }
+
+    it "estima pela base com a MVA menos o ICMS próprio" do
+      assert_equal [14_000, 1_320], estimativa("ICMS-ST").to_h.values_at(:base, :valor)
+      assert_match(/R\$ 140,00 × 18,00% − R\$ 12,00 \(12,00% da operação própria\) = R\$ 13,20/,
+                   estimativa("ICMS-ST").texto)
+    end
+
+    describe "com IPI e encargos" do
+      let(:fora) { st.merge(st_ipi: 1_000) }
+
+      it("soma o IPI à base") { assert_equal 1_572, estimativa("ICMS-ST").valor }
+    end
+
+    describe "com a alíquota própria maior que a interna" do
+      let(:fora) { st.merge(st_mva: Rational(1, 100), st_aliquota_interna: Rational(7, 100)) }
+
+      it("não fica negativo") { assert_equal 0, estimativa("ICMS-ST").valor }
+    end
+
+    describe "sem a MVA" do
+      let(:fora) { st.except(:st_mva) }
+
+      it "diz o que falta" do
+        assert_equal ["Informe a MVA para estimar.", nil], estimativa("ICMS-ST").to_h.values_at(:falta, :valor)
+      end
+    end
+  end
+
+  # R$ 100,00 de compras de outro estado, 17,5% interna e 12% interestadual: 100,00 × 5,5% = 5,50.
+  describe "com diferencial de alíquota" do
+    let(:difal) do
+      { difal_valor: 10_000, difal_aliquota_interna: Rational(175, 1000),
+        difal_aliquota_interestadual: Rational(12, 100) }
+    end
+    let(:fora) { difal }
+
+    it "estima pela diferença das alíquotas" do
+      assert_equal 550, estimativa("DIFAL").valor
+      assert_match(/R\$ 100,00 × \(17,50% − 12,00%\) = R\$ 5,50/, estimativa("DIFAL").texto)
+    end
+
+    describe "com a interestadual maior que a interna" do
+      let(:fora) { difal.merge(difal_aliquota_interestadual: Rational(18, 100)) }
+
+      it("não fica negativo") { assert_equal 0, estimativa("DIFAL").valor }
+    end
+
+    describe "sem a alíquota interestadual" do
+      let(:fora) { difal.except(:difal_aliquota_interestadual) }
+
+      it "diz o que falta" do
+        assert_equal "Informe a alíquota interestadual do ICMS para estimar.", estimativa("DIFAL").falta
+      end
+    end
+  end
+
   describe "com valores inválidos" do
     {
       { aliquota_iss: Rational(6, 100) } => /A alíquota do ISS precisa ser maior que zero e no máximo 5,00%/,
@@ -117,6 +182,8 @@ describe SimplesNacional::ForaDoDas do
       { creditos_icms: -1 } => /A soma dos créditos de ICMS não pode ser negativa/,
       { rat: 4 } => /O RAT precisa ser 1, 2 ou 3/,
       { fap: Rational(3) } => /O FAP precisa estar entre 0,5 e 2,0/,
+      { st_mva: 6 } => /A MVA precisa ser maior que zero e no máximo 500,00%/,
+      { difal_valor: -1 } => /A soma das compras de outros estados não pode ser negativa/,
       { aliquota_pis: 1 } => /Campo desconhecido fora do DAS: aliquota_pis/
     }.each do |valores, mensagem|
       describe valores.keys.first.to_s do

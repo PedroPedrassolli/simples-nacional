@@ -18,9 +18,10 @@ module SimplesNacional
                                            end), texto_cpp(apurada.tabela)]
     end
 
-    # O ISS antes do teto de 5%, quando passa dele e está no DAS; senão nil.
+    # O ISS antes do teto de 5%, quando passa dele e está no DAS; senão nil. (O ISS que vem do
+    # Anexo III na atividade com IPI e ISS é explicado no passo dos ajustes.)
     def self.iss_acima_do_teto(apurada, rbt12)
-      return unless apurada.reparticao.key?("ISS")
+      return unless apurada.reparticao.key?("ISS") && Reparticao.locais_do(apurada.tabela).include?("ISS")
 
       iss = Reparticao.locais(apurada.tabela, apurada.faixa, rbt12, apurada.efetiva)["ISS"]
       iss if iss > Reparticao::TETO_ISS

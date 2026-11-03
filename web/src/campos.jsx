@@ -1,5 +1,5 @@
 import { useId } from "react";
-import { formatarReais } from "./valores.js";
+import { formatarReais, NOMES_DOS_MESES } from "./valores.js";
 
 // Peças do formulário. Cada campo liga a dica e a mensagem de erro ao próprio campo
 // (aria-describedby), para o leitor de tela ler as duas junto com o rótulo.
@@ -150,8 +150,95 @@ export function CampoLista({ nome, rotulo, dica, vazio, opcoes, grupos, valor, e
   );
 }
 
-// Caixa de marcar, com a explicação embaixo.
-export function Caixa({ nome, rotulo, dica, marcada, aoMudar }) {
+// O mês de apuração em duas listas lado a lado (mês e ano), para escolher sem rolar uma lista
+// de 36 meses. Os dois rótulos ficam só para o leitor de tela ("Mês de apuração", "Ano de
+// apuração"); na tela, a legenda do grupo já diz o que é.
+export function CampoMesEAno({ mes, ano, anos, dica, erro, aoMudar }) {
+  const id = useId();
+  const lista = (nome, rotulo, valor, opcoes) => (
+    <div className="campo">
+      <label htmlFor={`${id}-${nome}`} className="so-leitor">
+        {rotulo} de apuração
+      </label>
+      <select
+        id={`${id}-${nome}`}
+        name={`${nome}_apuracao`}
+        value={valor}
+        onChange={(evento) => aoMudar({ [`${nome}_apuracao`]: evento.target.value })}
+        aria-invalid={erro && !valor ? "true" : undefined}
+        aria-describedby={descricao(id, dica, erro)}
+      >
+        <option value="" disabled>
+          {rotulo}
+        </option>
+        {opcoes}
+      </select>
+    </div>
+  );
+  return (
+    <fieldset className="mes-e-ano">
+      <legend>Mês de apuração</legend>
+      {dica && (
+        <p id={`${id}-dica`} className="dica">
+          {dica}
+        </p>
+      )}
+      <div className="mes-e-ano-campos">
+        {lista(
+          "mes",
+          "Mês",
+          mes,
+          NOMES_DOS_MESES.map((nome, indice) => (
+            <option key={nome} value={String(indice + 1).padStart(2, "0")}>
+              {nome}
+            </option>
+          )),
+        )}
+        {lista(
+          "ano",
+          "Ano",
+          ano,
+          anos.map((item) => (
+            <option key={item} value={String(item)}>
+              {item}
+            </option>
+          )),
+        )}
+      </div>
+      <Ajuda id={id} erro={erro} />
+    </fieldset>
+  );
+}
+
+// Data (o campo de data do navegador entrega "AAAA-MM-DD", o formato da API).
+export function CampoData({ nome, rotulo, dica, valor, erro, aoMudar }) {
+  const id = useId();
+  return (
+    <div className="campo">
+      <label htmlFor={id}>{rotulo}</label>
+      {dica && (
+        <p id={`${id}-dica`} className="dica">
+          {dica}
+        </p>
+      )}
+      <input
+        id={id}
+        name={nome}
+        type="date"
+        className="data"
+        value={valor}
+        onChange={(evento) => aoMudar(evento.target.value)}
+        aria-invalid={erro ? "true" : undefined}
+        aria-describedby={descricao(id, dica, erro)}
+      />
+      <Ajuda id={id} erro={erro} />
+    </div>
+  );
+}
+
+// Caixa de marcar, com a explicação embaixo. children: o que aparece embaixo quando faz
+// sentido (o percentual da redução, por exemplo).
+export function Caixa({ nome, rotulo, dica, marcada, aoMudar, children }) {
   const id = useId();
   return (
     <div className="caixa">
@@ -169,6 +256,34 @@ export function Caixa({ nome, rotulo, dica, marcada, aoMudar }) {
           {dica}
         </p>
       )}
+      {children && <div className="caixa-extra">{children}</div>}
+    </div>
+  );
+}
+
+// Duas (ou mais) escolhas com cara de chave: botões de rádio, um ao lado do outro. titulo:
+// o texto que aparece em cima (e que o leitor de tela lê como nome do grupo).
+export function Alternar({ nome, titulo, opcoes, valor, aoMudar }) {
+  const id = useId();
+  return (
+    <div className="campo">
+      <p id={`${id}-titulo`} className="rotulo">
+        {titulo}
+      </p>
+      <div className="alternar" role="radiogroup" aria-labelledby={`${id}-titulo`}>
+        {opcoes.map(([codigo, texto]) => (
+          <label key={codigo} className={valor === codigo ? "escolhido" : undefined}>
+            <input
+              type="radio"
+              name={nome}
+              value={codigo}
+              checked={valor === codigo}
+              onChange={() => aoMudar(codigo)}
+            />
+            {texto}
+          </label>
+        ))}
+      </div>
     </div>
   );
 }

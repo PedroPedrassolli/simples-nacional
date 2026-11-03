@@ -27,9 +27,10 @@ export default function App() {
           <h1 id="titulo">Calculadora do Simples Nacional</h1>
           <p className="hero-subtitulo">Estimativa educativa do DAS</p>
           <p className="hero-texto">
-            Informe as receitas do mês como no PGDAS-D, uma por atividade, e veja o DAS de cada uma,
-            quanto vai para cada tributo, o que é pago fora do DAS e a conta explicada passo a
-            passo, com a memória de cálculo para imprimir.
+            Informe as receitas do mês como no <span className="sem-quebra">PGDAS-D</span>, uma por
+            atividade, e veja o DAS de cada uma, quanto vai para cada tributo, o que é pago fora do
+            DAS, a multa e os juros do atraso e a conta explicada passo a passo. Também calcula o
+            DAS do MEI.
           </p>
           <div className="hero-acoes">
             <a className="botao primario" href="#calculadora">
@@ -143,8 +144,8 @@ function Secao({ id, titulo, descricao, children }) {
 }
 
 // O que a calculadora faz e o que ela não faz. Ela faz a mesma apuração do PGDAS-D para os
-// casos mais comuns, mas quem gera a guia é o PGDAS-D, e os casos da lista de baixo pedem um
-// contador.
+// casos mais comuns, mas quem gera a guia é o PGDAS-D (ou o PGMEI), e os casos da lista de
+// baixo pedem um contador.
 function Aviso() {
   return (
     <div className="aviso">
@@ -156,33 +157,44 @@ function Aviso() {
         </li>
         <li>
           Separa as receitas por atividade (até 10), com substituição tributária, monofásico, ISS
-          retido, exportação e locação de bens móveis.
+          retido, exportação, locação de bens móveis, receita com IPI e ISS ao mesmo tempo e isenção
+          ou redução de ICMS e ISS dada pelo estado ou pelo município.
         </li>
         <li>
-          Aceita os meses anteriores somados ou mês a mês, início de atividade, Fator R, sublimite e
-          receita acima de R$&nbsp;4.800.000,00 (até a exclusão).
+          Aceita os meses anteriores somados ou mês a mês, início de atividade, Fator R, ICMS e ISS
+          em valor fixo, sublimite, receita acima de R$&nbsp;4.800.000,00 (até a exclusão) e o
+          limite extra das receitas de exportação.
         </li>
         <li>
-          Estima o que é pago fora do DAS (ISS, ICMS, IBS, CBS e a CPP do Anexo IV) com as alíquotas
-          que você informar, e gera a memória de cálculo para imprimir ou salvar em PDF.
+          Estima o que é pago fora do DAS (ISS, ICMS, ICMS por substituição tributária, diferencial
+          de alíquota, IBS, CBS e a CPP do Anexo IV) com as alíquotas que você informar.
         </li>
+        <li>
+          Calcula a multa e os juros do DAS pago em atraso, com a Selic de cada mês, e o DAS do MEI,
+          com o limite do ano.
+        </li>
+        <li>Gera a memória de cálculo para imprimir ou salvar em PDF.</li>
       </ul>
       <h3>O que ela não faz</h3>
       <ul>
         <li>
-          É uma <strong>estimativa educativa</strong>: a guia oficial sai do PGDAS-D, e a
-          responsabilidade pelos dados continua sendo da empresa e do contador.
+          É uma <strong>estimativa educativa</strong>: a guia oficial sai do{" "}
+          <span className="sem-quebra">PGDAS-D</span> (ou do PGMEI), e a responsabilidade pelos
+          dados continua sendo da empresa e do contador.
         </li>
         <li>
-          Não cobre ISS em valor fixo, isenção ou redução de ICMS e ISS dada pelo estado ou
-          município, receita com IPI e ISS ao mesmo tempo, nem o limite extra das receitas de
-          exportação.
+          Não transmite a declaração, não gera a guia e não calcula a multa por atraso na entrega da
+          declaração.
         </li>
         <li>
-          Não calcula multa e juros de atraso, substituição tributária ou diferencial de alíquota do
-          ICMS, nem o MEI (que tem regras próprias).
+          As estimativas de fora do DAS usam as alíquotas e a MVA que você informar: a regra de cada
+          estado e município (MVA ajustada, fundos de combate à pobreza, benefícios) fica com o
+          contador.
         </li>
-        <li>Não calcula meses de 2029 em diante: as tabelas mudam de novo (LC 214/2025).</li>
+        <li>
+          No MEI que passou do limite em mais de 20%, mostra o que acontece, mas a apuração do ano
+          como ME é feita na calculadora do Simples, mês a mês.
+        </li>
       </ul>
     </div>
   );

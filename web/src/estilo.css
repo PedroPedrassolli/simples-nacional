@@ -728,7 +728,7 @@ h1 {
   border: 0;
 }
 
-.etapa legend {
+.etapa > legend {
   width: 100%;
   margin-bottom: 1.125rem;
   padding: 0 0 0.625rem;
@@ -738,9 +738,43 @@ h1 {
   letter-spacing: -0.01em;
 }
 
-.campo label {
+.campo label,
+.campo .rotulo,
+.mes-e-ano legend {
   display: block;
+  margin: 0;
   font-weight: 600;
+}
+
+/* Mês e ano de apuração: duas listas lado a lado, o mês mais largo. */
+.mes-e-ano {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.mes-e-ano legend {
+  padding: 0;
+}
+
+.mes-e-ano-campos {
+  display: grid;
+  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  gap: 0.75rem;
+  max-width: 26rem;
+}
+
+/* Data do pagamento: o mesmo tamanho dos outros campos (o calendário segue o tema). */
+input.data {
+  margin-top: 0.25rem;
+  max-width: 16rem;
+  min-height: 2.875rem;
+}
+
+/* Nomes que não podem quebrar no hífen, como "PGDAS-D". */
+.sem-quebra {
+  white-space: nowrap;
 }
 
 .dica {
@@ -807,6 +841,16 @@ select {
   padding-left: 0.5rem;
   background: transparent;
   border: 0;
+}
+
+/* No percentual o "%" vem depois do número: o espaço fica do lado de dentro da borda. */
+.reais.percentual input {
+  padding-left: 0.875rem;
+  padding-right: 0.25rem;
+}
+
+.reais.percentual span {
+  padding: 0 0.875rem 0 0.125rem;
 }
 
 .reais:focus-within {
@@ -1332,11 +1376,46 @@ select {
   margin: -0.5rem 0 0;
 }
 
-/* Campos lado a lado quando cabem (alíquotas, créditos, RAT e FAP). */
+/* Campos lado a lado quando cabem (alíquotas, créditos, RAT e FAP). Cada campo usa as linhas
+   da grade (subgrid): o rótulo, a caixa e o erro ficam alinhados com os do vizinho, mesmo
+   quando um rótulo quebra em duas linhas. */
 .grade {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 13rem), 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 11rem), 1fr));
   gap: 1rem;
+}
+
+.grade > .campo {
+  display: grid;
+  grid-row: span 3;
+  grid-template-rows: subgrid;
+  row-gap: 0;
+  align-content: start;
+}
+
+.grade > .campo > label {
+  align-self: end;
+}
+
+/* Um grupo de campos de fora do DAS (ISS e ICMS, ICMS-ST, DIFAL...), com a legenda em cima. */
+.grupo-fora {
+  display: grid;
+  gap: 0.5rem;
+  min-width: 0;
+  margin: 0.5rem 0 0;
+  padding: 0;
+  border: 0;
+}
+
+/* Um respiro maior separa um tributo do outro. Sem borda: a legenda do fieldset fica em cima
+   da borda e cortaria a linha. */
+.grupo-fora + .grupo-fora {
+  margin-top: 1.25rem;
+}
+
+.grupo-fora legend {
+  margin-bottom: 0.25rem;
+  padding: 0;
 }
 
 .botao.pequeno {
@@ -1371,7 +1450,7 @@ select {
   align-items: start;
 }
 
-.caixa input {
+.caixa > input {
   width: 1.125rem;
   height: 1.125rem;
   margin: 0.25rem 0 0;
@@ -1388,6 +1467,13 @@ select {
 .caixa .dica {
   grid-column: 2;
   margin: 0.125rem 0 0;
+}
+
+/* O que aparece embaixo da caixa marcada (o percentual da redução). */
+.caixa-extra {
+  grid-column: 2;
+  max-width: 12rem;
+  margin-top: 0.5rem;
 }
 
 /* Receitas do mês: uma linha (cartão) por atividade. Com uma só, sem cartão. */
@@ -1454,12 +1540,14 @@ select {
   font-size: 0.9375rem;
 }
 
-/* "Somas dos 12 meses" ou "Mês a mês": botões de rádio com cara de chave de dois lados. O
-   rádio fica por cima do texto, invisível, e continua recebendo o clique e o teclado. */
+/* "Simples Nacional" ou "MEI", "Somados" ou "Mês a mês": botões de rádio com cara de chave
+   de dois lados. O rádio fica por cima do texto, invisível, e continua recebendo o clique e o
+   teclado. */
 .alternar {
-  display: inline-flex;
-  flex-wrap: wrap;
-  justify-self: start;
+  display: flex;
+  width: 100%;
+  max-width: 26rem;
+  margin-top: 0.375rem;
   gap: 0.25rem;
   padding: 0.25rem;
   background: var(--color-surface);
@@ -1467,9 +1555,14 @@ select {
   border-radius: 999px;
 }
 
+/* Cada lado cresce a partir do tamanho do texto, sem quebrar a linha: "Simples Nacional"
+   cabe ao lado de "MEI" mesmo num celular de 320 px. */
 .alternar label {
   position: relative;
-  padding: 0.375rem 0.875rem;
+  flex: 1 1 auto;
+  padding: 0.375rem 0.75rem;
+  text-align: center;
+  white-space: nowrap;
   border-radius: 999px;
   color: var(--color-muted);
   font-size: 0.875rem;
@@ -1619,6 +1712,84 @@ select {
 
 .receitas-resultado {
   margin-bottom: 1.25rem;
+}
+
+.receitas-resultado h3 {
+  margin: 0 0 0.5rem;
+  font-size: 0.9375rem;
+}
+
+.receitas-resultado ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* O nome à esquerda e o valor à direita; o detalhe na linha de baixo, na largura toda. */
+.receitas-resultado li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.125rem 1rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px dashed var(--color-border-strong);
+}
+
+.receita-nome {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.receita-valor {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.receitas-resultado .detalhe {
+  grid-column: 1 / -1;
+}
+
+/* Pagamento em atraso: o DAS, a multa, os juros e o total. */
+.atraso {
+  margin-top: 1.5rem;
+  padding-top: 1.25rem;
+  border-top: 1px dashed var(--color-border-strong);
+}
+
+.atraso h3 {
+  margin: 0 0 0.5rem;
+}
+
+.atraso-contas {
+  margin: 0;
+}
+
+.atraso-contas div {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.125rem 1rem;
+  padding: 0.375rem 0;
+}
+
+.atraso-contas dt {
+  color: var(--color-muted);
+}
+
+.atraso-contas dd {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.atraso-contas .atraso-total {
+  margin-top: 0.25rem;
+  padding-top: 0.625rem;
+  border-top: 1px solid var(--color-border-strong);
+  font-weight: 600;
+}
+
+.atraso-contas .atraso-total dt {
+  color: var(--color-text);
 }
 
 .fora {

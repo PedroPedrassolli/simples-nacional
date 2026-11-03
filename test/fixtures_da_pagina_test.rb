@@ -23,7 +23,14 @@ FIXTURES_DA_PAGINA = {
                        "creditos_cbs" => "1000.00" },
   "sublimite.json" => { "periodo" => "2026-10", "atividades" => "revenda:400000.00", "rbt12" => "3900000.00",
                         "receita_ano" => "3300000.00", "receita_ano_anterior" => "3700000.00",
-                        "aliquota_icms" => "18", "creditos_icms" => "20000.00" }
+                        "aliquota_icms" => "18", "creditos_icms" => "20000.00" },
+  "situacoes.json" => { "periodo" => "2026-03", "rbt12" => "500000.00", "pagamento" => "2026-07-15",
+                        "atividades" => "industria_iss:30000.00:reducao_iss=40;revenda:10000.00:isencao_icms",
+                        "st_valor" => "100.00", "st_mva" => "40", "st_aliquota_interna" => "18",
+                        "st_aliquota_propria" => "12", "difal_valor" => "100.00",
+                        "difal_aliquota_interna" => "17.5", "difal_aliquota_interestadual" => "12" },
+  "mei.json" => { "regime" => "mei", "periodo" => "2026-03", "mei_atividade" => "comercio_servicos",
+                  "receita_ano" => "90000.00", "pagamento" => "2026-05-04" }
 }.freeze
 
 describe "fixtures dos testes da página" do

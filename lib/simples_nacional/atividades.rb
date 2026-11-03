@@ -5,21 +5,26 @@ module SimplesNacional
   # tipo de atividade (que diz o anexo) e o que já foi pago fora do Simples (que tira
   # tributos da conta).
   #
-  # LC 123/2006, art. 18, §§ 4º, 4º-A, 12 a 14; Res. CGSN 140/2018, art. 25.
-  # https://www.planalto.gov.br/ccivil_03/leis/lcp/lcp123.htm (conferido em 02/11/2026)
-  # https://normas.receita.fazenda.gov.br/sijut2consulta/link.action?idAto=92278 (conferido em 02/11/2026)
+  # LC 123/2006, art. 18, §§ 4º, 4º-A, 12 a 14, 20 e 20-A; Res. CGSN 140/2018, arts. 25 e 35.
+  # https://www.planalto.gov.br/ccivil_03/leis/lcp/lcp123.htm (conferido em 03/11/2026)
+  # https://normas.receita.fazenda.gov.br/sijut2consulta/link.action?idAto=92278 (conferido em 03/11/2026)
   module Atividades
     # anexo: 1 a 5, :fator_r (III ou V) ou :industria (depende do ano, ver Regras).
-    # tira: tributos que a atividade nunca paga no DAS. icms_do_anexo_i: soma o ICMS do Anexo I.
+    # tira: tributos que a atividade nunca paga no DAS; motivo: por que (para o passo a passo).
+    # de_outro_anexo: tributo que vem de outro anexo, na mesma faixa ({ "ICMS" => 1 }).
     # opcoes: os qualificadores que fazem sentido para a atividade.
-    Tipo = Data.define(:codigo, :nome, :anexo, :tira, :icms_do_anexo_i, :opcoes, :fonte)
+    Tipo = Data.define(:codigo, :nome, :anexo, :tira, :motivo, :de_outro_anexo, :opcoes, :fonte)
 
-    def self.tipo(codigo, nome, anexo, opcoes, fonte, tira: [], icms_do_anexo_i: false)
-      Tipo.new(codigo:, nome:, anexo:, tira:, icms_do_anexo_i:, opcoes:, fonte:)
+    def self.tipo(codigo, nome, anexo, opcoes, fonte, tira: [], motivo: nil, de_outro_anexo: {})
+      Tipo.new(codigo:, nome:, anexo:, tira:, motivo:, de_outro_anexo:, opcoes:, fonte:)
     end
 
-    MERCADORIAS = %w[st_icms monofasico exportacao].freeze
-    SERVICOS = %w[iss_retido exportacao].freeze
+    # Isenção ou redução que o estado (ICMS) ou o município (ISS) dá às ME e EPP (LC 123/2006,
+    # art. 18, §§ 20 e 20-A; Res. CGSN 140/2018, art. 35).
+    DO_ESTADO = %w[isencao_icms reducao_icms].freeze
+    DO_MUNICIPIO = %w[isencao_iss reducao_iss].freeze
+    MERCADORIAS = (%w[st_icms monofasico exportacao] + DO_ESTADO).freeze
+    SERVICOS = (%w[iss_retido exportacao] + DO_MUNICIPIO).freeze
 
     TIPOS = [
       tipo("revenda", "Revenda de mercadorias", 1, MERCADORIAS, "LC 123/2006, art. 18, § 4º, I"),
@@ -32,15 +37,23 @@ module SimplesNacional
       tipo("fator_r", "Serviços do Anexo III ou V, pelo Fator R", :fator_r, SERVICOS,
            "LC 123/2006, art. 18, §§ 5º-J, 5º-K e 5º-M"),
       # Anexo III "deduzida a parcela correspondente ao ISS" (art. 18, § 4º, V).
-      tipo("locacao", "Locação de bens móveis", 3, [], "LC 123/2006, art. 18, § 4º, V", tira: ["ISS"]),
+      tipo("locacao", "Locação de bens móveis", 3, [], "LC 123/2006, art. 18, § 4º, V",
+           tira: ["ISS"], motivo: "locação de bens móveis"),
       # Anexo III sem o ISS e com o ICMS do Anexo I (Res. CGSN 140/2018, art. 25, § 1º, IX).
-      tipo("transporte", "Transporte intermunicipal ou interestadual, ou comunicação", 3, ["st_icms"],
-           "Res. CGSN 140/2018, art. 25, § 1º, IX", tira: ["ISS"], icms_do_anexo_i: true)
+      tipo("transporte", "Transporte intermunicipal ou interestadual, ou comunicação", 3, ["st_icms", *DO_ESTADO],
+           "Res. CGSN 140/2018, art. 25, § 1º, IX",
+           tira: ["ISS"], de_outro_anexo: { "ICMS" => 1 }, motivo: "transporte e comunicação pagam ICMS, e não ISS"),
+      # Anexo II "deduzida a parcela correspondente ao ICMS e acrescida a parcela correspondente
+      # ao ISS prevista no Anexo III" (art. 18, § 4º, VI; Res. CGSN 140/2018, art. 25, § 1º, VII).
+      tipo("industria_iss", "Industrialização com IPI e ISS ao mesmo tempo", 2, SERVICOS,
+           "LC 123/2006, art. 18, § 4º, VI; Res. CGSN 140/2018, art. 25, § 1º, VII",
+           tira: ["ICMS"], de_outro_anexo: { "ISS" => 3 }, motivo: "a atividade com IPI e ISS paga ISS, e não ICMS")
     ].to_h { |tipo| [tipo.codigo, tipo] }.freeze
 
-    # O que a pessoa informou, já conferido: tipo (Tipo), receita em centavos e os códigos
-    # dos qualificadores.
-    Atividade = Data.define(:tipo, :receita, :opcoes) do
+    # O que a pessoa informou, já conferido: tipo (Tipo), receita em centavos, os códigos dos
+    # qualificadores e as reduções de ICMS e ISS ({ "ISS" => 2/5 } tira 40% do ISS).
+    Atividade = Data.define(:tipo, :receita, :opcoes, :reducoes) do
+      def initialize(tipo:, receita:, opcoes:, reducoes: {}) = super
       def exportacao? = opcoes.include?("exportacao")
     end
 
@@ -58,8 +71,19 @@ module SimplesNacional
                        "LC 123/2006, art. 18, § 4º-A, II; %<res>s, art. 25, § 9º"],
       "exportacao" => ["Exportação", "exportação",
                        "LC 123/2006, art. 18, §§ 4º-A, IV, e 14; %<res>s, arts. 23 e 25, § 3º"],
-      "ipi_mantido" => ["Produto com IPI mantido (Zona Franca de Manaus)", "IPI mantido", "%<res>s, art. 25, § 1º, II"]
+      "ipi_mantido" => ["Produto com IPI mantido (Zona Franca de Manaus)", "IPI mantido", "%<res>s, art. 25, § 1º, II"],
+      "isencao_icms" => ["Isenção do ICMS dada pelo estado", "isenção dada pelo estado",
+                         "LC 123/2006, art. 18, §§ 20 e 20-A; %<res>s, art. 35, I"],
+      "reducao_icms" => ["Redução do ICMS dada pelo estado", "redução dada pelo estado",
+                         "LC 123/2006, art. 18, §§ 20 e 20-A; %<res>s, art. 35, II"],
+      "isencao_iss" => ["Isenção do ISS dada pelo município", "isenção dada pelo município",
+                        "LC 123/2006, art. 18, §§ 20 e 20-A; %<res>s, art. 35, I"],
+      "reducao_iss" => ["Redução do ISS dada pelo município", "redução dada pelo município",
+                        "LC 123/2006, art. 18, §§ 20 e 20-A; %<res>s, art. 35, II"]
     }.freeze
+
+    # Qual imposto cada redução diminui.
+    REDUCOES = { "reducao_icms" => "ICMS", "reducao_iss" => "ISS" }.freeze
 
     # Nome, motivo e base legal de um qualificador. O nome do monofásico muda em 2027.
     def self.opcao(codigo, regras)
@@ -80,9 +104,9 @@ module SimplesNacional
 
     def self.tira_da_opcao(codigo, regras)
       case codigo
-      when "st_icms" then ["ICMS"]
+      when "st_icms", "isencao_icms" then ["ICMS"]
       when "monofasico" then regras.tira_no_monofasico
-      when "iss_retido" then ["ISS"]
+      when "iss_retido", "isencao_iss" then ["ISS"]
       when "exportacao" then regras.tira_na_exportacao
       else []
       end
@@ -97,41 +121,6 @@ module SimplesNacional
       end
     end
 
-    # Recebe [{ tipo: "revenda", receita: 1_000_000, opcoes: ["st_icms"] }, ...] e devolve
-    # a lista de Atividade, ou levanta EntradaInvalida com a mensagem para a página.
-    def self.conferir(lista, regras)
-      raise Entrada::EntradaInvalida, "Informe pelo menos uma receita do mês." unless lista.is_a?(Array) && lista.any?
-      raise Entrada::EntradaInvalida, "Informe no máximo #{MAXIMO} receitas no mês." if lista.size > MAXIMO
-
-      lista.each_with_index.map do |item, indice|
-        conferir_uma(item, lista.size == 1 ? "do mês" : (indice + 1).to_s, regras)
-      end
-    end
-
-    # Mais que isso não é um caso real e só deixaria a URL enorme.
-    MAXIMO = 10
-
-    def self.conferir_uma(item, numero, regras)
-      item = item.to_h
-      tipo = TIPOS[item[:tipo].to_s] || raise(Entrada::EntradaInvalida, "Escolha o tipo da receita #{numero}.")
-      opcoes = Array(item[:opcoes]).map(&:to_s).uniq
-      conferir_opcoes(tipo, opcoes, numero, regras)
-      Entrada.conferir_valor(item[:receita], "A receita #{numero}", positivo: true)
-      Atividade.new(tipo:, receita: item[:receita], opcoes:)
-    end
-
-    def self.conferir_opcoes(tipo, opcoes, numero, regras)
-      invalida = opcoes.find { |codigo| !tipo.opcoes.include?(codigo) }
-      if invalida
-        raise Entrada::EntradaInvalida,
-              "A opção \"#{invalida}\" não vale para a receita #{numero} (#{tipo.nome})."
-      end
-      return unless opcoes.include?("ipi_mantido") && regras.anexo_da_industria == 2
-
-      raise Entrada::EntradaInvalida, "O IPI mantido da Zona Franca só muda o anexo a partir de 2027: em " \
-                                      "#{regras.ano}, a venda de produto industrializado já é do Anexo II."
-    end
-
-    private_class_method :tipo, :nome_do_monofasico, :conferir_uma, :conferir_opcoes
+    private_class_method :tipo, :nome_do_monofasico
   end
 end

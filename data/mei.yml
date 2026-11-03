@@ -1,0 +1,38 @@
+# MEI (Simei): valores fixos mensais do DAS, de 2026 a 2028.
+#
+# INSS: 5% do salário mínimo (12% para o transportador autônomo de cargas), na forma do § 2º do
+# art. 21 da Lei 8.212/1991 (LC 123/2006, art. 18-A, § 3º, IV e V, a; Res. CGSN 140/2018, art. 101, I).
+# O salário mínimo de cada ano sai num decreto de dezembro: ano sem decreto fica fora daqui, e a
+# calculadora pede o valor.
+#
+# 2026: R$ 1,00 de ICMS e R$ 5,00 de ISS (LC 123/2006, art. 18-A, § 3º, V, b e c).
+# 2027 e 2028: ICMS, ISS, CBS e IBS do Anexo VII da LC 123/2006, incluído pela LC 214/2025
+# (art. 520 e Anexo XXIII; art. 18-A, § 3º, IV, b, e V, d e e). O ICMS só para quem é
+# contribuinte do ICMS e o ISS só para quem é contribuinte do ISS (art. 18-A, § 3º, V, b e c).
+#
+# Limite: R$ 81.000,00 no ano, ou R$ 6.750,00 por mês no ano de início; transportador autônomo
+# de cargas: R$ 251.600,00, ou R$ 20.966,67 por mês (Res. CGSN 140/2018, art. 100, caput e §§ 1º e 1º-A).
+conferido_em: "2026-11-03"
+fontes:
+  lc123: https://www.planalto.gov.br/ccivil_03/leis/lcp/lcp123.htm
+  lc214: https://www.planalto.gov.br/ccivil_03/leis/lcp/lcp214.htm
+  resolucao: https://normas.receita.fazenda.gov.br/sijut2consulta/link.action?idAto=92278
+salario_minimo:
+  2026:
+    valor: "1621.00"
+    ato: Decreto nº 12.797, de 23 de dezembro de 2025
+    fonte: https://www.planalto.gov.br/ccivil_03/_ato2023-2026/2025/decreto/d12797.htm
+valores_fixos:
+  2026:
+    ICMS: "1.00"
+    ISS: "5.00"
+  2027:
+    ICMS: "1.00"
+    ISS: "5.00"
+    CBS: "0.994"
+    IBS: "0.006"
+  2028:
+    ICMS: "1.00"
+    ISS: "5.00"
+    CBS: "0.994"
+    IBS: "0.006"

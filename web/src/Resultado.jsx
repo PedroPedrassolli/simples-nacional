@@ -63,6 +63,7 @@ export default function Resultado({ resultado, refTitulo, desatualizado }) {
         rodape={["DAS", resultado.aliquota_efetiva, resultado.das]}
       />
       {resultado.fora_do_das.length > 0 && <ForaDoDas resultado={resultado} />}
+      {resultado.atraso && <Atraso atraso={resultado.atraso} das={resultado.das} />}
 
       <div className="acoes-resultado">
         <button type="button" className="botao secundario pequeno" onClick={() => window.print()}>
@@ -73,36 +74,64 @@ export default function Resultado({ resultado, refTitulo, desatualizado }) {
   );
 }
 
-// Uma linha por receita: anexo, faixa, percentual e valor. As situações especiais de cada
-// uma ficam na conta passo a passo ("O que esta receita não paga no DAS").
+// Uma linha por receita: o nome e o DAS dela; embaixo, a receita, o anexo, a faixa e o
+// percentual. Lista, e não tabela, para caber no celular. As situações especiais de cada uma
+// ficam na conta passo a passo ("O que esta receita não paga no DAS").
 function Receitas({ atividades }) {
   return (
-    <table className="tabela receitas-resultado">
-      <caption>DAS de cada receita</caption>
-      <thead>
-        <tr>
-          <th scope="col">Receita</th>
-          <th scope="col">Anexo, faixa</th>
-          <th scope="col">%</th>
-          <th scope="col">Valor</th>
-        </tr>
-      </thead>
-      <tbody>
+    <div className="receitas-resultado">
+      <h3>DAS de cada receita</h3>
+      <ul>
         {atividades.map((atividade) => (
-          <tr key={atividade.numero}>
-            <th scope="row">
+          <li key={atividade.numero}>
+            <span className="receita-nome">
               {atividade.numero}. {atividade.nome}
-              <span className="detalhe">{atividade.receita}</span>
-            </th>
-            <td>
-              {ROMANOS[atividade.anexo]}, {atividade.faixa}ª
-            </td>
-            <td>{atividade.percentual}</td>
-            <td>{atividade.valor}</td>
-          </tr>
+            </span>
+            <strong className="receita-valor">{atividade.valor}</strong>
+            <span className="detalhe">
+              {semQuebra(
+                `${atividade.receita} de receita · Anexo ${ROMANOS[atividade.anexo]}, ${atividade.faixa}ª faixa · ${atividade.percentual}`,
+              )}
+            </span>
+          </li>
         ))}
-      </tbody>
-    </table>
+      </ul>
+    </div>
+  );
+}
+
+// O DAS pago depois do vencimento: multa, juros e o total a pagar (também no MEI).
+export function Atraso({ atraso, das }) {
+  return (
+    <div className="atraso">
+      <h3>Pago em {atraso.pagamento}</h3>
+      {atraso.dias === 0 ? (
+        <p className="detalhe">
+          Dentro do prazo (vencimento em {atraso.vencimento}): sem multa nem juros.
+        </p>
+      ) : (
+        <dl className="atraso-contas">
+          <div>
+            <dt>DAS</dt>
+            <dd>{das}</dd>
+          </div>
+          <div>
+            <dt>
+              Multa ({atraso.multa_percentual}, {atraso.dias} {atraso.dias === 1 ? "dia" : "dias"})
+            </dt>
+            <dd>{atraso.multa}</dd>
+          </div>
+          <div>
+            <dt>Juros ({atraso.juros_percentual})</dt>
+            <dd>{atraso.juros}</dd>
+          </div>
+          <div className="atraso-total">
+            <dt>Total a pagar</dt>
+            <dd>{atraso.total}</dd>
+          </div>
+        </dl>
+      )}
+    </div>
   );
 }
 
@@ -208,12 +237,15 @@ export function ContaPassoAPasso({ resultado }) {
             </ol>
           </section>
         ))}
-        <p className="fonte">
-          {resultado.atividades.length === 1
-            ? `Tabela na redação da ${tabela.redacao}, em vigor desde ${dataBrasileira(tabela.vigencia)}. `
-            : `Tabelas em vigor desde ${dataBrasileira(tabela.vigencia)}. `}
-          <a href={tabela.fonte}>Texto da lei no Planalto</a>.
-        </p>
+        {/* O MEI não tem tabela: os valores fixos estão nos passos. */}
+        {tabela && (
+          <p className="fonte">
+            {resultado.atividades.length === 1
+              ? `Tabela na redação da ${tabela.redacao}, em vigor desde ${dataBrasileira(tabela.vigencia)}. `
+              : `Tabelas em vigor desde ${dataBrasileira(tabela.vigencia)}. `}
+            <a href={tabela.fonte}>Texto da lei no Planalto</a>.
+          </p>
+        )}
       </div>
     </details>
   );

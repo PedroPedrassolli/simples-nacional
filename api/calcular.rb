@@ -19,9 +19,15 @@ require_relative "../lib/simples_nacional"
 # a exportação e a folha (as duas últimas podem faltar):
 #   GET /api/calcular?periodo=2026-03&anexo=3&receita_mes=40000.00&mes_2026-02=42000.00&mes_2026-01=38000:0:9000...
 #
+# Isenção ou redução de ICMS e ISS vai como qualificador, com o % depois do "=":
+#   atividades=servicos_3:10000.00:reducao_iss=40
+#
+# Pagamento em atraso (multa e juros): pagamento=2026-06-10. MEI: regime=mei, com
+# mei_atividade (comercio, industria, servicos ou comercio_servicos) e, se quiser, receita_ano.
+#
 # Os valores vão em reais, com ponto e até duas casas ("500000.00"); a página converte o
 # que a pessoa digitou ("500.000,00") antes de chamar. Percentuais em % ("3.5" = 3,5%).
-# Os demais parâmetros estão em PARAMETROS e no README.
+# Os demais parâmetros estão no README.
 module CalcularApi
   # Até R$ 9.999.999,99: cobre o limite do Simples e recusa textos enormes logo de cara.
   VALOR = /\A(\d{1,7})(?:\.(\d{1,2}))?\z/
@@ -36,23 +42,40 @@ module CalcularApi
     "receita_ano_anterior" => "a receita do ano anterior", "rbt12_exportacao" => "a RBT12 da exportação",
     "receita_mes_anterior" => "a receita do mês anterior", "creditos_icms" => "os créditos de ICMS",
     "creditos_ibs" => "os créditos de IBS", "creditos_cbs" => "os créditos de CBS",
-    "folha_empregados" => "a folha dos empregados", "pro_labore" => "o pró-labore"
+    "folha_empregados" => "a folha dos empregados", "pro_labore" => "o pró-labore",
+    "receita_ano_exportacao" => "a receita de exportação do ano", "icms_fixo" => "o valor fixo do ICMS",
+    "iss_fixo" => "o valor fixo do ISS", "st_valor" => "a venda com substituição tributária",
+    "st_ipi" => "a soma do IPI e dos encargos da venda", "difal_valor" => "a soma das compras de outros estados",
+    "salario_minimo" => "o salário mínimo"
   }.freeze
 
-  ALIQUOTAS = %w[aliquota_iss aliquota_icms aliquota_ibs aliquota_cbs].freeze
+  ACUMULADOS = %w[rbt12 rbt12_exportacao folha12 receita_ano receita_ano_anterior receita_mes_anterior
+                  receita_ano_exportacao].freeze
 
   # Parâmetro com problema: vira resposta 400 com a mensagem.
   class ParametroInvalido < StandardError; end
 
   # Devolve [status HTTP, corpo da resposta].
   def self.responder(parametros)
+    return [200, Mei.corpo(Mei.calcular(parametros))] if texto(parametros, "regime") == "mei"
+
     resultado = SimplesNacional.calcular(periodo: texto(parametros, "periodo"), inicio: texto(parametros, "inicio"),
                                          **receitas_do_mes(parametros), **acumulados(parametros),
                                          ibs_cbs_fora: texto(parametros, "ibs_cbs_fora") == "1",
-                                         fora_do_das: fora_do_das(parametros))
+                                         fora_do_das: ForaDoDas.ler(parametros),
+                                         valores_fixos: valores_fixos(parametros),
+                                         pagamento: texto(parametros, "pagamento"))
     [200, Corpo.montar(resultado)]
   rescue ParametroInvalido, SimplesNacional::Calculo::EntradaInvalida => e
     [400, { erro: e.message }]
+  end
+
+  # icms_fixo=108.00&iss_fixo=162.75 → { "ICMS" => 10_800, "ISS" => 16_275 } (só os informados).
+  def self.valores_fixos(parametros)
+    { "ICMS" => "icms_fixo", "ISS" => "iss_fixo" }.filter_map do |tributo, nome|
+      valor = opcional(parametros, nome)
+      [tributo, valor] if valor
+    end.to_h
   end
 
   # atividades=... (várias receitas) ou anexo + receita_mes (uma só).
@@ -66,7 +89,7 @@ module CalcularApi
 
   # "revenda:30000.00:st_icms+monofasico;servicos_3:10000.00" → lista de hashes.
   def self.atividades(texto)
-    texto.split(";").first(SimplesNacional::Atividades::MAXIMO + 1).map do |parte|
+    texto.split(";").first(SimplesNacional::AtividadesInformadas::MAXIMO + 1).map do |parte|
       tipo, valor, opcoes = parte.split(":", 3)
       { tipo:, receita: centavos({ "receita_mes" => valor }, "receita_mes"), opcoes: opcoes.to_s.split("+") }
     end
@@ -74,15 +97,14 @@ module CalcularApi
 
   # Totais (rbt12, folha12...) ou mês a mês (mes_AAAA-MM). A folha só vale no Fator R.
   def self.acumulados(parametros)
-    valores = %w[rbt12 rbt12_exportacao folha12 receita_ano receita_ano_anterior receita_mes_anterior].to_h do |nome|
-      [nome.to_sym, opcional(parametros, nome)]
-    end
-    unless parametros["anexo"].to_s == "fator_r" || parametros["atividades"].to_s.include?("fator_r")
-      valores[:folha12] =
-        nil
-    end
+    valores = ACUMULADOS.to_h { |nome| [nome.to_sym, opcional(parametros, nome)] }
+    valores[:folha12] = nil unless fator_r?(parametros)
     historico = historico(parametros)
     historico.empty? ? valores : valores.merge(historico:)
+  end
+
+  def self.fator_r?(parametros)
+    parametros["anexo"].to_s == "fator_r" || parametros["atividades"].to_s.include?("fator_r")
   end
 
   # { "2026-02" => { receita:, exportacao:, folha: } } a partir de mes_2026-02=42000.00:0:9000.00
@@ -97,38 +119,6 @@ module CalcularApi
   def self.mes_do_historico(valor, mes)
     receita, exportacao, folha = valor.to_s.split(":", 3).map { |parte| centavos({ "x" => parte }, "x", mes) }
     { receita:, exportacao: exportacao || 0, folha: folha || 0 }
-  end
-
-  def self.fora_do_das(parametros)
-    valores = ALIQUOTAS.to_h { |nome| [nome.to_sym, percentual(parametros, nome)] }
-    %w[creditos_icms creditos_ibs creditos_cbs folha_empregados pro_labore].each do |nome|
-      valores[nome.to_sym] = opcional(parametros, nome)
-    end
-    valores.merge(rat: texto(parametros, "rat")&.then { |rat| inteiro_do_rat(rat) }, fap: fap(parametros))
-  end
-
-  def self.inteiro_do_rat(texto)
-    /\A[123]\z/.match?(texto) ? texto.to_i : raise(ParametroInvalido, "O RAT precisa ser 1, 2 ou 3.")
-  end
-
-  # "3.5" → 3,5% (Rational(35, 1000)). Vazio vira nil.
-  def self.percentual(parametros, nome)
-    valor = texto(parametros, nome)
-    return if valor.nil?
-    raise ParametroInvalido, "Informe #{nome.tr('_', ' ')} em %, como 3.5." unless PERCENTUAL.match?(valor)
-
-    Rational(valor) / 100
-  end
-
-  def self.fap(parametros)
-    valor = texto(parametros, "fap")
-    return if valor.nil?
-    unless /\A\d(?:\.\d{1,4})?\z/.match?(valor)
-      raise ParametroInvalido,
-            "Informe o FAP como número, por exemplo 1.0000."
-    end
-
-    Rational(valor)
   end
 
   # Parâmetro de texto (os meses "AAAA-MM"); vazio vira nil. A biblioteca confere o formato.
@@ -151,8 +141,83 @@ module CalcularApi
     raise ParametroInvalido, "Informe #{NOMES.fetch(nome, 'a receita')} como número, por exemplo 500000.00."
   end
 
-  private_class_method :receitas_do_mes, :atividades, :acumulados, :historico, :mes_do_historico, :fora_do_das,
-                       :inteiro_do_rat, :percentual, :fap, :opcional
+  private_class_method :valores_fixos, :receitas_do_mes, :atividades, :acumulados, :fator_r?, :historico,
+                       :mes_do_historico
+
+  # O que fica fora do DAS: alíquotas em % ("3.5"), valores em reais, o RAT (1, 2 ou 3) e o FAP.
+  module ForaDoDas
+    ALIQUOTAS = %w[aliquota_iss aliquota_icms aliquota_ibs aliquota_cbs st_mva st_aliquota_interna st_aliquota_propria
+                   difal_aliquota_interna difal_aliquota_interestadual].freeze
+    FAP = /\A\d(?:\.\d{1,4})?\z/
+    VALORES_FORA = %w[creditos_icms creditos_ibs creditos_cbs folha_empregados pro_labore st_valor st_ipi
+                      difal_valor].freeze
+
+    def self.ler(parametros)
+      valores = ALIQUOTAS.to_h { |nome| [nome.to_sym, percentual(parametros, nome)] }
+      VALORES_FORA.each { |nome| valores[nome.to_sym] = CalcularApi.opcional(parametros, nome) }
+      valores.merge(rat: CalcularApi.texto(parametros, "rat")&.then { |rat| inteiro_do_rat(rat) }, fap: fap(parametros))
+    end
+
+    def self.inteiro_do_rat(texto)
+      /\A[123]\z/.match?(texto) ? texto.to_i : raise(ParametroInvalido, "O RAT precisa ser 1, 2 ou 3.")
+    end
+
+    # "3.5" → 3,5% (Rational(35, 1000)). Vazio vira nil.
+    def self.percentual(parametros, nome)
+      valor = CalcularApi.texto(parametros, nome)
+      return if valor.nil?
+      raise ParametroInvalido, "Informe #{nome.tr('_', ' ')} em %, como 3.5." unless PERCENTUAL.match?(valor)
+
+      Rational(valor) / 100
+    end
+
+    def self.fap(parametros)
+      valor = CalcularApi.texto(parametros, "fap")
+      return if valor.nil?
+      raise ParametroInvalido, "Informe o FAP como número, por exemplo 1.0000." unless FAP.match?(valor)
+
+      Rational(valor)
+    end
+
+    private_class_method :inteiro_do_rat, :percentual, :fap
+  end
+
+  # O MEI (regime=mei): o mês, a atividade e, se quiser, o início, a receita do ano, o salário
+  # mínimo (obrigatório em 2027 e 2028, ainda sem decreto) e a data do pagamento.
+  module Mei
+    F = SimplesNacional::Formato
+
+    def self.calcular(parametros)
+      SimplesNacional.calcular_mei(
+        periodo: CalcularApi.texto(parametros, "periodo"), atividade: CalcularApi.texto(parametros, "mei_atividade"),
+        transportador: CalcularApi.texto(parametros, "transportador") == "1",
+        inicio: CalcularApi.texto(parametros, "inicio"), receita_ano: CalcularApi.opcional(parametros, "receita_ano"),
+        salario_minimo: CalcularApi.opcional(parametros, "salario_minimo"),
+        pagamento: CalcularApi.texto(parametros, "pagamento")
+      )
+    end
+
+    def self.corpo(resultado)
+      periodo = resultado.periodo
+      { regime: "mei", periodo: periodo.strftime("%Y-%m"), periodo_nome: F.mes(periodo), ano: periodo.year,
+        atividade: resultado.atividade.nome, transportador: resultado.transportador }.merge(valores(resultado))
+    end
+
+    # O DAS, os valores fixos (a CBS e o IBS de 2027 têm milésimos), o limite e o atraso.
+    def self.valores(resultado)
+      { das: F.reais(resultado.das), das_centavos: resultado.das,
+        tributos: resultado.tributos.map { |tributo| { nome: tributo.nome, valor: F.reais_exatos(tributo.valor) } },
+        limite: limite(resultado.limite), atraso: Corpo.atraso(resultado.atraso), passos: resultado.passos.map(&:to_h) }
+    end
+
+    def self.limite(limite)
+      { limite: F.reais(limite.limite), receita_ano: limite.receita_ano && F.reais(limite.receita_ano),
+        excesso: F.reais(limite.excesso), diferenca: limite.diferenca && F.reais(limite.diferenca),
+        situacao: limite.situacao }
+    end
+
+    private_class_method :valores, :limite
+  end
 
   # O JSON da resposta: percentuais e dinheiro já no formato brasileiro, para a página só mostrar.
   # Os campos do topo (anexo, faixa, rbt12...) são da primeira receita, como antes da segregação;
@@ -162,12 +227,24 @@ module CalcularApi
 
     def self.montar(resultado)
       avisos = SimplesNacional::Avisos.montar(resultado)
-      cabecalho(resultado).merge(totais(resultado), atividades: atividades(resultado),
-                                                    fora_do_das: resultado.fora_do_das.map do |estimativa|
-                                                      estimativa(estimativa)
-                                                    end,
+      fora_do_das = resultado.fora_do_das.map { |item| estimativa(item) }
+      cabecalho(resultado).merge(totais(resultado), atividades: atividades(resultado), fora_do_das:,
                                                     passos: resultado.passos.map(&:to_h), aviso: avisos.first, avisos:,
-                                                    tabela: tabela(resultado.anexo))
+                                                    atraso: atraso(resultado.atraso), tabela: tabela(resultado.anexo))
+    end
+
+    # Multa e juros do pagamento em atraso, ou nil (também no MEI).
+    def self.atraso(atraso)
+      return if atraso.nil?
+
+      { vencimento: F.data(atraso.vencimento), pagamento: F.data(atraso.pagamento), dias: atraso.dias,
+        total_centavos: atraso.total }.merge(valores_do_atraso(atraso))
+    end
+
+    def self.valores_do_atraso(atraso)
+      { multa_percentual: F.percentual(atraso.multa_percentual), multa: F.reais(atraso.multa),
+        juros_percentual: F.percentual(atraso.juros_percentual), juros: F.reais(atraso.juros),
+        total: F.reais(atraso.total) }
     end
 
     # O mês e a primeira receita (os campos de antes da segregação).
@@ -196,8 +273,15 @@ module CalcularApi
     def self.identificacao(apurada, regras)
       atividade = apurada.atividade
       { numero: apurada.numero, tipo: atividade.tipo.codigo, nome: atividade.tipo.nome,
-        opcoes: atividade.opcoes.map { |codigo| SimplesNacional::Atividades.opcao(codigo, regras).nome },
+        opcoes: atividade.opcoes.map { |codigo| nome_da_opcao(codigo, atividade, regras) },
         exportacao: atividade.exportacao?, receita: F.reais(atividade.receita) }
+    end
+
+    # "Redução do ISS dada pelo município (40,00%)": a redução vai com o percentual.
+    def self.nome_da_opcao(codigo, atividade, regras)
+      nome = SimplesNacional::Atividades.opcao(codigo, regras).nome
+      tributo = SimplesNacional::Atividades::REDUCOES[codigo]
+      tributo ? "#{nome} (#{F.percentual(atividade.reducoes.fetch(tributo))})" : nome
     end
 
     def self.conta(apurada)
@@ -222,8 +306,8 @@ module CalcularApi
       end
     end
 
-    private_class_method :cabecalho, :da_tabela, :totais, :atividades, :identificacao, :conta, :estimativa, :tabela,
-                         :tributos
+    private_class_method :cabecalho, :da_tabela, :totais, :atividades, :identificacao, :nome_da_opcao, :conta,
+                         :estimativa, :tabela, :tributos, :valores_do_atraso
   end
 end
 

@@ -51,7 +51,7 @@ export function paraPercentual(texto) {
   return /^\d{1,3}(\.\d{1,4})?$/.test(limpo) ? limpo.replace(/^0+(?=\d)/, "") : null;
 }
 
-const NOMES_DOS_MESES = [
+export const NOMES_DOS_MESES = [
   "janeiro",
   "fevereiro",
   "março",

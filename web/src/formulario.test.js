@@ -6,6 +6,7 @@ import {
   FORA_VAZIO,
   linhasDaMemoria,
   novaReceita,
+  periodoDe,
   resumoDasReceitas,
   VAZIO,
 } from "./formulario.js";
@@ -65,7 +66,7 @@ test("aponta o erro de cada campo", () => {
   ];
   const { erros } = conferir({ ...VAZIO, rbt12: "abc", receitas });
   assert.deepEqual(erros, {
-    periodo: "Escolha o mês de apuração.",
+    periodo: "Escolha o mês e o ano de apuração.",
     rbt12: "Use só números, como 500.000,00.",
     "receitas.0.tipo": "Escolha o tipo da receita.",
     "receitas.0.valor": "Preencha este campo.",
@@ -226,5 +227,124 @@ test("na memória, o mês a mês vira uma linha só e o início aparece pelo nom
     ["Mês de apuração", "março de 2026"],
     ["Início das atividades", "janeiro de 2026"],
     ["Meses anteriores", "informados mês a mês (tabela abaixo)"],
+  ]);
+});
+
+test("junta o mês e o ano no período só com os dois escolhidos", () => {
+  assert.equal(periodoDe("03", "2026"), "2026-03");
+  assert.equal(periodoDe("03", ""), "");
+  assert.equal(periodoDe("", "2027"), "");
+  assert.deepEqual(
+    [EXEMPLO.mes_apuracao, EXEMPLO.ano_apuracao, EXEMPLO.periodo],
+    ["03", "2026", "2026-03"],
+  );
+});
+
+test("manda a isenção e a redução com o percentual depois do =", () => {
+  const receitas = [
+    {
+      ...novaReceita(1, "industria_iss", "40.000"),
+      opcoes: ["reducao_iss", "exportacao"],
+      reducoes: { reducao_iss: "40,5" },
+    },
+    { ...novaReceita(2, "revenda", "10.000"), opcoes: ["isencao_icms"] },
+  ];
+  const { parametros, erros } = conferir(formulario({ receitas, rbt12_exportacao: "0" }));
+  assert.deepEqual(erros, {});
+  assert.equal(
+    parametros.atividades,
+    "industria_iss:40000.00:reducao_iss=40.5+exportacao;revenda:10000.00:isencao_icms",
+  );
+});
+
+test("aponta a redução sem percentual ou fora de 0 a 100", () => {
+  for (const [texto, mensagem] of [
+    ["", /^Informe a redução em %/],
+    ["0", /maior que 0 e menor que 100/],
+    ["100", /maior que 0 e menor que 100/],
+    ["abc", /maior que 0 e menor que 100/],
+  ]) {
+    const receitas = [
+      {
+        ...novaReceita(1, "servicos_3", "1"),
+        opcoes: ["reducao_iss"],
+        reducoes: { reducao_iss: texto },
+      },
+    ];
+    assert.match(
+      conferir(formulario({ receitas })).erros["receitas.0.reducao_iss"],
+      mensagem,
+      texto,
+    );
+  }
+});
+
+test("manda os valores fixos, a exportação do ano e a data do pagamento", () => {
+  const receitas = [{ ...novaReceita(1, "revenda", "1"), opcoes: ["exportacao"] }];
+  const valores = formulario({
+    periodo: "2026-10",
+    receitas,
+    rbt12_exportacao: "0",
+    receita_ano_exportacao: "4.700.000",
+    icms_fixo: "108",
+    pagamento: "2026-12-01",
+  });
+  const { parametros, erros } = conferir(valores);
+  assert.deepEqual(erros, {});
+  assert.deepEqual(
+    [
+      parametros.receita_ano_exportacao,
+      parametros.icms_fixo,
+      parametros.iss_fixo,
+      parametros.pagamento,
+    ],
+    ["4700000.00", "108.00", undefined, "2026-12-01"],
+  );
+  // Sem exportação, o campo não aparece e não vai.
+  const semExportacao = conferir(formulario({ periodo: "2026-10", receita_ano_exportacao: "1" }));
+  assert.equal(semExportacao.parametros.receita_ano_exportacao, undefined);
+});
+
+test("aponta a data do pagamento incompleta e o valor fixo em formato errado", () => {
+  assert.deepEqual(conferir(formulario({ pagamento: "2026-12", iss_fixo: "abc" })).erros, {
+    iss_fixo: "Use só números, como 500.000,00.",
+    pagamento: "Use uma data completa, como 15/07/2026.",
+  });
+});
+
+test("manda o ICMS-ST e o DIFAL, com MVA de até 500%", () => {
+  const fora = {
+    ...FORA_VAZIO,
+    st_valor: "100",
+    st_mva: "40",
+    st_aliquota_interna: "18",
+    st_aliquota_propria: "12",
+    difal_valor: "100",
+    difal_aliquota_interna: "17,5",
+    difal_aliquota_interestadual: "12",
+  };
+  const { parametros, erros } = conferir(formulario({ fora }));
+  assert.deepEqual(erros, {});
+  assert.deepEqual(
+    [parametros.st_valor, parametros.st_mva, parametros.difal_aliquota_interna],
+    ["100.00", "40", "17.5"],
+  );
+  assert.deepEqual(conferir(formulario({ fora: { ...FORA_VAZIO, st_mva: "1,2,3" } })).erros, {
+    "fora.st_mva": "Use só números, como 3,5 (para 3,5%).",
+  });
+});
+
+test("na memória, mostra os valores fixos, o ICMS-ST e a data do pagamento", () => {
+  const valores = formulario({
+    iss_fixo: "400",
+    pagamento: "2026-07-15",
+    fora: { ...FORA_VAZIO, st_mva: "40", st_valor: "100" },
+  });
+  const linhas = linhasDaMemoria(valores);
+  assert.deepEqual(linhas.slice(-4), [
+    ["ISS em valor fixo", "R$ 400,00"],
+    ["Venda com ICMS-ST (a empresa é a substituta)", "R$ 100,00"],
+    ["MVA do ICMS-ST", "40%"],
+    ["Data do pagamento", "15/07/2026"],
   ]);
 });
