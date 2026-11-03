@@ -1407,11 +1407,10 @@ select {
   border: 0;
 }
 
-/* Uma linha tracejada separa um tributo do outro. */
+/* Um respiro maior separa um tributo do outro. Sem borda: a legenda do fieldset fica em cima
+   da borda e cortaria a linha. */
 .grupo-fora + .grupo-fora {
-  margin-top: 0.75rem;
-  padding-top: 1rem;
-  border-top: 1px dashed var(--color-border-strong);
+  margin-top: 1.25rem;
 }
 
 .grupo-fora legend {
