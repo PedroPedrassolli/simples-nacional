@@ -116,8 +116,10 @@ module CalcularApi
   end
 
   # "42000.00:0:9000.00" → { receita:, exportacao:, folha: } (as duas últimas valem 0 se faltarem).
+  # O scrub vem antes do split: com bytes inválidos (ex.: %FF na URL) o split levantava ArgumentError
+  # e a resposta virava erro 500 em vez de 400.
   def self.mes_do_historico(valor, mes)
-    receita, exportacao, folha = valor.to_s.split(":", 3).map { |parte| centavos({ "x" => parte }, "x", mes) }
+    receita, exportacao, folha = valor.to_s.scrub.split(":", 3).map { |parte| centavos({ "x" => parte }, "x", mes) }
     { receita:, exportacao: exportacao || 0, folha: folha || 0 }
   end
 

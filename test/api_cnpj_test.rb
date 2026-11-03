@@ -106,4 +106,13 @@ describe "api/cnpj.rb" do
       assert_equal 502, response.status
     end
   end
+
+  describe "com a BrasilAPI respondendo algo que não é um objeto JSON" do
+    let(:brasilapi) { [] }
+
+    it "responde 502 em vez de quebrar com erro 500" do
+      assert_match(/Tente de novo/, subject["erro"])
+      assert_equal 502, response.status
+    end
+  end
 end
